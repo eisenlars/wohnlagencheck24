@@ -435,6 +435,16 @@ function formatMatchConfidenceLabel(value: OfferAreaTargetRow['match_confidence'
   return '—';
 }
 
+function isOfferReadyForPublish(value: OverrideRow | null | undefined): boolean {
+  if (!value) return false;
+  const title = readTextValue(value.seo_h1) ?? readTextValue(value.seo_title);
+  const description =
+    readTextValue(value.long_description)
+    ?? readTextValue(value.short_description)
+    ?? readTextValue(value.seo_description);
+  return Boolean(title && description);
+}
+
 export default function OffersManager(props: Props) {
   const {
     visibilityConfig = null,
@@ -467,6 +477,7 @@ export default function OffersManager(props: Props) {
   const [offerLoadSummary, setOfferLoadSummary] = useState<string | null>(null);
   const [offerLoadDebug, setOfferLoadDebug] = useState<OffersWorkspaceLoadDebug | null>(null);
   const [offerDebugOpen, setOfferDebugOpen] = useState(false);
+  const [offerOverviewInfoOpen, setOfferOverviewInfoOpen] = useState(false);
   const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
 
   const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
@@ -1243,126 +1254,41 @@ export default function OffersManager(props: Props) {
             {selectedOffer ? (
               <div style={offerSummaryTopWrapStyle}>
                 <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
-                  <div style={offerSummaryGridStyle}>
+                  <div style={offerOverviewHeaderRowStyle}>
+                    <div style={offerSummaryHeaderStyle}>Überblick</div>
+                    <div style={offerOverviewHeaderActionsStyle}>
+                      <span style={offerOverviewStatusBadgeStyle(isOfferReadyForPublish(selectedOverride))}>
+                        <span
+                          aria-hidden="true"
+                          style={offerOverviewStatusDotStyle(isOfferReadyForPublish(selectedOverride))}
+                        />
+                        <span>{isOfferReadyForPublish(selectedOverride) ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOfferOverviewInfoOpen(true)}
+                        style={offerOverviewInfoButtonStyle}
+                      >
+                        Info
+                      </button>
+                    </div>
+                  </div>
+                  <div style={offerOverviewGridStyle}>
                     <div>
                       <div style={offerSummaryLabelStyle}>Objekt-ID</div>
                       <div style={offerSummaryValueStyle}>{selectedOffer.id}</div>
                     </div>
                     <div>
-                      <div style={offerSummaryLabelStyle}>Titel</div>
-                      <div style={offerSummaryValueStyle}>{selectedOffer.title || 'Objekt'}</div>
+                      <div style={offerSummaryLabelStyle}>Quelle</div>
+                      <div style={offerSummaryValueStyle}>
+                        {`${selectedOffer.source || '—'} · ${selectedOffer.external_id || selectedOffer.id}`}
+                      </div>
                     </div>
                     <div>
-                      <div style={offerSummaryLabelStyle}>Adresse</div>
-                      <div style={offerSummaryValueStyle}>{selectedOffer.address || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Objektart</div>
-                      <div style={offerSummaryValueStyle}>{getEffectiveOfferObjectType(selectedOffer) || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Angebotstyp</div>
-                      <div style={offerSummaryValueStyle}>{selectedOffer.offer_type || '—'}</div>
+                      <div style={offerSummaryLabelStyle}>Aktualisiert</div>
+                      <div style={offerSummaryValueStyle}>{formatDateLabel(selectedOffer.updated_at)}</div>
                     </div>
                   </div>
-                </div>
-                {onOfficeSnapshot ? (
-                  <div style={offerSummaryTopCardStyle}>
-                    <div style={offerSummaryHeaderRowStyle}>
-                      <div style={offerSummaryHeaderStyle}>CRM-Snapshot</div>
-                      <span style={crmCandidateBadgeStyle(onOfficeSnapshot.candidate.tone)}>
-                        {onOfficeSnapshot.candidate.label}
-                      </span>
-                    </div>
-                    <div style={mediaSectionHintStyle}>{onOfficeSnapshot.candidate.detail}</div>
-                    <div style={offerSummaryGridStyle}>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Quelle</div>
-                        <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Exposé / Extern</div>
-                        <div style={offerSummaryValueStyle}>
-                          {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Vermarktungsart</div>
-                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.marketingType || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>status</div>
-                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>status2</div>
-                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status2 || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>verkauft</div>
-                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>reserviert</div>
-                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>veröffentlichen</div>
-                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Ausspielungs-Debug</div>
-                  <div style={mediaSectionHintStyle}>
-                    Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
-                  </div>
-                  <div style={offerSummaryGridStyle}>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Aktuelles Gebiet</div>
-                      <div style={offerSummaryValueStyle}>{visibilityConfig?.areas?.name || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Lokaler Match</div>
-                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Match-Quelle</div>
-                      <div style={offerSummaryValueStyle}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Confidence</div>
-                      <div style={offerSummaryValueStyle}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Score</div>
-                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>PLZ</div>
-                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Ort</div>
-                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Region</div>
-                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
-                    </div>
-                  </div>
-                  {otherAreaTargets.length > 0 ? (
-                    <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
-                      <div style={offerSummaryLabelStyle}>Weitere gematchte Gebiete</div>
-                      {otherAreaTargets.slice(0, 5).map((target) => (
-                        <div key={`${target.offer_id}-${target.area_id}`} style={mediaSectionHintStyle}>
-                          {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -1911,6 +1837,132 @@ export default function OffersManager(props: Props) {
         )}
       </section>
       </div>
+      {offerOverviewInfoOpen && selectedOffer ? (
+        <div
+          style={workspaceDebugModalOverlayStyle}
+          onClick={() => setOfferOverviewInfoOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setOfferOverviewInfoOpen(false);
+          }}
+        >
+          <div
+            style={offerOverviewInfoModalCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offers-overview-info-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={workspaceDebugModalHeadStyle}>
+              <strong id="offers-overview-info-title" style={workspaceDebugModalTitleStyle}>Angebotsdetails</strong>
+              <button
+                type="button"
+                style={workspaceDebugModalCloseStyle}
+                onClick={() => setOfferOverviewInfoOpen(false)}
+                aria-label="Info-Modal schließen"
+              >
+                ×
+              </button>
+            </div>
+            {onOfficeSnapshot ? (
+              <div style={offerOverviewInfoSectionStyle}>
+                <div style={offerSummaryHeaderRowStyle}>
+                  <div style={offerSummaryHeaderStyle}>CRM-Snapshot</div>
+                  <span style={crmCandidateBadgeStyle(onOfficeSnapshot.candidate.tone)}>
+                    {onOfficeSnapshot.candidate.label}
+                  </span>
+                </div>
+                <div style={mediaSectionHintStyle}>{onOfficeSnapshot.candidate.detail}</div>
+                <div style={offerSummaryGridStyle}>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Quelle</div>
+                    <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Exposé / Extern</div>
+                    <div style={offerSummaryValueStyle}>
+                      {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Vermarktungsart</div>
+                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.marketingType || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>status</div>
+                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>status2</div>
+                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status2 || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>verkauft</div>
+                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>reserviert</div>
+                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>veröffentlichen</div>
+                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <div style={offerOverviewInfoSectionStyle}>
+              <div style={offerSummaryHeaderStyle}>Ausspielungs-Debug</div>
+              <div style={mediaSectionHintStyle}>
+                Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
+              </div>
+              <div style={offerSummaryGridStyle}>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Aktuelles Gebiet</div>
+                  <div style={offerSummaryValueStyle}>{visibilityConfig?.areas?.name || '—'}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Lokaler Match</div>
+                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Match-Quelle</div>
+                  <div style={offerSummaryValueStyle}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Confidence</div>
+                  <div style={offerSummaryValueStyle}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Score</div>
+                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>PLZ</div>
+                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Ort</div>
+                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
+                </div>
+                <div>
+                  <div style={offerSummaryLabelStyle}>Region</div>
+                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
+                </div>
+              </div>
+              {otherAreaTargets.length > 0 ? (
+                <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+                  <div style={offerSummaryLabelStyle}>Weitere gematchte Gebiete</div>
+                  {otherAreaTargets.slice(0, 5).map((target) => (
+                    <div key={`${target.offer_id}-${target.area_id}`} style={mediaSectionHintStyle}>
+                      {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
       {offerDebugOpen && offerLoadDebug ? (
         <div
           style={workspaceDebugModalOverlayStyle}
@@ -2017,6 +2069,23 @@ const workspaceDebugModalCardStyle: React.CSSProperties = {
   gap: 12,
 };
 
+const offerOverviewInfoModalCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 820,
+  borderRadius: 14,
+  border: '1px solid #dbe5ea',
+  background: '#ffffff',
+  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
+  padding: 16,
+  display: 'grid',
+  gap: 16,
+};
+
+const offerOverviewInfoSectionStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+};
+
 const workspaceDebugModalHeadStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -2044,6 +2113,64 @@ const workspaceDebugModalBodyStyle: React.CSSProperties = {
   gap: 8,
   fontSize: 13,
   color: '#334155',
+};
+
+const offerOverviewHeaderRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  rowGap: 12,
+  columnGap: 12,
+  marginBottom: 10,
+  flexWrap: 'wrap',
+};
+
+const offerOverviewHeaderActionsStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  rowGap: 8,
+  columnGap: 8,
+  flexWrap: 'wrap',
+};
+
+const offerOverviewStatusBadgeStyle = (active: boolean): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  rowGap: 8,
+  columnGap: 8,
+  borderRadius: 999,
+  padding: '6px 10px',
+  fontSize: 11,
+  fontWeight: 700,
+  color: active ? 'rgb(22, 101, 52)' : 'rgb(185, 28, 28)',
+  backgroundColor: active ? 'rgb(220, 252, 231)' : 'rgb(254, 226, 226)',
+  border: `1px solid ${active ? 'rgb(134, 239, 172)' : 'rgb(252, 165, 165)'}`,
+});
+
+const offerOverviewStatusDotStyle = (active: boolean): React.CSSProperties => ({
+  width: 10,
+  height: 10,
+  borderRadius: 999,
+  background: active ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)',
+  flex: '0 0 auto',
+});
+
+const offerOverviewInfoButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#334155',
+  borderRadius: 10,
+  padding: '8px 12px',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const offerOverviewGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  rowGap: 12,
+  columnGap: 12,
 };
 
 const workspaceTabsRowStyle: React.CSSProperties = {
