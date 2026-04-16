@@ -734,7 +734,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                       priority
                       quality={72}
                       sizes="(max-width: 991px) 100vw, 52vw"
-                      style={{ objectFit: "contain" }}
+                      style={{ objectFit: "cover" }}
                     />
                   </div>
                 </button>
@@ -764,6 +764,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 )}
               </div>
               <div className="offer-detail-slideshow-meta">
+                <div aria-hidden="true" />
                 <div className="offer-detail-slideshow-caption">
                   {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
                 </div>

@@ -2768,8 +2768,8 @@ h6 {
 }
 
 .offer-detail-slideshow-meta {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.44fr) minmax(0, 0.78fr);
   gap: 1rem;
   align-items: center;
 }
@@ -2777,6 +2777,7 @@ h6 {
 .offer-detail-slideshow-caption {
   font-weight: 600;
   color: #111;
+  text-align: center;
 }
 
 .offer-detail-slideshow-counter {
@@ -2839,11 +2840,21 @@ h6 {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 2;
 }
 
 .offer-detail-gallery-card--secondary:last-child .offer-detail-gallery-card__overlay {
   left: auto;
   right: 1rem;
+}
+
+.offer-detail-gallery-card--secondary .offer-detail-gallery-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 118, 110, 0.5);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .offer-detail-gallery-thumbs {
@@ -3245,6 +3256,12 @@ h6 {
   .offer-detail-gallery-card--secondary,
   .offer-detail-gallery-card--empty {
     display: none;
+  }
+
+  .offer-detail-slideshow-meta {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    justify-items: center;
   }
 
   .offer-detail-gallery-hero,
