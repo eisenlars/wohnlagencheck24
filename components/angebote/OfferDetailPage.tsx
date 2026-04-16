@@ -397,6 +397,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
   const [activeLightboxMedia, setActiveLightboxMedia] = useState<"images" | "floorplans" | "maps" | null>(null);
+  const [photoSlideDirection, setPhotoSlideDirection] = useState<"prev" | "next" | null>(null);
   const resolvedPhotoIndex = activePhotoIndex < photoAssets.length ? activePhotoIndex : 0;
   const resolvedFloorplanIndex = activeFloorplanIndex < floorplanAssets.length ? activeFloorplanIndex : 0;
   const resolvedLocationMapIndex =
@@ -610,6 +611,16 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     return accumulator;
   }, []);
 
+  function movePhotoPrev() {
+    setPhotoSlideDirection("prev");
+    setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1));
+  }
+
+  function movePhotoNext() {
+    setPhotoSlideDirection("next");
+    setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1));
+  }
+
   useEffect(() => {
     if (!isEnergyModalOpen && !activeLightboxMedia) return undefined;
     function handleKeyDown(event: KeyboardEvent) {
@@ -621,6 +632,12 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeLightboxMedia, isEnergyModalOpen]);
+
+  useEffect(() => {
+    if (!photoSlideDirection) return undefined;
+    const timer = window.setTimeout(() => setPhotoSlideDirection(null), 220);
+    return () => window.clearTimeout(timer);
+  }, [photoSlideDirection]);
 
   return (
     <div className="container text-dark">
@@ -705,12 +722,12 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         {activeMediaTab === "images" ? (
           activePhoto ? (
             <div className="offer-detail-slideshow">
-              <div className="offer-detail-slideshow-stage">
+              <div className={`offer-detail-slideshow-stage${photoSlideDirection ? ` is-moving-${photoSlideDirection}` : ""}`}>
                 {previousPhoto ? (
                   <button
                     type="button"
                     className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
-                    onClick={() => setActivePhotoIndex(previousPhotoIndex ?? 0)}
+                    onClick={movePhotoPrev}
                     aria-label="Vorheriges Bild anzeigen"
                   >
                     <div className="offer-detail-gallery-hero offer-detail-gallery-hero--edge-left">
@@ -755,7 +772,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   <button
                     type="button"
                     className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
-                    onClick={() => setActivePhotoIndex(nextPhotoIndex ?? 0)}
+                    onClick={movePhotoNext}
                     aria-label="Nächstes Bild anzeigen"
                   >
                     <div className="offer-detail-gallery-hero offer-detail-gallery-hero--edge-right">
@@ -1104,6 +1121,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <OfferInquiryInlineForm
             locale={formatProfile.locale}
             pagePath={pagePath}
+            showHeader={false}
               regionLabel={breadcrumb.names?.regionName ?? title}
               offer={{
                 id: offer.id,
