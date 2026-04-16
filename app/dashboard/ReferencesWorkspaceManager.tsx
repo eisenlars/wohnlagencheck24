@@ -59,6 +59,11 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
 
+type ReferencesWorkspaceLoadDebug = {
+  references: number;
+  overrides: number;
+};
+
 type MediaAsset = {
   url: string;
   title: string | null;
@@ -107,6 +112,26 @@ function formatReferenceResult(value: string): string {
   if (normalized === 'vermietet') return 'Vermietet';
   if (normalized === 'reserviert') return 'Reserviert';
   return value || '—';
+}
+
+function getReferencePreviewImageUrl(payload: Record<string, unknown>): string | null {
+  return parseMediaAssets(payload).find((asset) => asset.kind === 'image')?.url ?? null;
+}
+
+function getReferenceZipCode(payload: Record<string, unknown>): string {
+  return getPayloadText(payload, ['zip_code', 'postal_code', 'plz']);
+}
+
+function getReferenceCity(payload: Record<string, unknown>): string {
+  return getPayloadText(payload, ['city', 'ort']);
+}
+
+function getReferenceLocationLabel(payload: Record<string, unknown>): string {
+  const zipCode = getReferenceZipCode(payload);
+  const city = getReferenceCity(payload);
+  const location = [zipCode, city].filter(Boolean).join(' ');
+  if (location) return location;
+  return getPayloadText(payload, ['location', 'location_text', 'district']) || '—';
 }
 
 function getPayloadText(payload: Record<string, unknown>, keys: string[]): string {
@@ -210,15 +235,15 @@ const shellStyle: CSSProperties = { display: 'grid', gap: '10px' };
 const workspaceStyle: CSSProperties = { display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' };
 const panelStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const panelTitleStyle: CSSProperties = { margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: '#0f172a' };
-const searchInputStyle: CSSProperties = { width: '100%', border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', fontSize: 14 };
-const listWrapStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '62vh', overflowY: 'auto', marginTop: 14 };
+const searchInputStyle: CSSProperties = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13 };
+const listWrapStyle: CSSProperties = { display: 'grid', gap: 10, maxHeight: '62vh', overflowY: 'auto', marginTop: 12, paddingRight: 4 };
 const statusBoxStyle: CSSProperties = { marginTop: 0, marginBottom: 12, fontSize: 12, color: '#334155' };
 const summaryWrapStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: 16 };
-const summaryCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 16px', background: '#f8fafc' };
+const summaryCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#f8fafc' };
 const summaryHeaderStyle: CSSProperties = { fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', fontWeight: 700, marginBottom: 10 };
 const summaryGridStyle: CSSProperties = { display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' };
 const summaryLabelStyle: CSSProperties = { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 };
-const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600 };
+const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600, lineHeight: 1.45 };
 const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 };
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
@@ -263,7 +288,7 @@ const thumbButtonStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 const thumbImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
-const saveButtonStyle: CSSProperties = { border: '1px solid #0f766e', background: '#0f766e', color: '#fff', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', fontWeight: 700 };
+const saveButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: 'none', backgroundColor: '#0f172a', color: '#fff', fontWeight: 600, cursor: 'pointer' };
 
 function tabButtonStyle(active: boolean): CSSProperties {
   return {
@@ -280,16 +305,200 @@ function tabButtonStyle(active: boolean): CSSProperties {
 
 function listRowStyle(active: boolean): CSSProperties {
   return {
+    width: '100%',
     textAlign: 'left',
-    border: active ? '1px solid #0f766e' : '1px solid #e2e8f0',
-    background: active ? '#ecfeff' : '#fff',
-    borderRadius: 12,
-    padding: '12px 12px',
+    padding: 10,
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    backgroundColor: active ? '#f1f5f9' : '#fff',
     cursor: 'pointer',
     display: 'grid',
-    gap: 4,
+    gridTemplateColumns: '112px minmax(0, 1fr)',
+    gap: 12,
+    alignItems: 'center',
+    minHeight: 84,
   };
 }
+
+const workspaceListHeaderRowStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+  marginBottom: 12,
+};
+
+const workspaceDebugInfoButtonStyle: CSSProperties = {
+  width: 24,
+  height: 24,
+  borderRadius: '999px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#486b7a',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  flex: '0 0 auto',
+};
+
+const workspaceDebugModalOverlayStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.28)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+  padding: 20,
+};
+
+const workspaceDebugModalCardStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 340,
+  borderRadius: 14,
+  border: '1px solid #dbe5ea',
+  background: '#ffffff',
+  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
+  padding: 16,
+  display: 'grid',
+  gap: 12,
+};
+
+const referenceOverviewInfoModalCardStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 720,
+  borderRadius: 14,
+  border: '1px solid #dbe5ea',
+  background: '#ffffff',
+  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
+  padding: 16,
+  display: 'grid',
+  gap: 16,
+};
+
+const workspaceDebugModalHeadStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+};
+
+const workspaceDebugModalTitleStyle: CSSProperties = {
+  fontSize: 14,
+  color: '#0f172a',
+};
+
+const workspaceDebugModalCloseStyle: CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#64748b',
+  fontSize: 20,
+  lineHeight: 1,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const workspaceDebugModalBodyStyle: CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  fontSize: 13,
+  color: '#334155',
+};
+
+const referenceRowMediaStyle: CSSProperties = {
+  display: 'flex',
+  width: 112,
+  height: 84,
+  borderRadius: 12,
+  overflow: 'hidden',
+  backgroundColor: '#e2e8f0',
+  border: '1px solid #cbd5e1',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flex: '0 0 auto',
+};
+
+const referenceRowImageStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+
+const referenceRowImagePlaceholderStyle: CSSProperties = {
+  color: '#64748b',
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const referenceRowContentStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 5,
+  minWidth: 0,
+  justifyContent: 'center',
+};
+
+const referenceRowTitleStyle: CSSProperties = {
+  fontWeight: 600,
+  color: '#0f172a',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: 1.35,
+};
+
+const referenceRowMetaStyle: CSSProperties = {
+  fontSize: 12,
+  color: '#64748b',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  lineHeight: 1.4,
+};
+
+const referenceOverviewHeaderRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  rowGap: 12,
+  columnGap: 12,
+  marginBottom: 10,
+  flexWrap: 'wrap',
+};
+
+const referenceOverviewHeaderActionsStyle: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  rowGap: 8,
+  columnGap: 8,
+  flexWrap: 'wrap',
+};
+
+const referenceOverviewInfoButtonStyle: CSSProperties = {
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#334155',
+  borderRadius: 10,
+  padding: '8px 12px',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const referenceOverviewGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  rowGap: 12,
+  columnGap: 12,
+};
 
 export default function ReferencesWorkspaceManager() {
   const supabaseRef = useRef(createClient());
@@ -312,6 +521,10 @@ export default function ReferencesWorkspaceManager() {
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
   const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
   const [llmOptionsLoaded, setLlmOptionsLoaded] = useState(false);
+  const [referenceLoadSummary, setReferenceLoadSummary] = useState<string | null>(null);
+  const [referenceLoadDebug, setReferenceLoadDebug] = useState<ReferencesWorkspaceLoadDebug | null>(null);
+  const [referenceDebugOpen, setReferenceDebugOpen] = useState(false);
+  const [referenceOverviewInfoOpen, setReferenceOverviewInfoOpen] = useState(false);
   const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
 
   const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
@@ -377,6 +590,8 @@ export default function ReferencesWorkspaceManager() {
     async function load() {
       setLoading(true);
       setStatus('Lade Referenzen...');
+      setReferenceLoadSummary(null);
+      setReferenceLoadDebug(null);
       const res = await fetch('/api/partner/crm-assets/workspace?kind=references', {
         method: 'GET',
         cache: 'no-store',
@@ -392,10 +607,16 @@ export default function ReferencesWorkspaceManager() {
         return;
       }
       const nextRows = Array.isArray(payload?.rows) ? payload.rows : [];
+      const nextOverrides = Array.isArray(payload?.overrides) ? payload.overrides : [];
       setRows(nextRows);
-      setOverrides(Array.isArray(payload?.overrides) ? payload.overrides : []);
+      setOverrides(nextOverrides);
       setSelectedId(nextRows[0]?.id ?? null);
       setStatus('Referenzen geladen.');
+      setReferenceLoadSummary(`${nextRows.length} Referenzen geladen`);
+      setReferenceLoadDebug({
+        references: nextRows.length,
+        overrides: nextOverrides.length,
+      });
       setLoading(false);
     }
     void load();
@@ -410,7 +631,7 @@ export default function ReferencesWorkspaceManager() {
         row.title,
         row.external_id,
         row.provider,
-        getPayloadText(payload, ['description', 'reference_text_seed', 'location', 'city', 'district', 'object_type', 'transaction_result']),
+        getPayloadText(payload, ['description', 'reference_text_seed', 'location', 'city', 'district', 'object_type', 'transaction_result', 'offer_type', 'plz', 'zip_code', 'postal_code']),
       ]
         .filter(Boolean)
         .join(' ')
@@ -799,7 +1020,18 @@ export default function ReferencesWorkspaceManager() {
       </section>
       <div style={workspaceStyle}>
         <section style={panelStyle}>
-          <h3 style={panelTitleStyle}>Referenzen</h3>
+          <div style={workspaceListHeaderRowStyle}>
+            <h3 style={panelTitleStyle}>{referenceLoadSummary ?? '0 Referenzen geladen'}</h3>
+            <button
+              type="button"
+              style={workspaceDebugInfoButtonStyle}
+              onClick={() => setReferenceDebugOpen(true)}
+              disabled={!referenceLoadDebug}
+              aria-label="Debug-Informationen anzeigen"
+            >
+              i
+            </button>
+          </div>
           <input
             placeholder="Suchen..."
             value={query}
@@ -809,16 +1041,10 @@ export default function ReferencesWorkspaceManager() {
           <div style={listWrapStyle}>
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-              const description = getPayloadText(payload, ['description', 'reference_text_seed']);
-              const transaction = formatReferenceResult(getPayloadText(payload, ['transaction_result']) || '—');
+              const previewImageUrl = getReferencePreviewImageUrl(payload);
+              const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
               const objectType = getPayloadText(payload, ['object_type']) || '—';
-              const location = getPayloadText(payload, ['location']) || [getPayloadText(payload, ['city']), getPayloadText(payload, ['district'])].filter(Boolean).join(' ') || 'Region';
-              const hasOverride = overrides.some(
-                (entry) =>
-                  entry.partner_id === row.partner_id &&
-                  entry.source === row.provider &&
-                  entry.external_id === row.external_id,
-              );
+              const location = getReferenceLocationLabel(payload);
               return (
                 <button
                   key={row.id}
@@ -826,16 +1052,26 @@ export default function ReferencesWorkspaceManager() {
                   onClick={() => setSelectedId(row.id)}
                   style={listRowStyle(selectedId === row.id)}
                 >
-                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 14 }}>{row.title || row.external_id}</span>
-                  <span style={{ color: '#64748b', fontSize: 11 }}>{row.provider} · {row.external_id}</span>
-                  <span style={{ color: '#475569', fontSize: 12 }}>{transaction} · {objectType}</span>
-                  <span style={{ color: '#64748b', fontSize: 12 }}>{location}</span>
-                  <span style={{ color: '#334155', fontSize: 12 }}>
-                    {(description || 'Kein Referenztext im Payload vorhanden.').slice(0, 140)}
+                  <span style={referenceRowMediaStyle}>
+                    {previewImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previewImageUrl}
+                        alt={row.title || 'Referenzbild'}
+                        style={referenceRowImageStyle}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span style={referenceRowImagePlaceholderStyle}>Kein Bild</span>
+                    )}
                   </span>
-                  {hasOverride ? (
-                    <span style={{ color: '#486b7a', fontSize: 11, fontWeight: 700 }}>Override aktiv</span>
-                  ) : null}
+                  <span style={referenceRowContentStyle}>
+                    <span style={referenceRowTitleStyle}>{row.title || row.external_id}</span>
+                    <span style={referenceRowMetaStyle}>
+                      {`${marketingType} · ${objectType} · ${location}`}
+                    </span>
+                  </span>
                 </button>
               );
             })}
@@ -848,73 +1084,31 @@ export default function ReferencesWorkspaceManager() {
         </section>
 
         <section style={panelStyle}>
-          <p style={statusBoxStyle}>{status}</p>
+          {status.startsWith('Fehler') ? <p style={statusBoxStyle}>{status}</p> : null}
           {form && selectedRow ? (
             <>
               <div style={summaryWrapStyle}>
                 <div style={summaryCardStyle}>
-                  <div style={summaryHeaderStyle}>Referenz-Übersicht</div>
-                  <div style={summaryGridStyle}>
+                  <div style={referenceOverviewHeaderRowStyle}>
+                    <div style={summaryHeaderStyle}>Überblick</div>
+                    <div style={referenceOverviewHeaderActionsStyle}>
+                      <button
+                        type="button"
+                        onClick={() => setReferenceOverviewInfoOpen(true)}
+                        style={referenceOverviewInfoButtonStyle}
+                      >
+                        Info
+                      </button>
+                    </div>
+                  </div>
+                  <div style={referenceOverviewGridStyle}>
                     <div>
                       <div style={summaryLabelStyle}>Referenz-ID</div>
                       <div style={summaryValueStyle}>{selectedRow.id}</div>
                     </div>
                     <div>
-                      <div style={summaryLabelStyle}>Titel</div>
-                      <div style={summaryValueStyle}>{selectedRow.title || '—'}</div>
-                    </div>
-                    <div>
                       <div style={summaryLabelStyle}>Quelle</div>
                       <div style={summaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Objektart</div>
-                      <div style={summaryValueStyle}>{selectedType}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Ergebnis</div>
-                      <div style={summaryValueStyle}>{selectedTransaction}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Vermarktung</div>
-                      <div style={summaryValueStyle}>{selectedMode}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Zimmer</div>
-                      <div style={summaryValueStyle}>{selectedRooms ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Fläche</div>
-                      <div style={summaryValueStyle}>{selectedArea != null ? `${selectedArea} m²` : '—'}</div>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div style={summaryLabelStyle}>Ort / Lage</div>
-                      <div style={summaryValueStyle}>{selectedLocation}</div>
-                    </div>
-                  </div>
-                </div>
-                <div style={summaryCardStyle}>
-                  <div style={summaryHeaderStyle}>CRM-Snapshot</div>
-                  <div style={summaryGridStyle}>
-                    <div>
-                      <div style={summaryLabelStyle}>Quelltitel</div>
-                      <div style={summaryValueStyle}>{selectedSourceTitle}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Status</div>
-                      <div style={summaryValueStyle}>{selectedStatus}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Status-ID</div>
-                      <div style={summaryValueStyle}>{selectedStatusId}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Region</div>
-                      <div style={summaryValueStyle}>{selectedRegion}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Lagescope</div>
-                      <div style={summaryValueStyle}>{selectedLocationScope}</div>
                     </div>
                     <div>
                       <div style={summaryLabelStyle}>Aktualisiert</div>
@@ -960,7 +1154,7 @@ export default function ReferencesWorkspaceManager() {
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => void saveOverride()} disabled={saving} style={saveButtonStyle}>
-                      {saving ? 'Speichert...' : 'Texte speichern'}
+                      {saving ? 'Speichert...' : 'Referenztexte speichern'}
                     </button>
                   </div>
                 </div>
@@ -989,7 +1183,7 @@ export default function ReferencesWorkspaceManager() {
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => void saveOverride()} disabled={saving} style={saveButtonStyle}>
-                      {saving ? 'Speichert...' : 'SEO / GEO speichern'}
+                      {saving ? 'Speichert...' : 'Referenztexte speichern'}
                     </button>
                   </div>
                 </div>
@@ -1120,6 +1314,97 @@ export default function ReferencesWorkspaceManager() {
           )}
         </section>
       </div>
+      {referenceOverviewInfoOpen && selectedRow ? (
+        <div
+          style={workspaceDebugModalOverlayStyle}
+          onClick={() => setReferenceOverviewInfoOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setReferenceOverviewInfoOpen(false);
+          }}
+        >
+          <div
+            style={referenceOverviewInfoModalCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="references-overview-info-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={workspaceDebugModalHeadStyle}>
+              <strong id="references-overview-info-title" style={workspaceDebugModalTitleStyle}>Referenzdetails</strong>
+              <button
+                type="button"
+                style={workspaceDebugModalCloseStyle}
+                onClick={() => setReferenceOverviewInfoOpen(false)}
+                aria-label="Info-Modal schließen"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={summaryHeaderStyle}>CRM-Snapshot</div>
+              <div style={summaryGridStyle}>
+                <div>
+                  <div style={summaryLabelStyle}>Quelltitel</div>
+                  <div style={summaryValueStyle}>{selectedSourceTitle}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Status</div>
+                  <div style={summaryValueStyle}>{selectedStatus}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Status-ID</div>
+                  <div style={summaryValueStyle}>{selectedStatusId}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Region</div>
+                  <div style={summaryValueStyle}>{selectedRegion}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Lagescope</div>
+                  <div style={summaryValueStyle}>{selectedLocationScope}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Aktualisiert</div>
+                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {referenceDebugOpen && referenceLoadDebug ? (
+        <div
+          style={workspaceDebugModalOverlayStyle}
+          onClick={() => setReferenceDebugOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setReferenceDebugOpen(false);
+          }}
+        >
+          <div
+            style={workspaceDebugModalCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="references-workspace-debug-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={workspaceDebugModalHeadStyle}>
+              <strong id="references-workspace-debug-title" style={workspaceDebugModalTitleStyle}>Referenzen Debug</strong>
+              <button
+                type="button"
+                style={workspaceDebugModalCloseStyle}
+                onClick={() => setReferenceDebugOpen(false)}
+                aria-label="Debug-Modal schließen"
+              >
+                ×
+              </button>
+            </div>
+            <div style={workspaceDebugModalBodyStyle}>
+              <div>references={referenceLoadDebug.references}</div>
+              <div>overrides={referenceLoadDebug.overrides}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
