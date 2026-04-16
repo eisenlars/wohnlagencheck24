@@ -51,10 +51,14 @@ export function ImmobilienpreiseSection(props: Props) {
   const basePath = props.basePath ?? vm.basePath;
   const angebotHref = kreisSlug ? `${basePath}/immobilienangebote` : undefined;
   const gesuchHref = kreisSlug ? `${basePath}/immobiliengesuche` : undefined;
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
   
   // Farbsystem
   const COLOR_IMMO = "rgba(75,192,192,0.9)";

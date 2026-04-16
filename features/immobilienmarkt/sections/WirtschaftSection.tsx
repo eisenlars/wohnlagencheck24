@@ -37,10 +37,14 @@ export function WirtschaftSection(
   const kreisSlug = props.ctx?.kreisSlug ?? "";
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
   const basePath = props.basePath ?? vm.basePath;
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
 
   const mapSvg = props.assets?.kaufkraftindexMapSvg ?? null;
   const legendHtml = props.assets?.kaufkraftindexLegendHtml ?? null;

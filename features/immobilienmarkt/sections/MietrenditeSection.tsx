@@ -34,10 +34,14 @@ export function MietrenditeSection(
 
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
   const basePath = props.basePath ?? vm.basePath;
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
 
   return (
     <div className="text-dark">

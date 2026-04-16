@@ -38,7 +38,11 @@ import {
   isKreisVisible,
   isOrtslageVisible,
 } from "@/lib/area-visibility";
-import { loadPublicVisibleAreaIds, loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
+import {
+  loadPreviewPartnerContextForArea,
+  loadPublicVisibleAreaIds,
+  loadPublicVisiblePartnerContextForArea,
+} from "@/lib/public-partner-mappings";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import { loadPublicNetworkContentForArea } from "@/lib/network-partners/public-content";
 import type { PublicNetworkContentCollection } from "@/lib/network-partners/types";
@@ -439,7 +443,12 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     }
     const cached = partnerContextCache.get(normalizedAreaId);
     if (cached) return cached;
-    const next = loadPublicVisiblePartnerContextForArea(supabase, normalizedAreaId);
+    const next = audience === "preview"
+      ? loadPreviewPartnerContextForArea(supabase, normalizedAreaId).then((context) => ({
+          partnerId: context.partnerId,
+          isSystemDefault: context.isSystemDefault,
+        }))
+      : loadPublicVisiblePartnerContextForArea(supabase, normalizedAreaId);
     partnerContextCache.set(normalizedAreaId, next);
     return next;
   };

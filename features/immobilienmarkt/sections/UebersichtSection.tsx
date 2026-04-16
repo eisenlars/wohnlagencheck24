@@ -290,10 +290,14 @@ export function UebersichtSection(
 
   const basePath = props.basePath ?? vm.basePath;
   const heroImageSrc = vm.hero.imageSrc ?? props.assets?.heroImageSrc ?? "";
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
   
   const isBundesland = vm.level === "bundesland";
   const faqItems = props.marketExplanationFaqs.uebersicht.map((item) => ({
@@ -999,8 +1003,8 @@ export function UebersichtSection(
               imageSrc={vm.images.agentSuggestImage}
               linkHref={
                 bundeslandSlug && kreisSlug
-                  ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmakler`
-                  : "/immobilienmarkt"
+                  ? `${kreisBasePath}/immobilienmakler`
+                  : rootPath
               }
             />
           )}

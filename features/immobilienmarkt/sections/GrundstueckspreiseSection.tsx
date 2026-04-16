@@ -40,10 +40,14 @@ export function GrundstueckspreiseSection(props: Props) {
   const basePath = props.basePath ?? vm.basePath;
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
   const kreisSlug = props.ctx?.kreisSlug ?? "";
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc;
   const grundstueckspreisMapSvg = props.assets?.grundstueckspreisMapSvg ?? null;
 

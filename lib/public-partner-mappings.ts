@@ -103,6 +103,13 @@ export async function loadPublicVisiblePartnerContextForArea(
   areaId: string,
 ): Promise<{ partnerId: string | null; isSystemDefault: boolean }> {
   const partnerId = await loadSinglePublicVisiblePartnerIdForArea(client, areaId);
+  return loadPartnerContextByPartnerId(client, partnerId);
+}
+
+async function loadPartnerContextByPartnerId(
+  client: unknown,
+  partnerId: string | null,
+): Promise<{ partnerId: string | null; isSystemDefault: boolean }> {
   if (!partnerId) {
     return { partnerId: null, isSystemDefault: false };
   }
@@ -141,6 +148,18 @@ export async function loadPublicVisiblePartnerContextForArea(
   return {
     partnerId,
     isSystemDefault: Boolean(data?.is_system_default),
+  };
+}
+
+export async function loadPreviewPartnerContextForArea(
+  client: unknown,
+  areaId: string,
+): Promise<{ partnerId: string | null; isSystemDefault: boolean; status: PreviewAccessStatus }> {
+  const previewAccess = await loadPreviewAccessForArea(client, areaId);
+  const partnerContext = await loadPartnerContextByPartnerId(client, previewAccess.partnerId);
+  return {
+    ...partnerContext,
+    status: previewAccess.status,
   };
 }
 

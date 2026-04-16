@@ -34,6 +34,13 @@ export function ImmobilienmarktBreadcrumb(props: {
   const normalizedLocale = normalizePublicLocale(locale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
+  const isPreviewPath = basePath.startsWith("/preview/immobilienmarkt")
+    || Boolean(parentBasePath?.startsWith("/preview/immobilienmarkt"));
+  const marketRootHref = isPreviewPath ? "/preview/immobilienmarkt" : localizeHref("/immobilienmarkt");
+  const buildRegionHref = (segments: string[]): string => {
+    const path = `${isPreviewPath ? "/preview/immobilienmarkt" : "/immobilienmarkt"}/${segments.join("/")}`;
+    return isPreviewPath ? path : localizeHref(path);
+  };
 
   const activeTabLabel = tabs.find((tab) => tab.id === activeTabId)?.label ?? activeTabId;
   const activeTabHref =
@@ -42,35 +49,35 @@ export function ImmobilienmarktBreadcrumb(props: {
       : `${basePath}/${activeTabId}`;
 
   const breadcrumbItems: BreadcrumbItem[] = [
-    { label: texts.market_profiles, href: localizeHref("/immobilienmarkt") },
+    { label: texts.market_profiles, href: marketRootHref },
   ];
 
   if (ctx?.bundeslandSlug) {
     breadcrumbItems.push({
       label: names?.bundeslandName ?? formatRegionFallback(ctx.bundeslandSlug),
-      href: localizeHref(`/immobilienmarkt/${ctx.bundeslandSlug}`),
+      href: buildRegionHref([ctx.bundeslandSlug]),
     });
   }
 
   if (ctx?.kreisSlug) {
-    const kreisHref = ctx.bundeslandSlug
-      ? `/immobilienmarkt/${ctx.bundeslandSlug}/${ctx.kreisSlug}`
-      : `/immobilienmarkt/${ctx.kreisSlug}`;
+    const kreisHrefSegments = ctx.bundeslandSlug
+      ? [ctx.bundeslandSlug, ctx.kreisSlug]
+      : [ctx.kreisSlug];
 
     breadcrumbItems.push({
       label: names?.kreisName ?? formatRegionFallback(ctx.kreisSlug),
-      href: localizeHref(kreisHref),
+      href: buildRegionHref(kreisHrefSegments),
     });
   }
 
   if (ctx?.ortSlug) {
-    const ortHref = ctx.bundeslandSlug && ctx.kreisSlug
-      ? `/immobilienmarkt/${ctx.bundeslandSlug}/${ctx.kreisSlug}/${ctx.ortSlug}`
-      : `/immobilienmarkt/${ctx.ortSlug}`;
+    const ortHrefSegments = ctx.bundeslandSlug && ctx.kreisSlug
+      ? [ctx.bundeslandSlug, ctx.kreisSlug, ctx.ortSlug]
+      : [ctx.ortSlug];
 
     breadcrumbItems.push({
       label: names?.regionName ?? formatRegionFallback(ctx.ortSlug),
-      href: localizeHref(ortHref),
+      href: buildRegionHref(ortHrefSegments),
     });
   }
 

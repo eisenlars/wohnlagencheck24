@@ -64,10 +64,14 @@ export function MietpreiseSection(
   const basePath = props.basePath ?? vm.basePath;
   const angebotHref = kreisSlug ? `${basePath}/mietangebote` : undefined;
   const gesuchHref = kreisSlug ? `${basePath}/mietgesuche` : undefined;
+  const kreisBasePath = props.parentBasePath ?? basePath;
+  const rootPath = kreisBasePath.startsWith("/preview/immobilienmarkt")
+    ? "/preview/immobilienmarkt"
+    : "/immobilienmarkt";
   const kontaktHref =
     bundeslandSlug && kreisSlug
-      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
-      : "/immobilienmarkt";
+      ? `${kreisBasePath}/immobilienberatung`
+      : rootPath;
 
   return (
     <div className="text-dark">
