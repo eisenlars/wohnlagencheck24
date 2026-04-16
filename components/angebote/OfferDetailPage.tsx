@@ -77,11 +77,6 @@ type FactItem = {
   value: string;
 };
 
-type FactGroup = {
-  title: string;
-  items: FactItem[];
-};
-
 type OfferDetailPageProps = {
   offer: Offer;
   overrides?: OfferOverrides | null;
@@ -313,6 +308,21 @@ function formatDateLabel(value: string | null | undefined): string {
   return new Intl.DateTimeFormat("de-DE").format(parsed);
 }
 
+function formatCountValue(value: number | null | undefined): string | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function buildZipCityLabel(raw: Record<string, unknown>): string | null {
+  const zipCode = asText(raw["zip_code"]);
+  const city = asText(raw["city"]);
+  const parts = [zipCode, city].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
 export function OfferDetailPage(props: OfferDetailPageProps) {
   const { offer, mode, texts, formatProfile, pagePath, advisor, breadcrumb, listPath } = props;
   const isEnglish = String(formatProfile.locale).toLowerCase().startsWith("en");
@@ -429,6 +439,8 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     ]),
     [galleryAssets, rawDocuments],
   );
+  const detailsExtra = useMemo(() => asRecord(raw["details_extra"]) ?? {}, [raw]);
+  const equipmentSnapshot = useMemo(() => asRecord(raw["equipment"]) ?? {}, [raw]);
 
   const title = offer.seoH1 || offer.title || texts.object_generic;
   const description =
@@ -484,48 +496,30 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         (realEstateTransferTax ?? 0) +
         (buyerCommissionCosts ?? 0)
       : null;
-  const detailFactGroups = [
-    {
-      title: "Flächen",
-      items: [
-        offer.areaSqm != null ? { label: texts.living_area, value: `${formatArea(offer.areaSqm)} m²` } : null,
-        detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
-        detailsSnapshot?.plot_area_sqm != null ? { label: "Grundstück", value: `${formatArea(detailsSnapshot.plot_area_sqm)} m²` } : null,
-      ].filter((item): item is FactItem => Boolean(item)),
-    },
-    {
-      title: "Zimmer und Räume",
-      items: [
-        offer.rooms != null ? { label: texts.rooms, value: formatRooms(offer.rooms) } : null,
-        detailsSnapshot?.bedrooms != null ? { label: "Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
-        detailsSnapshot?.bathrooms != null ? { label: "Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
-        detailsSnapshot?.floor != null ? { label: "Etage", value: String(detailsSnapshot.floor) } : null,
-      ].filter((item): item is FactItem => Boolean(item)),
-    },
-    {
-      title: "Objektzustand",
-      items: [
-        (detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) != null
-          ? { label: "Baujahr", value: String(detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) }
-          : null,
-        detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
-        detailsSnapshot?.availability ? { label: "Verfügbarkeit", value: detailsSnapshot.availability } : null,
-      ].filter((item): item is FactItem => Boolean(item)),
-    },
-    {
-      title: "Weitere Angaben",
-      items: [
-        detailsSnapshot?.parking ? { label: "Stellplatz", value: detailsSnapshot.parking } : null,
-        detailsSnapshot?.balcony != null ? { label: "Balkon", value: formatBooleanLabel(detailsSnapshot.balcony) } : null,
-        detailsSnapshot?.terrace != null ? { label: "Terrasse", value: formatBooleanLabel(detailsSnapshot.terrace) } : null,
-        detailsSnapshot?.garden != null ? { label: "Garten", value: formatBooleanLabel(detailsSnapshot.garden) } : null,
-        detailsSnapshot?.elevator != null ? { label: "Aufzug", value: formatBooleanLabel(detailsSnapshot.elevator) } : null,
-      ].filter((item): item is FactItem => Boolean(item)),
-    },
-  ].filter((group): group is FactGroup => group.items.length > 0);
+  const crmFeatureFacts = [
+    offer.areaSqm != null ? { label: "Wohnfläche", value: `${formatArea(offer.areaSqm)} m²` } : null,
+    detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
+    offer.rooms != null ? { label: "Anzahl Zimmer", value: formatRooms(offer.rooms) } : null,
+    detailsSnapshot?.bedrooms != null ? { label: "Anzahl Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
+    detailsSnapshot?.bathrooms != null ? { label: "Anzahl Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
+    formatCountValue(asNumber(detailsExtra["separate_wc_count"])) ? { label: "Anzahl sep. WC", value: formatCountValue(asNumber(detailsExtra["separate_wc_count"])) as string } : null,
+    formatCountValue(asNumber(detailsExtra["balcony_count"]) ?? asNumber(detailsExtra["balconies_count"])) ? { label: "Anzahl Balkone", value: formatCountValue(asNumber(detailsExtra["balcony_count"]) ?? asNumber(detailsExtra["balconies_count"])) as string } : null,
+    formatCountValue(asNumber(detailsExtra["terrace_count"]) ?? asNumber(detailsExtra["terraces_count"])) ? { label: "Anzahl Terrassen", value: formatCountValue(asNumber(detailsExtra["terrace_count"]) ?? asNumber(detailsExtra["terraces_count"])) as string } : null,
+  ].filter((item): item is FactItem => Boolean(item));
+  const detailFactGroups = crmFeatureFacts.length > 0
+    ? [{ title: "Objektmerkmale", items: crmFeatureFacts }]
+    : [];
   const equipmentFacts = [
-    detailsSnapshot?.address_hidden != null ? { label: "Adresse verborgen", value: formatBooleanLabel(detailsSnapshot.address_hidden) } : null,
-  ].filter((item): item is { label: string; value: string } => Boolean(item));
+    readTextValue(equipmentSnapshot["internet_access_type"]) ? { label: "Internetanschluss", value: readTextValue(equipmentSnapshot["internet_access_type"]) as string } : null,
+    readTextValue(equipmentSnapshot["fuel_type"]) ? { label: "Befeuerung", value: readTextValue(equipmentSnapshot["fuel_type"]) as string } : null,
+    readTextValue(equipmentSnapshot["heating_type"]) ? { label: "Heizungsart", value: readTextValue(equipmentSnapshot["heating_type"]) as string } : null,
+    formatCountValue(asNumber(equipmentSnapshot["floors_total"]) ?? asNumber(detailsExtra["floors_total"])) ? { label: "Etagenzahl", value: formatCountValue(asNumber(equipmentSnapshot["floors_total"]) ?? asNumber(detailsExtra["floors_total"])) as string } : null,
+    (asBoolean(equipmentSnapshot["elevator"]) ?? detailsSnapshot?.elevator) === true ? { label: "Fahrstuhl", value: "Ja" } : null,
+    asBoolean(equipmentSnapshot["cable_sat_tv"]) === true ? { label: "Kabel Sat TV", value: "Ja" } : null,
+    (readTextValue(equipmentSnapshot["parking"]) ?? detailsSnapshot?.parking) ? { label: "Stellplätze", value: (readTextValue(equipmentSnapshot["parking"]) ?? detailsSnapshot?.parking) as string } : null,
+    detailsSnapshot?.balcony === true ? { label: "Balkon", value: "Ja" } : null,
+    detailsSnapshot?.terrace === true ? { label: "Terrasse", value: "Ja" } : null,
+  ].filter((item): item is FactItem => Boolean(item));
   const energyFacts = [
     { label: texts.energy_class, value: energySnapshot?.efficiency_class ?? "—" },
     {
@@ -579,6 +573,10 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const galleryLightboxId = `offer-gallery-lightbox-${offer.id}`;
   const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
   const advisorPhoneHref = useMemo(() => toTelHref(advisor.phone), [advisor.phone]);
+  const zipCityLabel = buildZipCityLabel(raw);
+  const isAddressHidden = detailsSnapshot?.address_hidden === true;
+  const displayAddress = isAddressHidden ? zipCityLabel : (offer.address ?? zipCityLabel);
+  const inquiryLocation = displayAddress ?? zipCityLabel ?? "";
   const brokerLinkHref =
     advisor.href ??
     (
@@ -635,7 +633,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <div className="offer-detail-hero-main">
           <span className="offer-detail-chip">{offer.objectType}</span>
           <h1 className="offer-detail-title">{title}</h1>
-          {offer.address ? <p className="offer-detail-address">{offer.address}</p> : null}
+          {displayAddress ? <p className="offer-detail-address">{displayAddress}</p> : null}
           <div className="offer-detail-keyfacts">
             <div>
               <span className="offer-detail-label">{priceLabel}</span>
@@ -878,7 +876,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <section className="offer-detail-grid offer-detail-section">
           {detailFactGroups.length > 0 ? (
             <div className="offer-detail-panel">
-              <h2 className="h5 mb-3">Objektdetails</h2>
+              <h2 className="h5 mb-3">Objektmerkmale</h2>
               <div className="offer-detail-group-stack">
                 {detailFactGroups.map((group) => (
                   <section key={group.title} className="offer-detail-fact-group">
@@ -1075,15 +1073,15 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <OfferInquiryInlineForm
             locale={formatProfile.locale}
             pagePath={pagePath}
-            regionLabel={breadcrumb.names?.regionName ?? title}
-            offer={{
-              id: offer.id,
-              title,
-              objectType: offer.objectType,
-              address: offer.address,
-            }}
-            context={breadcrumb.ctx ?? {}}
-          />
+              regionLabel={breadcrumb.names?.regionName ?? title}
+              offer={{
+                id: offer.id,
+                title,
+                objectType: offer.objectType,
+                address: inquiryLocation,
+              }}
+              context={breadcrumb.ctx ?? {}}
+            />
         </div>
       </section>
 
@@ -1143,7 +1141,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 id: `${offer.id}-energy`,
                 title,
                 objectType: offer.objectType,
-                address: offer.address,
+                address: inquiryLocation,
               }}
               context={breadcrumb.ctx ?? {}}
             />
