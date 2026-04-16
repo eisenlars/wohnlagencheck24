@@ -689,187 +689,188 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           ) : null}
         </div>
 
-        <div className="offer-detail-panel">
-          {activeMediaTab === "images" ? (
-            activePhoto ? (
-              <div className="offer-detail-slideshow">
-                <div className="offer-detail-slideshow-stage">
-                  {previousPhoto ? (
-                    <button
-                      type="button"
-                      className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
-                      onClick={() => setActivePhotoIndex(previousPhotoIndex ?? 0)}
-                      aria-label="Vorheriges Bild anzeigen"
-                    >
-                      <div className="offer-detail-gallery-hero offer-detail-gallery-hero--secondary">
-                        <Image
-                          key={`${previousPhoto.url}-previous`}
-                          src={previousPhoto.url}
-                          alt={imageAltTexts[previousPhotoIndex ?? 0] ?? previousPhoto.title ?? `${title} Bild ${(previousPhotoIndex ?? 0) + 1}`}
-                          fill
-                          loading="lazy"
-                          quality={56}
-                          sizes="(max-width: 991px) 100vw, 24vw"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <span className="offer-detail-gallery-card__hint">‹</span>
-                    </button>
-                  ) : (
-                    <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
-                  )}
+        {activeMediaTab === "images" ? (
+          activePhoto ? (
+            <div className="offer-detail-slideshow">
+              <div className="offer-detail-slideshow-stage">
+                {previousPhoto ? (
                   <button
                     type="button"
-                    className="offer-detail-gallery-card offer-detail-gallery-card--active"
-                    onClick={() => setIsGalleryLightboxOpen(true)}
-                    aria-haspopup="dialog"
-                    aria-controls={galleryLightboxId}
-                    aria-label="Bildergalerie in Vollbild öffnen"
+                    className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
+                    onClick={() => setActivePhotoIndex(previousPhotoIndex ?? 0)}
+                    aria-label="Vorheriges Bild anzeigen"
                   >
-                    <div className="offer-detail-gallery-hero offer-detail-gallery-hero--active">
+                    <div className="offer-detail-gallery-hero offer-detail-gallery-hero--edge-left">
                       <Image
-                        key={activePhoto.url}
-                        src={activePhoto.url}
-                        alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                        key={`${previousPhoto.url}-previous`}
+                        src={previousPhoto.url}
+                        alt={imageAltTexts[previousPhotoIndex ?? 0] ?? previousPhoto.title ?? `${title} Bild ${(previousPhotoIndex ?? 0) + 1}`}
                         fill
-                        priority
-                        quality={72}
-                        sizes="(max-width: 991px) 100vw, 52vw"
-                        style={{ objectFit: "contain" }}
+                        loading="lazy"
+                        quality={56}
+                        sizes="(max-width: 991px) 100vw, 24vw"
+                        style={{ objectFit: "cover" }}
                       />
+                      <span className="offer-detail-gallery-card__overlay" aria-hidden="true">‹</span>
                     </div>
                   </button>
-                  {nextPhoto ? (
-                    <button
-                      type="button"
-                      className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
-                      onClick={() => setActivePhotoIndex(nextPhotoIndex ?? 0)}
-                      aria-label="Nächstes Bild anzeigen"
-                    >
-                      <div className="offer-detail-gallery-hero offer-detail-gallery-hero--secondary">
-                        <Image
-                          key={`${nextPhoto.url}-next`}
-                          src={nextPhoto.url}
-                          alt={imageAltTexts[nextPhotoIndex ?? 0] ?? nextPhoto.title ?? `${title} Bild ${(nextPhotoIndex ?? 0) + 1}`}
-                          fill
-                          loading="lazy"
-                          quality={56}
-                          sizes="(max-width: 991px) 100vw, 24vw"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <span className="offer-detail-gallery-card__hint">›</span>
-                    </button>
-                  ) : (
-                    <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
-                  )}
-                </div>
-                <div className="offer-detail-slideshow-meta">
-                  <div className="offer-detail-slideshow-caption">
-                    {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
-                  </div>
-                  <div className="offer-detail-slideshow-counter">
-                    {resolvedPhotoIndex + 1} / {photoAssets.length}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="offer-detail-placeholder">{texts.no_images_available}</div>
-            )
-          ) : null}
-
-          {activeMediaTab === "floorplans" ? (
-            activeFloorplan ? (
-              <div className="offer-detail-panel-media">
-                <div className="offer-detail-panel-media-frame is-floorplan">
-                  <Image
-                    key={activeFloorplan.url}
-                    src={activeFloorplan.url}
-                      alt={activeFloorplan.title ?? texts.floor_plan}
+                ) : (
+                  <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
+                )}
+                <button
+                  type="button"
+                  className="offer-detail-gallery-card offer-detail-gallery-card--active"
+                  onClick={() => setIsGalleryLightboxOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-controls={galleryLightboxId}
+                  aria-label="Bildergalerie in Vollbild öffnen"
+                >
+                  <div className="offer-detail-gallery-hero offer-detail-gallery-hero--center">
+                    <Image
+                      key={activePhoto.url}
+                      src={activePhoto.url}
+                      alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
                       fill
-                      loading="lazy"
+                      priority
                       quality={72}
-                      sizes="(max-width: 991px) 100vw, 72vw"
+                      sizes="(max-width: 991px) 100vw, 52vw"
                       style={{ objectFit: "contain" }}
                     />
-                </div>
-                {floorplanAssets.length > 1 ? (
-                  <div className="offer-detail-panel-thumbs">
-                    {floorplanAssets.map((asset, index) => (
-                      <button
-                        key={`${asset.url}-${index}`}
-                        type="button"
-                        className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
-                        onClick={() => setActiveFloorplanIndex(index)}
-                        aria-label={`Grundriss ${index + 1} anzeigen`}
-                      >
-                        <div className="offer-detail-thumb-frame">
-                          <Image
-                            src={asset.url}
-                            alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
-                            fill
-                            loading="lazy"
-                            quality={56}
-                            sizes="84px"
-                            style={{ objectFit: "cover" }}
-                          />
-                        </div>
-                      </button>
-                    ))}
                   </div>
-                ) : null}
+                </button>
+                {nextPhoto ? (
+                  <button
+                    type="button"
+                    className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
+                    onClick={() => setActivePhotoIndex(nextPhotoIndex ?? 0)}
+                    aria-label="Nächstes Bild anzeigen"
+                  >
+                    <div className="offer-detail-gallery-hero offer-detail-gallery-hero--edge-right">
+                      <Image
+                        key={`${nextPhoto.url}-next`}
+                        src={nextPhoto.url}
+                        alt={imageAltTexts[nextPhotoIndex ?? 0] ?? nextPhoto.title ?? `${title} Bild ${(nextPhotoIndex ?? 0) + 1}`}
+                        fill
+                        loading="lazy"
+                        quality={56}
+                        sizes="(max-width: 991px) 100vw, 24vw"
+                        style={{ objectFit: "cover" }}
+                      />
+                      <span className="offer-detail-gallery-card__overlay" aria-hidden="true">›</span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
+                )}
               </div>
-            ) : (
-              <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>
-            )
-          ) : null}
+              <div className="offer-detail-slideshow-meta">
+                <div className="offer-detail-slideshow-caption">
+                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                </div>
+                <div className="offer-detail-slideshow-counter">
+                  {resolvedPhotoIndex + 1} / {photoAssets.length}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="offer-detail-placeholder">{texts.no_images_available}</div>
+          )
+        ) : (
+          <div className="offer-detail-panel">
 
-          {activeMediaTab === "maps" ? (
-            activeLocationMap ? (
-              <div className="offer-detail-panel-media">
-                <div className="offer-detail-panel-media-frame">
-                  <Image
-                    key={activeLocationMap.url}
-                    src={activeLocationMap.url}
-                      alt={activeLocationMap.title ?? texts.location_map}
-                      fill
-                      loading="lazy"
-                      quality={72}
-                      sizes="(max-width: 991px) 100vw, 72vw"
-                      style={{ objectFit: "contain" }}
-                    />
-                </div>
-                {locationMapAssets.length > 1 ? (
-                  <div className="offer-detail-panel-thumbs">
-                    {locationMapAssets.map((asset, index) => (
-                      <button
-                        key={`${asset.url}-${index}`}
-                        type="button"
-                        className={`offer-detail-panel-thumb${index === resolvedLocationMapIndex ? " is-active" : ""}`}
-                        onClick={() => setActiveLocationMapIndex(index)}
-                        aria-label={`Lagegrafik ${index + 1} anzeigen`}
-                      >
-                        <div className="offer-detail-thumb-frame">
-                          <Image
-                            src={asset.url}
-                            alt={asset.title ?? `${texts.location_map} ${index + 1}`}
-                            fill
-                            loading="lazy"
-                            quality={56}
-                            sizes="84px"
-                            style={{ objectFit: "cover" }}
-                          />
-                        </div>
-                      </button>
-                    ))}
+            {activeMediaTab === "floorplans" ? (
+              activeFloorplan ? (
+                <div className="offer-detail-panel-media">
+                  <div className="offer-detail-panel-media-frame is-floorplan">
+                    <Image
+                      key={activeFloorplan.url}
+                      src={activeFloorplan.url}
+                        alt={activeFloorplan.title ?? texts.floor_plan}
+                        fill
+                        loading="lazy"
+                        quality={72}
+                        sizes="(max-width: 991px) 100vw, 72vw"
+                        style={{ objectFit: "contain" }}
+                      />
                   </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="offer-detail-placeholder">{texts.location_map_pending}</div>
-            )
-          ) : null}
-        </div>
+                  {floorplanAssets.length > 1 ? (
+                    <div className="offer-detail-panel-thumbs">
+                      {floorplanAssets.map((asset, index) => (
+                        <button
+                          key={`${asset.url}-${index}`}
+                          type="button"
+                          className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
+                          onClick={() => setActiveFloorplanIndex(index)}
+                          aria-label={`Grundriss ${index + 1} anzeigen`}
+                        >
+                          <div className="offer-detail-thumb-frame">
+                            <Image
+                              src={asset.url}
+                              alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
+                              fill
+                              loading="lazy"
+                              quality={56}
+                              sizes="84px"
+                              style={{ objectFit: "cover" }}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>
+              )
+            ) : null}
+
+            {activeMediaTab === "maps" ? (
+              activeLocationMap ? (
+                <div className="offer-detail-panel-media">
+                  <div className="offer-detail-panel-media-frame">
+                    <Image
+                      key={activeLocationMap.url}
+                      src={activeLocationMap.url}
+                        alt={activeLocationMap.title ?? texts.location_map}
+                        fill
+                        loading="lazy"
+                        quality={72}
+                        sizes="(max-width: 991px) 100vw, 72vw"
+                        style={{ objectFit: "contain" }}
+                      />
+                  </div>
+                  {locationMapAssets.length > 1 ? (
+                    <div className="offer-detail-panel-thumbs">
+                      {locationMapAssets.map((asset, index) => (
+                        <button
+                          key={`${asset.url}-${index}`}
+                          type="button"
+                          className={`offer-detail-panel-thumb${index === resolvedLocationMapIndex ? " is-active" : ""}`}
+                          onClick={() => setActiveLocationMapIndex(index)}
+                          aria-label={`Lagegrafik ${index + 1} anzeigen`}
+                        >
+                          <div className="offer-detail-thumb-frame">
+                            <Image
+                              src={asset.url}
+                              alt={asset.title ?? `${texts.location_map} ${index + 1}`}
+                              fill
+                              loading="lazy"
+                              quality={56}
+                              sizes="84px"
+                              style={{ objectFit: "cover" }}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="offer-detail-placeholder">{texts.location_map_pending}</div>
+              )
+            ) : null}
+          </div>
+        )}
       </section>
 
       {detailFactGroups.length > 0 || equipmentFacts.length > 0 ? (

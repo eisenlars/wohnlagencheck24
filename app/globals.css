@@ -2736,29 +2736,21 @@ h6 {
 .offer-detail-slideshow-stage {
   display: grid;
   grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.44fr) minmax(0, 0.78fr);
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: stretch;
 }
 
 .offer-detail-gallery-card {
-  display: grid;
-  gap: 0.5rem;
+  display: block;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
+  position: relative;
 }
 
 .offer-detail-gallery-card--empty {
   visibility: hidden;
-}
-
-.offer-detail-gallery-card__hint {
-  color: #475569;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
 }
 
 .offer-detail-slideshow-nav {
@@ -2795,19 +2787,22 @@ h6 {
 
 .offer-detail-gallery-hero {
   background: #ffffff;
-  border-radius: 1rem;
   overflow: hidden;
   border: none;
   position: relative;
-  min-height: clamp(190px, 22vw, 260px);
+  min-height: clamp(240px, 28vw, 320px);
 }
 
-.offer-detail-gallery-hero--active {
-  min-height: clamp(240px, 28vw, 340px);
+.offer-detail-gallery-hero--center {
+  border-radius: 0;
 }
 
-.offer-detail-gallery-hero--secondary {
-  min-height: clamp(190px, 22vw, 250px);
+.offer-detail-gallery-hero--edge-left {
+  border-radius: 1rem 0 0 1rem;
+}
+
+.offer-detail-gallery-hero--edge-right {
+  border-radius: 0 1rem 1rem 0;
 }
 
 .offer-detail-gallery-hero img {
@@ -2824,6 +2819,31 @@ h6 {
   border: 0;
   background: transparent;
   cursor: zoom-in;
+}
+
+.offer-detail-gallery-card__overlay {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  transform: translateY(-50%);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(6px);
+  color: #111;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.offer-detail-gallery-card--secondary:last-child .offer-detail-gallery-card__overlay {
+  left: auto;
+  right: 1rem;
 }
 
 .offer-detail-gallery-thumbs {
@@ -3228,9 +3248,11 @@ h6 {
   }
 
   .offer-detail-gallery-hero,
-  .offer-detail-gallery-hero--active,
-  .offer-detail-gallery-hero--secondary {
+  .offer-detail-gallery-hero--center,
+  .offer-detail-gallery-hero--edge-left,
+  .offer-detail-gallery-hero--edge-right {
     min-height: clamp(240px, 60vw, 340px);
+    border-radius: 1rem;
   }
 
   .offer-detail-cta-card {
