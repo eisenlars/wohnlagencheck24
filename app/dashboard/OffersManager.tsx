@@ -435,16 +435,6 @@ function formatMatchConfidenceLabel(value: OfferAreaTargetRow['match_confidence'
   return '—';
 }
 
-function isOfferReadyForPublish(value: OverrideRow | null | undefined): boolean {
-  if (!value) return false;
-  const title = readTextValue(value.seo_h1) ?? readTextValue(value.seo_title);
-  const description =
-    readTextValue(value.long_description)
-    ?? readTextValue(value.short_description)
-    ?? readTextValue(value.seo_description);
-  return Boolean(title && description);
-}
-
 export default function OffersManager(props: Props) {
   const {
     visibilityConfig = null,
@@ -1257,13 +1247,6 @@ export default function OffersManager(props: Props) {
                   <div style={offerOverviewHeaderRowStyle}>
                     <div style={offerSummaryHeaderStyle}>Überblick</div>
                     <div style={offerOverviewHeaderActionsStyle}>
-                      <span style={offerOverviewStatusBadgeStyle(isOfferReadyForPublish(selectedOverride))}>
-                        <span
-                          aria-hidden="true"
-                          style={offerOverviewStatusDotStyle(isOfferReadyForPublish(selectedOverride))}
-                        />
-                        <span>{isOfferReadyForPublish(selectedOverride) ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
-                      </span>
                       <button
                         type="button"
                         onClick={() => setOfferOverviewInfoOpen(true)}
@@ -2132,28 +2115,6 @@ const offerOverviewHeaderActionsStyle: React.CSSProperties = {
   columnGap: 8,
   flexWrap: 'wrap',
 };
-
-const offerOverviewStatusBadgeStyle = (active: boolean): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  rowGap: 8,
-  columnGap: 8,
-  borderRadius: 999,
-  padding: '6px 10px',
-  fontSize: 11,
-  fontWeight: 700,
-  color: active ? 'rgb(22, 101, 52)' : 'rgb(185, 28, 28)',
-  backgroundColor: active ? 'rgb(220, 252, 231)' : 'rgb(254, 226, 226)',
-  border: `1px solid ${active ? 'rgb(134, 239, 172)' : 'rgb(252, 165, 165)'}`,
-});
-
-const offerOverviewStatusDotStyle = (active: boolean): React.CSSProperties => ({
-  width: 10,
-  height: 10,
-  borderRadius: 999,
-  background: active ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)',
-  flex: '0 0 auto',
-});
 
 const offerOverviewInfoButtonStyle: React.CSSProperties = {
   border: '1px solid #cbd5e1',
