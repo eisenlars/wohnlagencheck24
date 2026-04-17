@@ -1178,14 +1178,11 @@ function mapEstateToReference(
         : "verkauft";
   const locationLabel = city || "der Region";
   const challengeNoteSource = String(elements["sonstige_angaben"] ?? "").trim() || null;
-  const referenceTitle =
-    saleType === "reserviert"
-      ? `Reserviert in ${locationLabel}`
-      : `Erfolgreich ${saleType} in ${locationLabel}`;
+  const sourceTitle = String(elements["objekttitel"] ?? "").trim() || null;
   const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
   const normalizedPayload: Record<string, unknown> = {
-    title: referenceTitle,
-    source_title: String(elements["objekttitel"] ?? "") || null,
+    title: sourceTitle,
+    source_title: sourceTitle,
     transaction_result: saleType,
     city: city || null,
     district: null,
@@ -1224,7 +1221,7 @@ function mapEstateToReference(
     partnerId,
     "onoffice",
     `reference:${String(elements["Id"] ?? record.id ?? "")}`,
-    referenceTitle,
+    sourceTitle,
     sourceUpdatedAt,
     normalizedPayload,
     record as unknown as Record<string, unknown>,
