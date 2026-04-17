@@ -646,54 +646,11 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         />
       </div>
 
-      <div className="offer-detail-back-link-wrap">
-        <Link href={listPath} className="offer-detail-back-link">
-          ← {texts.back_to_overview}
-        </Link>
-      </div>
-
-      <section className="offer-detail-hero">
-        <div className="offer-detail-hero-main">
-          <span className="offer-detail-chip">{offer.objectType}</span>
-          <h1 className="offer-detail-title">{title}</h1>
-          {displayAddress ? <p className="offer-detail-address">{displayAddress}</p> : null}
-          <div className="offer-detail-keyfacts">
-            <div>
-              <span className="offer-detail-label">{priceLabel}</span>
-              <div className="offer-detail-price">
-                {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
-                {priceSuffix ? <span className="offer-detail-suffix">{priceSuffix}</span> : null}
-              </div>
-            </div>
-            <div>
-              <span className="offer-detail-label">{texts.living_area}</span>
-              <strong>{`${formatArea(offer.areaSqm)} m²`}</strong>
-            </div>
-            <div>
-              <span className="offer-detail-label">{texts.rooms}</span>
-              <strong>{formatRooms(offer.rooms)}</strong>
-            </div>
-          </div>
-        </div>
-        <aside className="offer-detail-cta">
-          <div className="offer-detail-cta-card">
-            <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
-            <p className="offer-detail-cta-note">Direkter Anbieterkontakt</p>
-            {advisorPhoneHref && advisor.phone ? (
-              <a className="btn btn-dark w-100 mb-2" href={advisorPhoneHref}>
-                {advisor.phone}
-              </a>
-            ) : null}
-            <a className="btn btn-outline-dark w-100" href={`#${contactFormAnchor}`}>
-              {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
-            </a>
-          </div>
-        </aside>
-      </section>
-
       <section className="offer-detail-media offer-detail-section">
         <div className="offer-detail-media-head">
-          <h2 className="h5 mb-0">{isEnglish ? "Media" : "Medien"}</h2>
+          <Link href={listPath} className="offer-detail-back-link">
+            ← {texts.back_to_overview}
+          </Link>
           {mediaTabs.length > 1 ? (
             <div className="offer-detail-media-tabs" role="tablist" aria-label={isEnglish ? "Media categories" : "Medienkategorien"}>
               {mediaTabs.map((tab) => (
@@ -907,6 +864,45 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             ) : null}
           </div>
         )}
+      </section>
+
+      <section className="offer-detail-hero">
+        <div className="offer-detail-hero-main">
+          <span className="offer-detail-chip">{offer.objectType}</span>
+          <h1 className="offer-detail-title">{title}</h1>
+          {displayAddress ? <p className="offer-detail-address">{displayAddress}</p> : null}
+          <div className="offer-detail-keyfacts">
+            <div>
+              <span className="offer-detail-label">{priceLabel}</span>
+              <div className="offer-detail-price">
+                {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
+                {priceSuffix ? <span className="offer-detail-suffix">{priceSuffix}</span> : null}
+              </div>
+            </div>
+            <div>
+              <span className="offer-detail-label">{texts.living_area}</span>
+              <strong>{`${formatArea(offer.areaSqm)} m²`}</strong>
+            </div>
+            <div>
+              <span className="offer-detail-label">{texts.rooms}</span>
+              <strong>{formatRooms(offer.rooms)}</strong>
+            </div>
+          </div>
+        </div>
+        <aside className="offer-detail-cta">
+          <div className="offer-detail-cta-card">
+            <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
+            <p className="offer-detail-cta-note">Direkter Anbieterkontakt</p>
+            {advisorPhoneHref && advisor.phone ? (
+              <a className="btn btn-dark w-100 mb-2" href={advisorPhoneHref}>
+                {advisor.phone}
+              </a>
+            ) : null}
+            <a className="btn btn-outline-dark w-100" href={`#${contactFormAnchor}`}>
+              {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
+            </a>
+          </div>
+        </aside>
       </section>
 
       {detailFactGroups.length > 0 || equipmentFacts.length > 0 ? (
