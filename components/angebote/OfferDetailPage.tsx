@@ -714,6 +714,11 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                       sizes="(max-width: 991px) 100vw, 52vw"
                       style={{ objectFit: "cover" }}
                     />
+                    <div className="offer-detail-gallery-meta-badge">
+                      {`${resolvedPhotoIndex + 1}/${photoAssets.length}${
+                        activePhoto.title ? ` - ${activePhoto.title}` : ""
+                      }`}
+                    </div>
                   </div>
                 </button>
                 {nextPhoto ? (
@@ -740,15 +745,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 ) : (
                   <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
                 )}
-              </div>
-              <div className="offer-detail-slideshow-meta">
-                <div aria-hidden="true" />
-                <div className="offer-detail-slideshow-caption">
-                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
-                </div>
-                <div className="offer-detail-slideshow-counter">
-                  {resolvedPhotoIndex + 1} / {photoAssets.length}
-                </div>
               </div>
             </div>
           ) : (

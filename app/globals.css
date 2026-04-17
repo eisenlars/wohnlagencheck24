@@ -2773,23 +2773,23 @@ h6 {
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.04);
 }
 
-.offer-detail-slideshow-meta {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.44fr) minmax(0, 0.78fr);
-  gap: 1rem;
-  align-items: center;
-}
-
-.offer-detail-slideshow-caption {
-  font-weight: 600;
-  color: #111;
-  text-align: center;
-}
-
-.offer-detail-slideshow-counter {
-  color: #6c757d;
-  font-size: 0.92rem;
+.offer-detail-gallery-meta-badge {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  max-width: calc(100% - 2rem);
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-weight: 500;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offer-detail-gallery-hero {
