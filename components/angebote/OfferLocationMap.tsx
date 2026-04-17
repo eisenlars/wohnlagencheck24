@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 
-const OPEN_FREE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+const OPEN_FREE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/3d";
 
 type OfferLocationMapProps = {
   lat: number;
