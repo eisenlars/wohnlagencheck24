@@ -1964,6 +1964,10 @@ export async function fetchOnOfficeReferences(
     const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
     const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
 
+    if (soldFlag === "1") {
+      return true;
+    }
+
     if (isReservedOnOfficeStatus(fieldValue)) {
       return settings.listing_reserved_target === "references";
     }
@@ -1971,8 +1975,7 @@ export async function fetchOnOfficeReferences(
     if (fieldValue.length > 0 && allowedStatusValues.has(fieldValue)) {
       return false;
     }
-
-    return soldFlag === "1";
+    return false;
   });
   return {
     ...response,
