@@ -11,6 +11,7 @@ import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
 import { OfferInquiryInlineForm } from "./OfferInquiryInlineForm";
+import { OfferLocationMap } from "./OfferLocationMap";
 
 type MediaAssetKind = "image" | "floorplan" | "location_map" | "document";
 
@@ -324,23 +325,6 @@ function buildZipCityLabel(raw: Record<string, unknown>): string | null {
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-function buildOpenStreetMapEmbedUrl(
-  lat: number,
-  lng: number,
-  options?: { delta?: number; marker?: boolean },
-): string {
-  const delta = options?.delta ?? 0.0065;
-  const left = Math.max(-180, lng - delta);
-  const right = Math.min(180, lng + delta);
-  const bottom = Math.max(-90, lat - delta);
-  const top = Math.min(90, lat + delta);
-  const bbox = [left, bottom, right, top]
-    .map((value) => Number(value.toFixed(6)))
-    .join("%2C");
-  const marker = options?.marker === false ? "" : `&marker=${lat}%2C${lng}`;
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${marker}`;
-}
-
 function LocationPinIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -429,13 +413,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const mapDisplayLat = hasCoordinateMap && isAddressHidden ? Math.round(latitude * 50) / 50 : latitude;
   const mapDisplayLng = hasCoordinateMap && isAddressHidden ? Math.round(longitude * 50) / 50 : longitude;
   const hasApproximateMap = hasCoordinateMap && isAddressHidden;
-  const interactiveMapUrl =
-    mapDisplayLat != null && mapDisplayLng != null
-      ? buildOpenStreetMapEmbedUrl(mapDisplayLat, mapDisplayLng, {
-          delta: hasApproximateMap ? 0.012 : 0.0065,
-          marker: !hasApproximateMap,
-        })
-      : null;
   const hasMapsMedia = locationMapAssets.length > 0 || hasCoordinateMap;
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
@@ -857,18 +834,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             ) : null}
 
             {activeMediaTab === "maps" ? (
-              interactiveMapUrl ? (
+              mapDisplayLat != null && mapDisplayLng != null ? (
                 <div className="offer-detail-map-embed">
-                  <iframe
-                    key={mapResetKey}
-                    title={
-                      hasApproximateMap
-                        ? (isEnglish ? "Approximate property area map" : "Kartenansicht der ungefähren Objektlage")
-                        : (isEnglish ? "Property location map" : "Kartenansicht der Objektlage")
-                    }
-                    src={interactiveMapUrl ?? undefined}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
+                  <OfferLocationMap
+                    lat={mapDisplayLat}
+                    lng={mapDisplayLng}
+                    approximate={hasApproximateMap}
+                    resetToken={mapResetKey}
                   />
                   {hasApproximateMap ? (
                     <div className="offer-detail-map-embed__marker" aria-hidden="true">
