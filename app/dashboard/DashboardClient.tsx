@@ -1698,7 +1698,10 @@ export default function DashboardClient({
         </div>
       </header>
 
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+      {activeMainTab === 'factors' && factorPaneLoading && !showWelcome ? (
+        <FullscreenLoader show label="Wertanpassungen werden geladen..." fixed={false} />
+      ) : null}
 
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
       {showUtilityBar ? (
@@ -2105,9 +2108,6 @@ export default function DashboardClient({
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
           <div style={{ width: '100%', position: 'relative' }}>
-            {activeMainTab === 'factors' && factorPaneLoading ? (
-              <FullscreenLoader show label="Wertanpassungen werden geladen..." fixed={false} />
-            ) : null}
             <header style={regionHeaderStickyStyle}>
               {!hideTextsHeaderInActivationFlow ? (
                 <div style={{ marginBottom: '6px' }}>
