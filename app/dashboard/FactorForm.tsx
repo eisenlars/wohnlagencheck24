@@ -489,7 +489,27 @@ const FactorForm = forwardRef<FactorFormHandle, {
   const canRebuild = hasFactorChanges || hasPendingRebuild;
 
   useEffect(() => {
-    onLoadingChange?.(isLoading);
+    if (!onLoadingChange) return;
+    if (isLoading) {
+      onLoadingChange(true);
+      return;
+    }
+
+    let cancelled = false;
+    let frameOne = 0;
+    let frameTwo = 0;
+
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        if (!cancelled) onLoadingChange(false);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (frameOne) window.cancelAnimationFrame(frameOne);
+      if (frameTwo) window.cancelAnimationFrame(frameTwo);
+    };
   }, [isLoading, onLoadingChange]);
 
   useImperativeHandle(ref, () => ({
