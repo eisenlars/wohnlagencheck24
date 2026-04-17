@@ -234,6 +234,20 @@ function buildDefaultForm(row: RawReferenceRow, override?: OverrideRow | null): 
   };
 }
 
+function isReferenceReadyForPublish(row: RawReferenceRow, override?: OverrideRow | null): boolean {
+  const curatedTitle = asText(override?.seo_h1);
+  const curatedText = asText(override?.long_description);
+  const rawTitle = asText(row.title);
+  const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
+  const rawText = asText(getPayloadText(payload, ['description', 'reference_text_seed']));
+  return (
+    curatedTitle.length > 0 &&
+    curatedText.length > 0 &&
+    curatedTitle !== rawTitle &&
+    curatedText !== rawText
+  );
+}
+
 function buildReferenceAiSourceContext(row: RawReferenceRow | null, payload: Record<string, unknown>): string {
   if (!row) return '';
   const categories = Array.isArray(payload.challenge_categories)
@@ -277,6 +291,26 @@ const summaryGridStyle: CSSProperties = { display: 'grid', gap: 10, gridTemplate
 const summaryLabelStyle: CSSProperties = { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 };
 const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600, lineHeight: 1.45 };
 const summaryHintStyle: CSSProperties = { fontSize: 12, color: '#475569', lineHeight: 1.5 };
+const onlineStatusDotStyle = (ready: boolean): CSSProperties => ({
+  width: 10,
+  height: 10,
+  borderRadius: 999,
+  backgroundColor: ready ? '#16a34a' : '#dc2626',
+  flex: '0 0 auto',
+  marginTop: 3,
+});
+const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  borderRadius: 999,
+  padding: '6px 10px',
+  fontSize: 11,
+  fontWeight: 700,
+  color: ready ? '#166534' : '#991b1b',
+  backgroundColor: ready ? '#dcfce7' : '#fee2e2',
+  border: `1px solid ${ready ? '#86efac' : '#fca5a5'}`,
+});
 const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 };
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
@@ -1060,6 +1094,7 @@ export default function ReferencesWorkspaceManager() {
     requiredReferenceText.length > 0 &&
     requiredReferenceTitle !== rawReferenceTitle &&
     requiredReferenceText !== rawReferenceText;
+  const isReferenceReady = selectedRow && form ? isReferenceReadyForPublish(selectedRow, form) : false;
 
   if (loading) return <FullscreenLoader show label="Referenzen werden geladen..." />;
 
@@ -1150,6 +1185,13 @@ export default function ReferencesWorkspaceManager() {
               const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
               const objectType = getPayloadText(payload, ['object_type']) || '—';
               const location = getReferenceLocationLabel(payload);
+              const rowOverride = overrides.find(
+                (entry) =>
+                  entry.partner_id === row.partner_id &&
+                  entry.source === row.provider &&
+                  entry.external_id === row.external_id,
+              ) ?? null;
+              const isReady = isReferenceReadyForPublish(row, rowOverride);
               return (
                 <button
                   key={row.id}
@@ -1172,7 +1214,10 @@ export default function ReferencesWorkspaceManager() {
                     )}
                   </span>
                   <span style={referenceRowContentStyle}>
-                    <span style={referenceRowTitleStyle}>{row.title || row.external_id}</span>
+                    <span style={referenceRowTitleStyle}>
+                      <span>{row.title || row.external_id}</span>
+                      <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
+                    </span>
                     <span style={referenceRowMetaStyle}>
                       {`${marketingType} · ${objectType} · ${location}`}
                     </span>
@@ -1197,6 +1242,10 @@ export default function ReferencesWorkspaceManager() {
                   <div style={referenceOverviewHeaderRowStyle}>
                     <div style={summaryHeaderStyle}>Überblick</div>
                     <div style={referenceOverviewHeaderActionsStyle}>
+                      <span style={onlineStatusBadgeStyle(isReferenceReady)}>
+                        <span aria-hidden="true" style={onlineStatusDotStyle(isReferenceReady)} />
+                        <span>{isReferenceReady ? 'Onlinefertig' : 'Nicht onlinefertig'}</span>
+                      </span>
                       <button
                         type="button"
                         onClick={() => setReferenceOverviewInfoOpen(true)}
