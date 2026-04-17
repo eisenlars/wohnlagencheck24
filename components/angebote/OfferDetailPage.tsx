@@ -448,6 +448,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
   const [activeLightboxMedia, setActiveLightboxMedia] = useState<"images" | "floorplans" | "maps" | null>(null);
   const [photoSlideDirection, setPhotoSlideDirection] = useState<"prev" | "next" | null>(null);
+  const [mapResetKey, setMapResetKey] = useState(0);
   const resolvedPhotoIndex = activePhotoIndex < photoAssets.length ? activePhotoIndex : 0;
   const resolvedFloorplanIndex = activeFloorplanIndex < floorplanAssets.length ? activeFloorplanIndex : 0;
   const resolvedLocationMapIndex =
@@ -865,6 +866,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
               interactiveMapUrl ? (
                 <div className="offer-detail-map-embed">
                   <iframe
+                    key={mapResetKey}
                     title={
                       hasApproximateMap
                         ? (isEnglish ? "Approximate property area map" : "Kartenansicht der ungefähren Objektlage")
@@ -893,6 +895,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         : (displayAddress ?? zipCityLabel ?? texts.location_map)}
                     </span>
                   </div>
+                  <button
+                    type="button"
+                    className="offer-detail-map-embed__reset"
+                    onClick={() => setMapResetKey((current) => current + 1)}
+                  >
+                    {isEnglish ? "Reset map" : "Karte zurücksetzen"}
+                  </button>
                   <a
                     className="offer-detail-map-embed__link"
                     href={externalMapHref ?? undefined}
