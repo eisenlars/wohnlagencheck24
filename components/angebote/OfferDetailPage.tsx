@@ -324,6 +324,27 @@ function buildZipCityLabel(raw: Record<string, unknown>): string | null {
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
+function buildOpenStreetMapEmbedUrl(lat: number, lng: number): string {
+  const delta = 0.0065;
+  const left = Math.max(-180, lng - delta);
+  const right = Math.min(180, lng + delta);
+  const bottom = Math.max(-90, lat - delta);
+  const top = Math.min(90, lat + delta);
+  const bbox = [left, bottom, right, top]
+    .map((value) => Number(value.toFixed(6)))
+    .join("%2C");
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+}
+
+function LocationPinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 21s-6-5.4-6-11a6 6 0 1 1 12 0c0 5.6-6 11-6 11Z" />
+      <circle cx="12" cy="10" r="2.6" />
+    </svg>
+  );
+}
+
 export function OfferDetailPage(props: OfferDetailPageProps) {
   const { offer, mode, texts, formatProfile, pagePath, advisor, breadcrumb, listPath } = props;
   const isEnglish = String(formatProfile.locale).toLowerCase().startsWith("en");
@@ -394,6 +415,17 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
       : [];
     return uniqByUrl([...explicit, ...legacy]);
   }, [galleryAssets, raw, texts.location_map]);
+  const rawDetails = useMemo(() => asRecord(raw["details"]) ?? {}, [raw]);
+  const latitude = asNumber(raw["lat"]);
+  const longitude = asNumber(raw["lng"]);
+  const zipCityLabel = buildZipCityLabel(raw);
+  const isAddressHidden = asBoolean(rawDetails["address_hidden"]) === true;
+  const hasInteractiveMap = latitude != null && longitude != null && !isAddressHidden;
+  const interactiveMapUrl = hasInteractiveMap ? buildOpenStreetMapEmbedUrl(latitude, longitude) : null;
+  const externalMapHref = hasInteractiveMap
+    ? `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`
+    : null;
+  const hasMapsMedia = locationMapAssets.length > 0 || hasInteractiveMap;
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
@@ -425,14 +457,14 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const mediaTabs = [
     { id: "images" as const, label: isEnglish ? "Images" : "Bilder", count: photoAssets.length },
     { id: "floorplans" as const, label: texts.floor_plan, count: floorplanAssets.length },
-    { id: "maps" as const, label: texts.location_map, count: locationMapAssets.length },
+    { id: "maps" as const, label: texts.location_map, count: hasMapsMedia ? 1 : 0 },
   ].filter((tab) => tab.count > 0);
   const [activeMediaTab, setActiveMediaTab] = useState<"images" | "floorplans" | "maps">(
     mediaTabs[0]?.id ?? "images",
   );
   const features = Array.isArray(raw["features"]) ? (raw["features"] as string[]) : [];
   const energySnapshot = useMemo(() => parseEnergySnapshot(raw["energy"]), [raw]);
-  const detailsSnapshot = useMemo(() => parseDetailsSnapshot(raw["details"]), [raw]);
+  const detailsSnapshot = useMemo(() => parseDetailsSnapshot(rawDetails), [rawDetails]);
   const rawDocuments = useMemo(() => parseDocumentAssets(raw["documents"]), [raw]);
   const documentAssets = useMemo(
     () => uniqDocumentsByUrl([
@@ -587,11 +619,10 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const galleryLightboxId = `offer-gallery-lightbox-${offer.id}`;
   const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
   const advisorPhoneHref = useMemo(() => toTelHref(advisor.phone), [advisor.phone]);
-  const zipCityLabel = buildZipCityLabel(raw);
-  const isAddressHidden = detailsSnapshot?.address_hidden === true;
   const displayAddress = isAddressHidden ? zipCityLabel : (offer.address ?? zipCityLabel);
   const inquiryLocation = displayAddress ?? zipCityLabel ?? "";
   const brokerLinkHref = advisor.href ?? null;
+  const mediaSectionId = `offer-media-${offer.id}`;
   const narrativeSectionCandidates = [
     description ? { kicker: texts.property_description, title: texts.property_description, copy: description } : null,
     featuresText ? { kicker: texts.features_label, title: texts.features_label, copy: featuresText } : null,
@@ -610,6 +641,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   function movePhotoNext() {
     setPhotoSlideDirection("next");
     setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1));
+  }
+
+  function openMapsMedia() {
+    if (!hasMapsMedia) return;
+    setActiveMediaTab("maps");
+    const mediaElement = document.getElementById(mediaSectionId);
+    mediaElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   useEffect(() => {
@@ -646,7 +684,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         />
       </div>
 
-      <section className="offer-detail-media offer-detail-section">
+      <section id={mediaSectionId} className="offer-detail-media offer-detail-section">
         <div className="offer-detail-media-head">
           <Link href={listPath} className="offer-detail-back-link">
             ← {texts.back_to_overview}
@@ -807,7 +845,28 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             ) : null}
 
             {activeMediaTab === "maps" ? (
-              activeLocationMap ? (
+              hasInteractiveMap ? (
+                <div className="offer-detail-map-embed">
+                  <iframe
+                    title={isEnglish ? "Property location map" : "Kartenansicht der Objektlage"}
+                    src={interactiveMapUrl ?? undefined}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                  <div className="offer-detail-map-embed__badge">
+                    <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
+                    <span>{displayAddress ?? zipCityLabel ?? texts.location_map}</span>
+                  </div>
+                  <a
+                    className="offer-detail-map-embed__link"
+                    href={externalMapHref ?? undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {isEnglish ? "Open map in new tab" : "Karte in neuem Tab öffnen"}
+                  </a>
+                </div>
+              ) : activeLocationMap ? (
                 <div className="offer-detail-panel-media">
                   <button
                     type="button"
@@ -864,9 +923,27 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
 
       <section className="offer-detail-hero">
         <div className="offer-detail-hero-main">
-          <span className="offer-detail-chip">{offer.objectType}</span>
+          <div className="offer-detail-hero-top">
+            <span className="offer-detail-chip">{offer.objectType}</span>
+            {displayAddress ? (
+              hasMapsMedia ? (
+                <button
+                  type="button"
+                  className="offer-detail-location-link"
+                  onClick={openMapsMedia}
+                >
+                  <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
+                  <span>{displayAddress}</span>
+                </button>
+              ) : (
+                <span className="offer-detail-location-link is-static">
+                  <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
+                  <span>{displayAddress}</span>
+                </span>
+              )
+            ) : null}
+          </div>
           <h1 className="offer-detail-title">{title}</h1>
-          {displayAddress ? <p className="offer-detail-address">{displayAddress}</p> : null}
           <div className="offer-detail-keyfacts">
             <div>
               <span className="offer-detail-label">{priceLabel}</span>
