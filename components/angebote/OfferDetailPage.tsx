@@ -324,8 +324,12 @@ function buildZipCityLabel(raw: Record<string, unknown>): string | null {
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-function buildOpenStreetMapEmbedUrl(lat: number, lng: number): string {
-  const delta = 0.0065;
+function buildOpenStreetMapEmbedUrl(
+  lat: number,
+  lng: number,
+  options?: { delta?: number; marker?: boolean },
+): string {
+  const delta = options?.delta ?? 0.0065;
   const left = Math.max(-180, lng - delta);
   const right = Math.min(180, lng + delta);
   const bottom = Math.max(-90, lat - delta);
@@ -333,7 +337,8 @@ function buildOpenStreetMapEmbedUrl(lat: number, lng: number): string {
   const bbox = [left, bottom, right, top]
     .map((value) => Number(value.toFixed(6)))
     .join("%2C");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+  const marker = options?.marker === false ? "" : `&marker=${lat}%2C${lng}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${marker}`;
 }
 
 function LocationPinIcon() {
@@ -420,12 +425,24 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const longitude = asNumber(raw["lng"]);
   const zipCityLabel = buildZipCityLabel(raw);
   const isAddressHidden = asBoolean(rawDetails["address_hidden"]) === true;
-  const hasInteractiveMap = latitude != null && longitude != null && !isAddressHidden;
-  const interactiveMapUrl = hasInteractiveMap ? buildOpenStreetMapEmbedUrl(latitude, longitude) : null;
-  const externalMapHref = hasInteractiveMap
-    ? `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`
-    : null;
-  const hasMapsMedia = locationMapAssets.length > 0 || hasInteractiveMap;
+  const hasCoordinateMap = latitude != null && longitude != null;
+  const mapDisplayLat = hasCoordinateMap && isAddressHidden ? Math.round(latitude * 10) / 10 : latitude;
+  const mapDisplayLng = hasCoordinateMap && isAddressHidden ? Math.round(longitude * 10) / 10 : longitude;
+  const hasApproximateMap = hasCoordinateMap && isAddressHidden;
+  const interactiveMapUrl =
+    mapDisplayLat != null && mapDisplayLng != null
+      ? buildOpenStreetMapEmbedUrl(mapDisplayLat, mapDisplayLng, {
+          delta: hasApproximateMap ? 0.045 : 0.0065,
+          marker: !hasApproximateMap,
+        })
+      : null;
+  const externalMapHref =
+    mapDisplayLat != null && mapDisplayLng != null
+      ? hasApproximateMap
+        ? `https://www.openstreetmap.org/#map=12/${mapDisplayLat}/${mapDisplayLng}`
+        : `https://www.openstreetmap.org/?mlat=${mapDisplayLat}&mlon=${mapDisplayLng}#map=15/${mapDisplayLat}/${mapDisplayLng}`
+      : null;
+  const hasMapsMedia = locationMapAssets.length > 0 || hasCoordinateMap;
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
@@ -845,17 +862,25 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             ) : null}
 
             {activeMediaTab === "maps" ? (
-              hasInteractiveMap ? (
+              interactiveMapUrl ? (
                 <div className="offer-detail-map-embed">
                   <iframe
-                    title={isEnglish ? "Property location map" : "Kartenansicht der Objektlage"}
+                    title={
+                      hasApproximateMap
+                        ? (isEnglish ? "Approximate property area map" : "Kartenansicht der ungefähren Objektlage")
+                        : (isEnglish ? "Property location map" : "Kartenansicht der Objektlage")
+                    }
                     src={interactiveMapUrl ?? undefined}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                   />
                   <div className="offer-detail-map-embed__badge">
                     <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
-                    <span>{displayAddress ?? zipCityLabel ?? texts.location_map}</span>
+                    <span>
+                      {hasApproximateMap
+                        ? `${isEnglish ? "Approximate area in" : "Ungefähre Lage in"} ${zipCityLabel ?? texts.location_map}`
+                        : (displayAddress ?? zipCityLabel ?? texts.location_map)}
+                    </span>
                   </div>
                   <a
                     className="offer-detail-map-embed__link"
@@ -863,7 +888,9 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {isEnglish ? "Open map in new tab" : "Karte in neuem Tab öffnen"}
+                    {hasApproximateMap
+                      ? (isEnglish ? "Open area map in new tab" : "Gebietskarte in neuem Tab öffnen")
+                      : (isEnglish ? "Open map in new tab" : "Karte in neuem Tab öffnen")}
                   </a>
                 </div>
               ) : activeLocationMap ? (
