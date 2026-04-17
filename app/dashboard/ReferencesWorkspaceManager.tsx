@@ -500,6 +500,13 @@ const referenceRowContentStyle: CSSProperties = {
   justifyContent: 'center',
 };
 
+const referenceRowTopStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'flex-start',
+  minHeight: 13,
+};
+
 const referenceRowTitleStyle: CSSProperties = {
   fontWeight: 600,
   color: '#0f172a',
@@ -1214,10 +1221,10 @@ export default function ReferencesWorkspaceManager() {
                     )}
                   </span>
                   <span style={referenceRowContentStyle}>
-                    <span style={referenceRowTitleStyle}>
-                      <span>{row.title || row.external_id}</span>
+                    <span style={referenceRowTopStyle}>
                       <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
                     </span>
+                    <span style={referenceRowTitleStyle}>{row.title || row.external_id}</span>
                     <span style={referenceRowMetaStyle}>
                       {`${marketingType} · ${objectType} · ${location}`}
                     </span>
