@@ -523,6 +523,7 @@ export default function DashboardClient({
   const [selectedConfig, setSelectedConfig] = useState<PartnerAreaConfig | null>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [factorPaneLoading, setFactorPaneLoading] = useState(false);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
   const [partnerFirstName, setPartnerFirstName] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -733,7 +734,7 @@ export default function DashboardClient({
         ? persisted.showWelcome
         : (typeof initialShowWelcome === 'boolean' ? initialShowWelcome : true);
       const includeChildrenOnBootstrap = isOrtslageAreaId(restoredAreaId)
-        || (!nextShowWelcome && preferredTab === 'factors');
+        || preferredTab === 'factors';
       const includeLocalesOnBootstrap = preferredTab === 'international';
       const bootstrapParams = new URLSearchParams({ mode: 'core' });
       if (includeChildrenOnBootstrap) bootstrapParams.set('include_children', '1');
@@ -1019,6 +1020,9 @@ export default function DashboardClient({
     }
     if (tab === 'texts') {
       setMandatoryProgressLoading(true);
+    }
+    if (tab === 'factors') {
+      void ensureDetailedConfigs();
     }
     setActiveMainTab(tab);
     setShowWelcome(false);
@@ -1348,6 +1352,14 @@ export default function DashboardClient({
       setExpandedDistrict(previewDistrict.area_id);
     }
   }, [showWelcome, previewDistricts, selectedConfig?.area_id, expandedDistrict]);
+
+  useEffect(() => {
+    if (loading || showWelcome || activeMainTab !== 'factors' || !selectedConfig?.area_id) {
+      setFactorPaneLoading(false);
+      return;
+    }
+    setFactorPaneLoading(true);
+  }, [activeMainTab, loading, selectedConfig?.area_id, showWelcome]);
 
   if (loading) return <FullscreenLoader show label="Dashboard wird geladen..." />;
 
@@ -1773,6 +1785,9 @@ export default function DashboardClient({
                 <div key={district.area_id} style={{ marginBottom: '8px' }}>
                   <button
                     onClick={() => {
+                      if (activeMainTab === 'factors') {
+                        void ensureDetailedConfigs();
+                      }
                       handleSelectConfig(district);
                       setExpandedDistrict(isExpanded ? null : district.area_id);
                     }}
@@ -2038,7 +2053,6 @@ export default function DashboardClient({
                         disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
                         style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
                       >
-                        <div style={welcomeCardIconStyle}>{renderUtilityIcon(tool.icon, 30)}</div>
                         <div style={welcomeCardTitleStyle}>{tool.title}</div>
                         <div style={welcomeCardTextStyle}>
                           {tool.description}
@@ -2090,7 +2104,10 @@ export default function DashboardClient({
           </div>
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%', position: 'relative' }}>
+            {activeMainTab === 'factors' && factorPaneLoading ? (
+              <FullscreenLoader show label="Wertanpassungen werden geladen..." fixed={false} />
+            ) : null}
             <header style={regionHeaderStickyStyle}>
               {!hideTextsHeaderInActivationFlow ? (
                 <div style={{ marginBottom: '6px' }}>
@@ -2338,7 +2355,12 @@ export default function DashboardClient({
 
             {/* Die Forms nutzen nun die volle Breite des <main> Containers */}
             {activeMainTab === 'factors' ? (
-              <FactorForm ref={factorFormRef} key={`f-${effectiveSelectedConfig.area_id}`} config={effectiveSelectedConfig} />
+              <FactorForm
+                ref={factorFormRef}
+                key={`f-${effectiveSelectedConfig.area_id}`}
+                config={effectiveSelectedConfig}
+                onLoadingChange={setFactorPaneLoading}
+              />
             ) : activeMainTab === 'texts' && scopedContentAreaConfig ? (
               isAwaitingAdminApproval ? null : (
                 <TextEditorForm
@@ -3259,14 +3281,6 @@ const welcomeCardStyle = (disabled: boolean): React.CSSProperties => ({
   boxShadow: '0 10px 18px rgba(15, 23, 42, 0.06)',
   transition: 'transform 0.15s ease, box-shadow 0.15s ease',
 });
-
-const welcomeCardIconStyle = {
-  minHeight: '36px',
-  marginBottom: '12px',
-  display: 'flex',
-  alignItems: 'center',
-  color: '#0f172a',
-};
 
 const welcomeCardTitleStyle = {
   fontSize: '16px',

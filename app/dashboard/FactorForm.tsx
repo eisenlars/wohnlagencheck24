@@ -410,7 +410,10 @@ function InputRow({
   );
 }
 
-const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(function FactorForm({ config }, ref) {
+const FactorForm = forwardRef<FactorFormHandle, {
+  config: PartnerAreaConfig;
+  onLoadingChange?: (loading: boolean) => void;
+}>(function FactorForm({ config, onLoadingChange }, ref) {
   const supabase = createClient();
   const [message, setMessage] = useState('');
   const [rebuildMessage, setRebuildMessage] = useState('');
@@ -470,6 +473,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   const [lastRebuiltFactors, setLastRebuiltFactors] = useState(
     makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite),
   );
+  const isLoading = settingsLoading || previewLoading;
   const currentFactors = useMemo(
     () => makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite),
     [sf, trend, kh, kw, kg, mh, mw, rendite],
@@ -483,6 +487,10 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
     [currentFactors, lastRebuiltFactors],
   );
   const canRebuild = hasFactorChanges || hasPendingRebuild;
+
+  useEffect(() => {
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
   useImperativeHandle(ref, () => ({
     autoSyncIfDirty: async () => {
@@ -1043,14 +1051,14 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         }
       `}</style>
 
-      {(settingsLoading || previewLoading) ? (
+      {!onLoadingChange && isLoading ? (
         <FullscreenLoader show label="Faktoren werden geladen..." fixed={false} />
       ) : null}
       
       {/* 1. Markttrends */}
       {!isOrtslage ? (
         <details open style={sectionStyle}>
-          <summary style={summaryStyle}>📈 Markttrends & Basis</summary>
+          <summary style={summaryStyle}>Markttrends & Basis</summary>
           <div style={gridStyle}>
             <TrendRow
               label="Trend Immobilienmarkt"
@@ -1076,7 +1084,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
       {/* 2. Kaufpreise */}
       <details style={sectionStyle}>
-        <summary style={summaryStyle}>💰 Kaufpreis-Faktoren</summary>
+        <summary style={summaryStyle}>Kaufpreis-Faktoren</summary>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '50px', padding: '25px 0' }}>
           <FactorGrid
             title="Häuser"
@@ -1119,7 +1127,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
       {/* 3. Mietpreise */}
       <details style={sectionStyle}>
-        <summary style={summaryStyle}>🏠 Mietpreis-Faktoren</summary>
+        <summary style={summaryStyle}>Mietpreis-Faktoren</summary>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', padding: '25px 0' }}>
           <FactorGrid
             title="Miete Häuser"
@@ -1150,7 +1158,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
       {/* 4. Rendite */}
       <details style={sectionStyle}>
-        <summary style={summaryStyle}>📊 Rendite & Indizes</summary>
+        <summary style={summaryStyle}>Rendite & Indizes</summary>
         <div style={gridStyle}>
           <InputRow
             label="Mietrendite ETW"
@@ -1211,7 +1219,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
       {/* 5. Standortfaktoren */}
       <details style={sectionStyle}>
-        <summary style={summaryStyle}>📍 Standortbewertung</summary>
+        <summary style={summaryStyle}>Standortbewertung</summary>
         <div style={gridStyle}>
           {(Object.keys(defaultSf) as Array<keyof typeof defaultSf>).map((key) => (
             <InputRow

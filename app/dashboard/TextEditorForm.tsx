@@ -63,8 +63,6 @@ import {
   workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
   workflowTabButtonStyle as tabButtonStyle,
   workflowTabContainerStyle as tabContainerStyle,
-  workflowTabIconEmojiStyle as tabIconEmojiStyle,
-  workflowTabIconImageStyle as tabIconImageStyle,
   workflowTabLabelStyle as tabLabelStyle,
 } from '@/app/dashboard/workflow-ui';
 
@@ -95,10 +93,6 @@ function resolveInputType(sectionKey: string): 'text' | 'email' | 'tel' {
   if (sectionKey.endsWith('_email')) return 'email';
   if (sectionKey.includes('telefon')) return 'tel';
   return 'text';
-}
-
-function isIconPath(value: string): boolean {
-  return typeof value === 'string' && value.startsWith('/');
 }
 
 function formatProviderLabel(provider: string): string {
@@ -1837,11 +1831,6 @@ export default function TextEditorForm({
                     onClick={() => setActiveTab(tab.id)}
                     style={tabButtonStyle(activeTab === tab.id)}
                   >
-                    {isIconPath(tab.icon) ? (
-                      <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-                    ) : (
-                      <span style={tabIconEmojiStyle}>{tab.icon}</span>
-                    )}
                     <span style={tabLabelStyle}>{tab.label}</span>
                   </button>
                 ))}
