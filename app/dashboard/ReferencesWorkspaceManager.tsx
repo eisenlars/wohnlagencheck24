@@ -281,18 +281,6 @@ const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRad
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
 const fieldCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, background: '#fff', padding: 14, display: 'grid', gap: 12 };
 const fieldHeaderStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' };
-const fieldHeaderActionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };
-const customizedBadgeStyle: CSSProperties = { fontSize: 11, color: '#0f766e', fontWeight: 700 };
-const resetButtonStyle = (active: boolean): CSSProperties => ({
-  border: '1px solid #cbd5e1',
-  borderRadius: 999,
-  padding: '6px 10px',
-  background: active ? '#eff6ff' : '#f8fafc',
-  color: '#334155',
-  cursor: 'pointer',
-  fontSize: 12,
-  fontWeight: 600,
-});
 const editorGridStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'minmax(0, 1.25fr) minmax(260px, 0.75fr)' };
 const textareaWrapperStyle: CSSProperties = { display: 'grid', gap: 10 };
 const textareaStyle: CSSProperties = { minHeight: 150, border: '1px solid #cbd5e1', borderRadius: 12, padding: '12px 14px', fontSize: 14, lineHeight: 1.55, resize: 'vertical' };
@@ -852,10 +840,6 @@ export default function ReferencesWorkspaceManager() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
-  function resetField(key: keyof OverrideRow, rawValue: string | string[]) {
-    updateField(key, rawValue);
-  }
-
   function getStandardPromptText(label: string, areaName: string) {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('referenz-titel') || lowerLabel.includes('h1')) {
@@ -891,7 +875,6 @@ export default function ReferencesWorkspaceManager() {
     if (!form) return null;
     const keyName = String(key);
     const value = String(form[key] ?? '');
-    const isCustomized = value.trim() !== rawValue.trim();
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
@@ -901,12 +884,6 @@ export default function ReferencesWorkspaceManager() {
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
           <h4 style={{ margin: 0, fontSize: 15, color: '#0f172a' }}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
-            {isCustomized ? <span style={customizedBadgeStyle}>✓ Individuell angepasst</span> : null}
-            <button type="button" onClick={() => resetField(key, rawValue)} style={resetButtonStyle(isCustomized)}>
-              Original nutzen
-            </button>
-          </div>
         </div>
         <div style={showPreview ? editorGridStyle : textareaWrapperStyle}>
           <div style={textareaWrapperStyle}>
@@ -980,7 +957,6 @@ export default function ReferencesWorkspaceManager() {
     const currentList = Array.isArray(form[key]) ? (form[key] as string[]) : [];
     const value = currentList.join('\n');
     const rawValueText = rawValue.join('\n');
-    const isCustomized = value.trim() !== rawValueText.trim();
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
@@ -989,12 +965,6 @@ export default function ReferencesWorkspaceManager() {
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
           <h4 style={{ margin: 0, fontSize: 15, color: '#0f172a' }}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
-            {isCustomized ? <span style={customizedBadgeStyle}>✓ Individuell angepasst</span> : null}
-            <button type="button" onClick={() => resetField(key, rawValue)} style={resetButtonStyle(isCustomized)}>
-              Original nutzen
-            </button>
-          </div>
         </div>
         <div style={editorGridStyle}>
           <div style={textareaWrapperStyle}>
