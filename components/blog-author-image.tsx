@@ -10,8 +10,6 @@ type BlogAuthorImageProps = {
   className?: string;
 };
 
-const passthroughLoader = ({ src }: { src: string }) => src;
-
 export default function BlogAuthorImage({
   src,
   fallbackSrc,
@@ -32,8 +30,7 @@ export default function BlogAuthorImage({
       width={64}
       height={64}
       sizes="64px"
-      loader={passthroughLoader}
-      unoptimized
+      quality={60}
       onError={() => {
         if (errorForSrc !== baseSrc) {
           setErrorForSrc(baseSrc);

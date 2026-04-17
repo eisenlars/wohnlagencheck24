@@ -44,7 +44,8 @@ export function ReferenceSlideshow(props: ReferenceSlideshowProps) {
               alt={active.title}
               fill
               sizes="(max-width: 900px) 100vw, 360px"
-              unoptimized
+              quality={64}
+              priority={index === 0}
               style={{ objectFit: "cover" }}
             />
           ) : null}
