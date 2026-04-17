@@ -276,6 +276,7 @@ const summaryHeaderStyle: CSSProperties = { fontSize: 12, textTransform: 'upperc
 const summaryGridStyle: CSSProperties = { display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' };
 const summaryLabelStyle: CSSProperties = { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 };
 const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600, lineHeight: 1.45 };
+const summaryHintStyle: CSSProperties = { fontSize: 12, color: '#475569', lineHeight: 1.5 };
 const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 };
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
@@ -1028,6 +1029,16 @@ export default function ReferencesWorkspaceManager() {
   const selectedRegion = getPayloadText(selectedPayload, ['region']) || '—';
   const selectedLocation = getReferenceLocationLabel(selectedPayload) || '—';
   const selectedLocationScope = getPayloadText(selectedPayload, ['location_scope']) || '—';
+  const selectedImageUrl = getPayloadText(selectedPayload, ['image_url']);
+  const selectedGalleryCount = Array.isArray(selectedPayload.gallery) ? selectedPayload.gallery.length : 0;
+  const selectedGalleryAssetCount = Array.isArray(selectedPayload.gallery_assets) ? selectedPayload.gallery_assets.length : 0;
+  const selectedHasMainImage = selectedImageUrl.length > 0 || imageAssets.length > 0;
+  const selectedOfferTypeDebug = getPayloadText(selectedPayload, ['offer_type', 'vermarktungsart']) || '—';
+  const selectedTransactionDebug = getPayloadText(selectedPayload, ['transaction_result']) || '—';
+  const selectedSoldFlag = getPayloadText(selectedPayload, ['verkauft']) || '—';
+  const selectedRentedFlag = getPayloadText(selectedPayload, ['vermietet']) || '—';
+  const selectedReservedFlag = getPayloadText(selectedPayload, ['reserviert']) || '—';
+  const selectedPublishFlag = getPayloadText(selectedPayload, ['veroeffentlichen']) || '—';
   const rawDescription = selectedDescription;
   const rawChallengeText = getPayloadText(selectedPayload, ['challenge_note_source']);
   const selectedChallengeCategories = Array.isArray(selectedPayload.challenge_categories)
@@ -1512,6 +1523,14 @@ export default function ReferencesWorkspaceManager() {
               <div style={summaryHeaderStyle}>CRM-Snapshot</div>
               <div style={summaryGridStyle}>
                 <div>
+                  <div style={summaryLabelStyle}>Provider</div>
+                  <div style={summaryValueStyle}>{selectedRow.provider || '—'}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Extern-ID</div>
+                  <div style={summaryValueStyle}>{selectedRow.external_id || '—'}</div>
+                </div>
+                <div>
                   <div style={summaryLabelStyle}>Quelltitel</div>
                   <div style={summaryValueStyle}>{selectedSourceTitle}</div>
                 </div>
@@ -1535,6 +1554,75 @@ export default function ReferencesWorkspaceManager() {
                   <div style={summaryLabelStyle}>Aktualisiert</div>
                   <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}</div>
                 </div>
+              </div>
+              <div style={summaryHeaderStyle}>Sync / Klassifizierung</div>
+              <div style={summaryGridStyle}>
+                <div>
+                  <div style={summaryLabelStyle}>Transaktion</div>
+                  <div style={summaryValueStyle}>{selectedTransactionDebug}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Vermarktungsart</div>
+                  <div style={summaryValueStyle}>{selectedOfferTypeDebug}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>verkauft</div>
+                  <div style={summaryValueStyle}>{selectedSoldFlag}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>vermietet</div>
+                  <div style={summaryValueStyle}>{selectedRentedFlag}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>reserviert</div>
+                  <div style={summaryValueStyle}>{selectedReservedFlag}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>veröffentlichen</div>
+                  <div style={summaryValueStyle}>{selectedPublishFlag}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>source_updated_at</div>
+                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at)}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>last_seen_at</div>
+                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.last_seen_at)}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>workspace updated_at</div>
+                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.updated_at)}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>is_active</div>
+                  <div style={summaryValueStyle}>{selectedRow.is_active === true ? 'ja' : selectedRow.is_active === false ? 'nein' : '—'}</div>
+                </div>
+              </div>
+              <div style={summaryHeaderStyle}>Medien-Diagnose</div>
+              <div style={summaryGridStyle}>
+                <div>
+                  <div style={summaryLabelStyle}>Objekthauptbild</div>
+                  <div style={summaryValueStyle}>{selectedHasMainImage ? 'ja' : 'nein'}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>image_url</div>
+                  <div style={summaryValueStyle}>{selectedImageUrl || '—'}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>gallery</div>
+                  <div style={summaryValueStyle}>{selectedGalleryCount}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>gallery_assets</div>
+                  <div style={summaryValueStyle}>{selectedGalleryAssetCount}</div>
+                </div>
+                <div>
+                  <div style={summaryLabelStyle}>Bild-Assets gerendert</div>
+                  <div style={summaryValueStyle}>{imageAssets.length}</div>
+                </div>
+              </div>
+              <div style={summaryHintStyle}>
+                Wenn hier kein Objekthauptbild und keine Gallery-Assets auftauchen, ist im gespeicherten Referenz-Payload aktuell kein Bild angekommen. Dann sitzt das Problem upstream im CRM-Import oder im letzten Sync-Stand.
               </div>
             </div>
           </div>

@@ -658,11 +658,14 @@ export default function OffersManager(props: Props) {
     return {
       exposeeId: readTextValue(selectedRaw.exposee_id),
       marketingType: readTextValue(selectedRaw.vermarktungsart) ?? selectedOffer.offer_type ?? null,
+      objectType: readTextValue(selectedRaw.objektart) ?? selectedOffer.object_type ?? null,
       status: readTextValue(selectedRaw.status),
       status2: readTextValue(selectedRaw.status2),
       sold: selectedRaw.verkauft,
+      rented: selectedRaw.vermietet,
       reserved: selectedRaw.reserviert,
       publish: selectedRaw.veroeffentlichen,
+      sourceUpdatedAt: readTextValue(selectedRaw.geaendert_am),
       candidate: classifyOnOfficeCandidate(selectedRaw),
     };
   }, [selectedOffer, selectedRaw]);
@@ -1857,6 +1860,10 @@ export default function OffersManager(props: Props) {
                 <div style={mediaSectionHintStyle}>{onOfficeSnapshot.candidate.detail}</div>
                 <div style={offerSummaryGridStyle}>
                   <div>
+                    <div style={offerSummaryLabelStyle}>Datensatz-ID</div>
+                    <div style={offerSummaryValueStyle}>{selectedOffer.id || '—'}</div>
+                  </div>
+                  <div>
                     <div style={offerSummaryLabelStyle}>Quelle</div>
                     <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
                   </div>
@@ -1871,6 +1878,10 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryValueStyle}>{onOfficeSnapshot.marketingType || '—'}</div>
                   </div>
                   <div>
+                    <div style={offerSummaryLabelStyle}>Objektart</div>
+                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.objectType || '—'}</div>
+                  </div>
+                  <div>
                     <div style={offerSummaryLabelStyle}>status</div>
                     <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status || '—'}</div>
                   </div>
@@ -1883,6 +1894,10 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
                   </div>
                   <div>
+                    <div style={offerSummaryLabelStyle}>vermietet</div>
+                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.rented)}</div>
+                  </div>
+                  <div>
                     <div style={offerSummaryLabelStyle}>reserviert</div>
                     <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
                   </div>
@@ -1890,6 +1905,17 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryLabelStyle}>veröffentlichen</div>
                     <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
                   </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Angebot aktualisiert</div>
+                    <div style={offerSummaryValueStyle}>{formatDateLabel(selectedOffer.updated_at) || '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>CRM geändert am</div>
+                    <div style={offerSummaryValueStyle}>{formatDateLabel(onOfficeSnapshot.sourceUpdatedAt) || '—'}</div>
+                  </div>
+                </div>
+                <div style={{ ...mediaSectionHintStyle, marginTop: 12 }}>
+                  Angebote werden nur beim Angebots- oder Vollsync deaktiviert. Wenn ein Datensatz nach einem reinen Referenz-Sync hier weiter sichtbar ist, ist das meist ein alter Persistenzstand und kein aktueller Provider-Treffer.
                 </div>
               </div>
             ) : null}
