@@ -725,12 +725,18 @@ export default function TextEditorForm({
   const [publishing, setPublishing] = useState(false);
   const topicSectionAnchorId = 'text-editor-topic-section';
   const parts = config?.area_id ? config.area_id.split('-') : [];
+  const rootAreaId = String(config?.area_id ?? '').trim();
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
   const isLocalSite = tableName === 'partner_local_site_texts';
+  const visibleScopeAreaItems = useMemo<PartnerAreaConfig[]>(() => {
+    if (bulkScope !== 'kreis' || isOrtslage) return scopeAreaItems;
+    const districtItems = scopeAreaItems.filter((item) => String(item.area_id ?? '').trim() === rootAreaId);
+    return districtItems.length > 0 ? districtItems : [config];
+  }, [bulkScope, config, isOrtslage, rootAreaId, scopeAreaItems]);
   const selectedAreaConfig = useMemo<PartnerAreaConfig>(() => (
-    scopeAreaItems.find((item) => item.area_id === selectedScopeAreaId) ?? config
-  ), [config, scopeAreaItems, selectedScopeAreaId]);
+    visibleScopeAreaItems.find((item) => item.area_id === selectedScopeAreaId) ?? visibleScopeAreaItems[0] ?? config
+  ), [config, selectedScopeAreaId, visibleScopeAreaItems]);
   const selectedAreaIsOrtslage = useMemo(
     () => String(selectedAreaConfig?.area_id ?? '').split('-').length > 3,
     [selectedAreaConfig],
@@ -900,11 +906,11 @@ export default function TextEditorForm({
   }, [llmIntegrations, llmOptionsLoaded]);
 
   useEffect(() => {
-    if (!config?.area_id) return;
-    if (scopeAreaItems.length === 0) return;
-    if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
-    setSelectedScopeAreaId(config.area_id);
-  }, [config?.area_id, scopeAreaItems, selectedScopeAreaId, setSelectedScopeAreaId]);
+    if (!rootAreaId) return;
+    if (visibleScopeAreaItems.length === 0) return;
+    if (visibleScopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
+    setSelectedScopeAreaId(rootAreaId);
+  }, [rootAreaId, selectedScopeAreaId, setSelectedScopeAreaId, visibleScopeAreaItems]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1616,7 +1622,7 @@ export default function TextEditorForm({
   });
   const isBulkRewriting = Boolean(classBulkState);
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
-  const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && scopeAreaItems.length > 1;
+  const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && visibleScopeAreaItems.length > 1;
 
   return (
     <div style={{ width: '100%' }}>
@@ -1800,7 +1806,7 @@ export default function TextEditorForm({
           {showScopeAreaSidebar ? (
             <aside style={textAreaListCardStyle}>
               <div style={textAreaListWrapStyle}>
-                {scopeAreaItems.map((item) => {
+                {visibleScopeAreaItems.map((item) => {
                   const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
                   const active = item.area_id === selectedAreaConfig?.area_id;
                   return (
