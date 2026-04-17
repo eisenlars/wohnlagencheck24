@@ -853,20 +853,17 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                       />
                     </div>
                   ) : null}
-                  <div className="offer-detail-map-embed__badge">
-                    <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
-                    <span>
-                      {hasApproximateMap
-                        ? `${isEnglish ? "Approximate area in" : "Ungefähre Lage in"} ${zipCityLabel ?? texts.location_map}`
-                        : (displayAddress ?? zipCityLabel ?? texts.location_map)}
-                    </span>
-                  </div>
                   <button
                     type="button"
-                    className="offer-detail-map-embed__reset"
+                    className="offer-detail-map-embed__badge offer-detail-map-embed__badge--button"
                     onClick={() => setMapResetKey((current) => current + 1)}
                   >
-                    {isEnglish ? "Reset map" : "Karte zurücksetzen"}
+                    <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
+                    <span>
+                      {isEnglish
+                        ? `Location in ${zipCityLabel ?? texts.location_map}`
+                        : `Lage in ${zipCityLabel ?? texts.location_map}`}
+                    </span>
                   </button>
                 </div>
               ) : activeLocationMap ? (
