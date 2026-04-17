@@ -1864,6 +1864,10 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryValueStyle}>{selectedOffer.id || '—'}</div>
                   </div>
                   <div>
+                    <div style={offerSummaryLabelStyle}>onOffice-ID</div>
+                    <div style={offerSummaryValueStyle}>{selectedOffer.external_id || '—'}</div>
+                  </div>
+                  <div>
                     <div style={offerSummaryLabelStyle}>Quelle</div>
                     <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
                   </div>
@@ -1872,6 +1876,10 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryValueStyle}>
                       {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
                     </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Quelltitel</div>
+                    <div style={offerSummaryValueStyle}>{readTextValue(selectedRaw.source_title) || '—'}</div>
                   </div>
                   <div>
                     <div style={offerSummaryLabelStyle}>Vermarktungsart</div>
