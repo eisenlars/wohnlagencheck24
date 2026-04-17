@@ -1997,7 +1997,7 @@ export default function DashboardClient({
                               href={effectiveWelcomePreviewHref}
                               target="_blank"
                               rel="noreferrer"
-                              style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                              style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginLeft: 'auto' }}
                             >
                               Frontend-Preview öffnen
                             </a>
@@ -2011,19 +2011,11 @@ export default function DashboardClient({
                               type="button"
                               onClick={() => void handleRequestLive(effectiveWelcomePreviewConfig)}
                               disabled={previewRequestBusy}
-                              style={{ ...previewReadySuccessButtonStyle, marginLeft: 'auto' }}
+                              style={previewReadySuccessButtonStyle}
                             >
                               {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                             </button>
                           )}
-                          {hasInternationalEnabled ? (
-                            <button type="button" onClick={() => {
-                              setSelectedConfig(effectiveWelcomePreviewConfig);
-                              handleToolSelect('international');
-                            }} style={previewReadyGhostButtonStyle}>
-                              Internationalisierung
-                            </button>
-                          ) : null}
                         </div>
                         {previewRequestMessage ? (
                           <div style={{ marginTop: '12px' }}>
@@ -2166,7 +2158,7 @@ export default function DashboardClient({
                             href={selectedPreviewHref}
                             target="_blank"
                             rel="noreferrer"
-                            style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                            style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginLeft: 'auto' }}
                           >
                             Frontend-Preview öffnen
                           </a>
@@ -2180,16 +2172,11 @@ export default function DashboardClient({
                             type="button"
                             onClick={() => void handleRequestLive(effectiveAreaConfig)}
                             disabled={previewRequestBusy}
-                            style={{ ...previewReadySuccessButtonStyle, marginLeft: 'auto' }}
+                            style={previewReadySuccessButtonStyle}
                           >
                             {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                           </button>
                         )}
-                        {hasInternationalEnabled ? (
-                          <button type="button" onClick={() => handleToolSelect('international')} style={previewReadyGhostButtonStyle}>
-                            Internationalisierung
-                          </button>
-                        ) : null}
                       </div>
                       {previewRequestMessage ? (
                         <div style={{ marginTop: '12px' }}>
