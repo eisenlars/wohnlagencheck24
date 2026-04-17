@@ -432,7 +432,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const interactiveMapUrl =
     mapDisplayLat != null && mapDisplayLng != null
       ? buildOpenStreetMapEmbedUrl(mapDisplayLat, mapDisplayLng, {
-          delta: hasApproximateMap ? 0.045 : 0.0065,
+          delta: hasApproximateMap ? 0.022 : 0.0065,
           marker: !hasApproximateMap,
         })
       : null;
@@ -874,6 +874,17 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                   />
+                  {hasApproximateMap ? (
+                    <div className="offer-detail-map-embed__marker" aria-hidden="true">
+                      <Image
+                        src="/logo/wohnlagencheck24.svg"
+                        alt=""
+                        width={56}
+                        height={56}
+                        priority={false}
+                      />
+                    </div>
+                  ) : null}
                   <div className="offer-detail-map-embed__badge">
                     <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
                     <span>
