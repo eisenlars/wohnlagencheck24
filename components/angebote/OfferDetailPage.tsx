@@ -426,13 +426,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const zipCityLabel = buildZipCityLabel(raw);
   const isAddressHidden = asBoolean(rawDetails["address_hidden"]) === true;
   const hasCoordinateMap = latitude != null && longitude != null;
-  const mapDisplayLat = hasCoordinateMap && isAddressHidden ? Math.round(latitude * 10) / 10 : latitude;
-  const mapDisplayLng = hasCoordinateMap && isAddressHidden ? Math.round(longitude * 10) / 10 : longitude;
+  const mapDisplayLat = hasCoordinateMap && isAddressHidden ? Math.round(latitude * 50) / 50 : latitude;
+  const mapDisplayLng = hasCoordinateMap && isAddressHidden ? Math.round(longitude * 50) / 50 : longitude;
   const hasApproximateMap = hasCoordinateMap && isAddressHidden;
   const interactiveMapUrl =
     mapDisplayLat != null && mapDisplayLng != null
       ? buildOpenStreetMapEmbedUrl(mapDisplayLat, mapDisplayLng, {
-          delta: hasApproximateMap ? 0.022 : 0.0065,
+          delta: hasApproximateMap ? 0.012 : 0.0065,
           marker: !hasApproximateMap,
         })
       : null;
