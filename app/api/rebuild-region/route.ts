@@ -32,6 +32,9 @@ type AnyRecord = Record<string, unknown>;
 type DataRow = AnyRecord & { jahr?: number; region?: string; ortslage?: string };
 type FactorGroup = {
   f01?: number;
+  f01_min?: number;
+  f01_avg?: number;
+  f01_max?: number;
   f02?: number;
   f03?: number;
   f04?: number;
@@ -80,15 +83,45 @@ function scaleRowByLabel(rows: DataRow[] | undefined, label: string, keys: strin
   }
 }
 
+function currentAvgFactor(group: FactorGroup | null | undefined) {
+  return typeof group?.f01_avg === "number" && Number.isFinite(group.f01_avg) && group.f01_avg > 0
+    ? group.f01_avg
+    : (typeof group?.f01 === "number" && Number.isFinite(group.f01) && group.f01 > 0 ? group.f01 : 1);
+}
+
+function currentMinFactor(group: FactorGroup | null | undefined) {
+  return typeof group?.f01_min === "number" && Number.isFinite(group.f01_min) && group.f01_min > 0
+    ? group.f01_min
+    : currentAvgFactor(group);
+}
+
+function currentMaxFactor(group: FactorGroup | null | undefined) {
+  return typeof group?.f01_max === "number" && Number.isFinite(group.f01_max) && group.f01_max > 0
+    ? group.f01_max
+    : currentAvgFactor(group);
+}
+
+function scaleCurrentRangeRow(
+  row: AnyRecord | null | undefined,
+  keys: { min: string; avg: string; max: string },
+  group: FactorGroup | null | undefined,
+) {
+  if (!row || typeof row !== "object") return;
+  scaleRow(row, [keys.min], currentMinFactor(group));
+  scaleRow(row, [keys.avg], currentAvgFactor(group));
+  scaleRow(row, [keys.max], currentMaxFactor(group));
+}
+
 function factorByYear(year: number | null, year01: number | null, group: FactorGroup | null | undefined) {
-  if (typeof year01 !== "number" || typeof year !== "number") return group?.f01 ?? 1;
+  if (typeof year01 !== "number" || typeof year !== "number") return currentAvgFactor(group);
   const offset = year01 - year;
-  if (offset < 0) return group?.f01 ?? 1;
+  if (offset < 0) return currentAvgFactor(group);
   const index = offset + 1;
-  if (index < 1 || index > 6) return group?.f01 ?? 1;
+  if (index < 1 || index > 6) return currentAvgFactor(group);
+  if (index === 1) return currentAvgFactor(group);
   const key = `f0${index}`;
   const value = group?.[key as keyof FactorGroup];
-  return typeof value === "number" && Number.isFinite(value) ? value : group?.f01 ?? 1;
+  return typeof value === "number" && Number.isFinite(value) ? value : currentAvgFactor(group);
 }
 
 function scaleAllYearsByYear(rows: DataRow[] | undefined, key: string, year01: number | null, group: FactorGroup | null | undefined) {
@@ -153,11 +186,11 @@ function setRegionValue(rows: DataRow[] | undefined, regionName: string, key: st
 
 function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: NormalizedFactors, year01: number | null) {
   if (!data || typeof data !== "object") return;
-  const kh = factors.kauf_haus?.f01 ?? 1;
-  const kw = factors.kauf_wohnung?.f01 ?? 1;
-  const kg = factors.kauf_grundstueck?.f01 ?? 1;
-  const mh = factors.miete_haus?.f01 ?? 1;
-  const mw = factors.miete_wohnung?.f01 ?? 1;
+  const kh = currentAvgFactor(factors.kauf_haus);
+  const kw = currentAvgFactor(factors.kauf_wohnung);
+  const kg = currentAvgFactor(factors.kauf_grundstueck);
+  const mh = currentAvgFactor(factors.miete_haus);
+  const mw = currentAvgFactor(factors.miete_wohnung);
   const tImmo = factors.immobilienmarkt_trend?.immobilienmarkt ?? 0;
   const tMiete = factors.immobilienmarkt_trend?.mietmarkt ?? 0;
   const immoFactor = meanOf([kh, kw]) ?? 1;
@@ -184,7 +217,11 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
 
   scaleRow(getFirstRow(data, "immobilien_kaufpreis"), ["kaufpreis_immobilien"], immoFactor);
   scaleRow(getFirstRow(data, "haus_kaufpreis"), ["kaufpreis_haus"], kh);
-  scaleRow(getFirstRow(data, "haus_kaufpreisspanne"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], kh);
+  scaleCurrentRangeRow(getFirstRow(data, "haus_kaufpreisspanne"), {
+    min: "preis_haus_min",
+    avg: "preis_haus_avg",
+    max: "preis_haus_max",
+  }, factors.kauf_haus);
   scaleRowByLabel(getRows(data, "haus_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kh);
   for (const row of getRows(data, "haus_kaufpreise_lage")) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kh);
@@ -196,7 +233,11 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(getRows(data, "haus_kaufpreisentwicklung") as DataRow[], "preis_ol", year01, factors.kauf_haus);
 
   scaleRow(getFirstRow(data, "wohnung_kaufpreis"), ["kaufpreis_wohnung"], kw);
-  scaleRow(getFirstRow(data, "wohnung_kaufpreisspanne"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], kw);
+  scaleCurrentRangeRow(getFirstRow(data, "wohnung_kaufpreisspanne"), {
+    min: "preis_wohnung_min",
+    avg: "preis_wohnung_avg",
+    max: "preis_wohnung_max",
+  }, factors.kauf_wohnung);
   scaleRowByLabel(getRows(data, "wohnung_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kw);
   for (const row of getRows(data, "wohnung_kaufpreise_lage")) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kw);
@@ -211,11 +252,19 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(getRows(data, "wohnung_kaufpreisentwicklung") as DataRow[], "preis_ol", year01, factors.kauf_wohnung);
 
   scaleRow(getFirstRow(data, "grundstueck_kaufpreis"), ["kaufpreis_grundstueck"], kg);
-  scaleRow(getFirstRow(data, "grundstueck_kaufpreisspanne"), ["preis_grundstueck_min", "preis_grundstueck_avg", "preis_grundstueck_max"], kg);
+  scaleCurrentRangeRow(getFirstRow(data, "grundstueck_kaufpreisspanne"), {
+    min: "preis_grundstueck_min",
+    avg: "preis_grundstueck_avg",
+    max: "preis_grundstueck_max",
+  }, factors.kauf_grundstueck);
   scaleRowByLabel(getRows(data, "grundstueck_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kg);
   scaleRegionRow(getRows(data, "grundstueckspreise_ueberregionaler_vergleich") as DataRow[], kreisName, "grundstueckspreis", kg);
 
-  scaleRow(getFirstRow(data, "mietpreise_wohnung_gesamt"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], mw);
+  scaleCurrentRangeRow(getFirstRow(data, "mietpreise_wohnung_gesamt"), {
+    min: "preis_wohnung_min",
+    avg: "preis_wohnung_avg",
+    max: "preis_wohnung_max",
+  }, factors.miete_wohnung);
   for (const row of getRows(data, "mietpreise_wohnung_nach_zimmern")) {
     scaleRow(row, ["kaltmiete"], mw);
   }
@@ -229,7 +278,11 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_wohnung") as DataRow[], "preis_ol", year01, factors.miete_wohnung);
   scaleRegionRow(getRows(data, "mietpreise_ueberregionaler_vergleich") as DataRow[], kreisName, "kaltmiete", rentFactor);
 
-  scaleRow(getFirstRow(data, "mietpreise_haus_gesamt"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], mh);
+  scaleCurrentRangeRow(getFirstRow(data, "mietpreise_haus_gesamt"), {
+    min: "preis_haus_min",
+    avg: "preis_haus_avg",
+    max: "preis_haus_max",
+  }, factors.miete_haus);
   scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_haus") as DataRow[], "preis_k", year01, factors.miete_haus);
   scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_haus") as DataRow[], "preis_ol", year01, factors.miete_haus);
 
@@ -264,11 +317,11 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
 
 function applyFactorsToTextInputs(inputs: AnyRecord, factors: NormalizedFactors, year01: number | null) {
   if (!inputs) return;
-  const kh = factors.kauf_haus?.f01 ?? 1;
-  const kw = factors.kauf_wohnung?.f01 ?? 1;
-  const kg = factors.kauf_grundstueck?.f01 ?? 1;
-  const mh = factors.miete_haus?.f01 ?? 1;
-  const mw = factors.miete_wohnung?.f01 ?? 1;
+  const kh = currentAvgFactor(factors.kauf_haus);
+  const kw = currentAvgFactor(factors.kauf_wohnung);
+  const kg = currentAvgFactor(factors.kauf_grundstueck);
+  const mh = currentAvgFactor(factors.miete_haus);
+  const mw = currentAvgFactor(factors.miete_wohnung);
   const immoFactor = meanOf([kh, kw]) ?? 1;
   const rentFactor = meanOf([mh, mw]) ?? 1;
   const rend = factors.rendite ?? {};
@@ -285,10 +338,10 @@ function applyFactorsToTextInputs(inputs: AnyRecord, factors: NormalizedFactors,
     return null;
   };
   const factorByIndex = (group: FactorGroup | null | undefined, index: number | null) => {
-    if (!index) return group?.f01 ?? 1;
+    if (!index || index === 1) return currentAvgFactor(group);
     const key = `f0${index}`;
     const value = group?.[key as keyof FactorGroup];
-    return typeof value === "number" && Number.isFinite(value) ? value : group?.f01 ?? 1;
+    return typeof value === "number" && Number.isFinite(value) ? value : currentAvgFactor(group);
   };
   const rentFactorByIndex = (index: number | null) =>
     meanOf([factorByIndex(factors.miete_haus, index), factorByIndex(factors.miete_wohnung, index)]) ?? 1;
@@ -629,11 +682,11 @@ function recomputeAggregatedPrices(
 }
 
 type NormalizedFactors = {
-  kauf_haus: { f01: number; f02: number; f03: number; f04: number; f05: number; f06: number };
-  kauf_wohnung: { f01: number; f02: number; f03: number; f04: number; f05: number; f06: number };
-  kauf_grundstueck: { f01: number; f02: number; f03: number; f04: number; f05: number; f06: number };
-  miete_haus: { f01: number; f02: number; f03: number; f04: number; f05: number; f06: number };
-  miete_wohnung: { f01: number; f02: number; f03: number; f04: number; f05: number; f06: number };
+  kauf_haus: { f01_min: number; f01_avg: number; f01_max: number; f02: number; f03: number; f04: number; f05: number; f06: number };
+  kauf_wohnung: { f01_min: number; f01_avg: number; f01_max: number; f02: number; f03: number; f04: number; f05: number; f06: number };
+  kauf_grundstueck: { f01_min: number; f01_avg: number; f01_max: number; f02: number; f03: number; f04: number; f05: number; f06: number };
+  miete_haus: { f01_min: number; f01_avg: number; f01_max: number; f02: number; f03: number; f04: number; f05: number; f06: number };
+  miete_wohnung: { f01_min: number; f01_avg: number; f01_max: number; f02: number; f03: number; f04: number; f05: number; f06: number };
   immobilienmarkt_trend: { immobilienmarkt: number; mietmarkt: number };
   rendite: {
     mietrendite_etw: number;
@@ -646,11 +699,11 @@ type NormalizedFactors = {
 };
 
 const DEFAULT_FACTORS: NormalizedFactors = {
-  kauf_haus: { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
-  kauf_wohnung: { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
-  kauf_grundstueck: { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
-  miete_haus: { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
-  miete_wohnung: { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
+  kauf_haus: { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
+  kauf_wohnung: { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
+  kauf_grundstueck: { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
+  miete_haus: { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
+  miete_wohnung: { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 },
   immobilienmarkt_trend: { immobilienmarkt: 0, mietmarkt: 0 },
   rendite: {
     mietrendite_etw: 1,
@@ -683,47 +736,26 @@ function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors 
     ? (source.immobilienmarkt_trend as AnyRecord)
     : {};
   const rendite = source.rendite && typeof source.rendite === "object" ? (source.rendite as AnyRecord) : {};
+  const normalizeGroup = (group: AnyRecord) => {
+    const legacyF01 = safeFactor(group.f01);
+    const currentAvg = safeFactor(group.f01_avg ?? legacyF01);
+    return {
+      f01_min: safeFactor(group.f01_min ?? currentAvg),
+      f01_avg: currentAvg,
+      f01_max: safeFactor(group.f01_max ?? currentAvg),
+      f02: safeFactor(group.f02),
+      f03: safeFactor(group.f03),
+      f04: safeFactor(group.f04),
+      f05: safeFactor(group.f05),
+      f06: safeFactor(group.f06),
+    };
+  };
   return {
-    kauf_haus: {
-      f01: safeFactor(kaufHaus.f01),
-      f02: safeFactor(kaufHaus.f02),
-      f03: safeFactor(kaufHaus.f03),
-      f04: safeFactor(kaufHaus.f04),
-      f05: safeFactor(kaufHaus.f05),
-      f06: safeFactor(kaufHaus.f06),
-    },
-    kauf_wohnung: {
-      f01: safeFactor(kaufWohnung.f01),
-      f02: safeFactor(kaufWohnung.f02),
-      f03: safeFactor(kaufWohnung.f03),
-      f04: safeFactor(kaufWohnung.f04),
-      f05: safeFactor(kaufWohnung.f05),
-      f06: safeFactor(kaufWohnung.f06),
-    },
-    kauf_grundstueck: {
-      f01: safeFactor(kaufGrundstueck.f01),
-      f02: safeFactor(kaufGrundstueck.f02),
-      f03: safeFactor(kaufGrundstueck.f03),
-      f04: safeFactor(kaufGrundstueck.f04),
-      f05: safeFactor(kaufGrundstueck.f05),
-      f06: safeFactor(kaufGrundstueck.f06),
-    },
-    miete_haus: {
-      f01: safeFactor(mieteHaus.f01),
-      f02: safeFactor(mieteHaus.f02),
-      f03: safeFactor(mieteHaus.f03),
-      f04: safeFactor(mieteHaus.f04),
-      f05: safeFactor(mieteHaus.f05),
-      f06: safeFactor(mieteHaus.f06),
-    },
-    miete_wohnung: {
-      f01: safeFactor(mieteWohnung.f01),
-      f02: safeFactor(mieteWohnung.f02),
-      f03: safeFactor(mieteWohnung.f03),
-      f04: safeFactor(mieteWohnung.f04),
-      f05: safeFactor(mieteWohnung.f05),
-      f06: safeFactor(mieteWohnung.f06),
-    },
+    kauf_haus: normalizeGroup(kaufHaus),
+    kauf_wohnung: normalizeGroup(kaufWohnung),
+    kauf_grundstueck: normalizeGroup(kaufGrundstueck),
+    miete_haus: normalizeGroup(mieteHaus),
+    miete_wohnung: normalizeGroup(mieteWohnung),
     immobilienmarkt_trend: {
       immobilienmarkt: safeTrendDelta(immobilienmarktTrend.immobilienmarkt),
       mietmarkt: safeTrendDelta(immobilienmarktTrend.mietmarkt),
@@ -739,10 +771,27 @@ function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors 
   };
 }
 
+function validateNormalizedFactors(factors: NormalizedFactors): string | null {
+  const checks: Array<[string, { f01_min: number; f01_avg: number; f01_max: number }]> = [
+    ["Kauf Haus", factors.kauf_haus],
+    ["Kauf Wohnung", factors.kauf_wohnung],
+    ["Kauf Grundstück", factors.kauf_grundstueck],
+    ["Miete Haus", factors.miete_haus],
+    ["Miete Wohnung", factors.miete_wohnung],
+  ];
+  for (const [label, group] of checks) {
+    if (group.f01_min > group.f01_avg) return `${label}: Min darf nicht größer als Avg sein.`;
+    if (group.f01_avg > group.f01_max) return `${label}: Avg darf nicht größer als Max sein.`;
+  }
+  return null;
+}
+
 function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFactors): NormalizedFactors {
   return {
     kauf_haus: {
-      f01: target.kauf_haus.f01 / safeFactor(previous.kauf_haus.f01),
+      f01_min: target.kauf_haus.f01_min / safeFactor(previous.kauf_haus.f01_min),
+      f01_avg: target.kauf_haus.f01_avg / safeFactor(previous.kauf_haus.f01_avg),
+      f01_max: target.kauf_haus.f01_max / safeFactor(previous.kauf_haus.f01_max),
       f02: target.kauf_haus.f02 / safeFactor(previous.kauf_haus.f02),
       f03: target.kauf_haus.f03 / safeFactor(previous.kauf_haus.f03),
       f04: target.kauf_haus.f04 / safeFactor(previous.kauf_haus.f04),
@@ -750,7 +799,9 @@ function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFact
       f06: target.kauf_haus.f06 / safeFactor(previous.kauf_haus.f06),
     },
     kauf_wohnung: {
-      f01: target.kauf_wohnung.f01 / safeFactor(previous.kauf_wohnung.f01),
+      f01_min: target.kauf_wohnung.f01_min / safeFactor(previous.kauf_wohnung.f01_min),
+      f01_avg: target.kauf_wohnung.f01_avg / safeFactor(previous.kauf_wohnung.f01_avg),
+      f01_max: target.kauf_wohnung.f01_max / safeFactor(previous.kauf_wohnung.f01_max),
       f02: target.kauf_wohnung.f02 / safeFactor(previous.kauf_wohnung.f02),
       f03: target.kauf_wohnung.f03 / safeFactor(previous.kauf_wohnung.f03),
       f04: target.kauf_wohnung.f04 / safeFactor(previous.kauf_wohnung.f04),
@@ -758,7 +809,9 @@ function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFact
       f06: target.kauf_wohnung.f06 / safeFactor(previous.kauf_wohnung.f06),
     },
     kauf_grundstueck: {
-      f01: target.kauf_grundstueck.f01 / safeFactor(previous.kauf_grundstueck.f01),
+      f01_min: target.kauf_grundstueck.f01_min / safeFactor(previous.kauf_grundstueck.f01_min),
+      f01_avg: target.kauf_grundstueck.f01_avg / safeFactor(previous.kauf_grundstueck.f01_avg),
+      f01_max: target.kauf_grundstueck.f01_max / safeFactor(previous.kauf_grundstueck.f01_max),
       f02: target.kauf_grundstueck.f02 / safeFactor(previous.kauf_grundstueck.f02),
       f03: target.kauf_grundstueck.f03 / safeFactor(previous.kauf_grundstueck.f03),
       f04: target.kauf_grundstueck.f04 / safeFactor(previous.kauf_grundstueck.f04),
@@ -766,7 +819,9 @@ function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFact
       f06: target.kauf_grundstueck.f06 / safeFactor(previous.kauf_grundstueck.f06),
     },
     miete_haus: {
-      f01: target.miete_haus.f01 / safeFactor(previous.miete_haus.f01),
+      f01_min: target.miete_haus.f01_min / safeFactor(previous.miete_haus.f01_min),
+      f01_avg: target.miete_haus.f01_avg / safeFactor(previous.miete_haus.f01_avg),
+      f01_max: target.miete_haus.f01_max / safeFactor(previous.miete_haus.f01_max),
       f02: target.miete_haus.f02 / safeFactor(previous.miete_haus.f02),
       f03: target.miete_haus.f03 / safeFactor(previous.miete_haus.f03),
       f04: target.miete_haus.f04 / safeFactor(previous.miete_haus.f04),
@@ -774,7 +829,9 @@ function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFact
       f06: target.miete_haus.f06 / safeFactor(previous.miete_haus.f06),
     },
     miete_wohnung: {
-      f01: target.miete_wohnung.f01 / safeFactor(previous.miete_wohnung.f01),
+      f01_min: target.miete_wohnung.f01_min / safeFactor(previous.miete_wohnung.f01_min),
+      f01_avg: target.miete_wohnung.f01_avg / safeFactor(previous.miete_wohnung.f01_avg),
+      f01_max: target.miete_wohnung.f01_max / safeFactor(previous.miete_wohnung.f01_max),
       f02: target.miete_wohnung.f02 / safeFactor(previous.miete_wohnung.f02),
       f03: target.miete_wohnung.f03 / safeFactor(previous.miete_wohnung.f03),
       f04: target.miete_wohnung.f04 / safeFactor(previous.miete_wohnung.f04),
@@ -949,6 +1006,10 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       targetFactors = normalizeFactors(settings ?? DEFAULT_FACTORS);
+      const factorValidationError = validateNormalizedFactors(targetFactors);
+      if (factorValidationError) {
+        return NextResponse.json({ error: factorValidationError }, { status: 400 });
+      }
       const previousFactorsRaw =
         existingRuntimeState?.factors_snapshot
         ?? existingRuntimeState?.helpers_json?.applied_factors
@@ -983,20 +1044,33 @@ export async function POST(req: Request) {
       }
 
       const scopeKey = scope === "ortslage" ? "ortslage" : "kreis";
-      if (!meta.base_values || !meta.base_values[scopeKey]) {
-        meta.base_values = {
-          ...(meta.base_values ?? {}),
-          [scopeKey]: {
-            haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
-            wohnung_kaufpreis: toNumber(getFirstRow(data, "wohnung_kaufpreis")?.kaufpreis_wohnung),
-            grundstueck_kaufpreis: toNumber(getFirstRow(data, "grundstueck_kaufpreis")?.kaufpreis_grundstueck),
-            miete_haus_avg: toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg),
-            miete_wohnung_avg: toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg),
-            immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
-            mietpreise_gesamt: toNumber(getFirstRow(data, "mietpreise_gesamt")?.preis_kaltmiete),
-          },
-        };
-      }
+      const existingBaseValues = toRecord(meta.base_values);
+      const scopeBaseValues = toRecord(existingBaseValues[scopeKey]);
+      meta.base_values = {
+        ...existingBaseValues,
+        [scopeKey]: {
+          haus_kaufpreis: toNumber(scopeBaseValues.haus_kaufpreis) ?? toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
+          haus_kaufpreis_avg: toNumber(scopeBaseValues.haus_kaufpreis_avg) ?? toNumber(scopeBaseValues.haus_kaufpreis) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_avg),
+          haus_kaufpreis_min: toNumber(scopeBaseValues.haus_kaufpreis_min) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_min),
+          haus_kaufpreis_max: toNumber(scopeBaseValues.haus_kaufpreis_max) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_max),
+          wohnung_kaufpreis: toNumber(scopeBaseValues.wohnung_kaufpreis) ?? toNumber(getFirstRow(data, "wohnung_kaufpreis")?.kaufpreis_wohnung),
+          wohnung_kaufpreis_avg: toNumber(scopeBaseValues.wohnung_kaufpreis_avg) ?? toNumber(scopeBaseValues.wohnung_kaufpreis) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_avg),
+          wohnung_kaufpreis_min: toNumber(scopeBaseValues.wohnung_kaufpreis_min) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_min),
+          wohnung_kaufpreis_max: toNumber(scopeBaseValues.wohnung_kaufpreis_max) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_max),
+          grundstueck_kaufpreis: toNumber(scopeBaseValues.grundstueck_kaufpreis) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreis")?.kaufpreis_grundstueck),
+          grundstueck_kaufpreis_avg: toNumber(scopeBaseValues.grundstueck_kaufpreis_avg) ?? toNumber(scopeBaseValues.grundstueck_kaufpreis) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_avg),
+          grundstueck_kaufpreis_min: toNumber(scopeBaseValues.grundstueck_kaufpreis_min) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_min),
+          grundstueck_kaufpreis_max: toNumber(scopeBaseValues.grundstueck_kaufpreis_max) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_max),
+          miete_haus_avg: toNumber(scopeBaseValues.miete_haus_avg) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg),
+          miete_haus_min: toNumber(scopeBaseValues.miete_haus_min) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_min),
+          miete_haus_max: toNumber(scopeBaseValues.miete_haus_max) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_max),
+          miete_wohnung_avg: toNumber(scopeBaseValues.miete_wohnung_avg) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg),
+          miete_wohnung_min: toNumber(scopeBaseValues.miete_wohnung_min) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_min),
+          miete_wohnung_max: toNumber(scopeBaseValues.miete_wohnung_max) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_max),
+          immobilien_kaufpreis: toNumber(scopeBaseValues.immobilien_kaufpreis) ?? toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
+          mietpreise_gesamt: toNumber(scopeBaseValues.mietpreise_gesamt) ?? toNumber(getFirstRow(data, "mietpreise_gesamt")?.preis_kaltmiete),
+        },
+      };
 
       applyFactorsToData(
         effectiveData,

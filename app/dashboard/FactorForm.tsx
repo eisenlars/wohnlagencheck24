@@ -11,12 +11,25 @@ export type FactorFormHandle = {
 };
 
 type FactorValues = {
-  f01: number;
+  f01_min: number;
+  f01_avg: number;
+  f01_max: number;
   f02: number;
   f03: number;
   f04: number;
   f05: number;
   f06: number;
+};
+
+type PreviewFactorValues = {
+  f01_min: number | null;
+  f01_avg: number | null;
+  f01_max: number | null;
+  f02: number | null;
+  f03: number | null;
+  f04: number | null;
+  f05: number | null;
+  f06: number | null;
 };
 
 type TrendValues = {
@@ -57,11 +70,11 @@ type FactorSnapshot = {
 type PreviewBase = {
   immobilienmarkt_index?: number | null;
   mietmarkt_index?: number | null;
-  haus_kaufpreis?: FactorValues;
-  wohnung_kaufpreis?: FactorValues;
-  grundstueck_kaufpreis?: FactorValues;
-  miete_haus_avg?: FactorValues;
-  miete_wohnung_avg?: FactorValues;
+  haus_kaufpreis?: PreviewFactorValues;
+  wohnung_kaufpreis?: PreviewFactorValues;
+  grundstueck_kaufpreis?: PreviewFactorValues;
+  miete_haus?: PreviewFactorValues;
+  miete_wohnung?: PreviewFactorValues;
 };
 
 const defaultSf: StandortFaktoren = {
@@ -74,7 +87,7 @@ const defaultSf: StandortFaktoren = {
   naherholung: 1,
 };
 const defaultTrend: TrendValues = { immobilienmarkt: 0, mietmarkt: 0 };
-const defaultF: FactorValues = { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 };
+const defaultF: FactorValues = { f01_min: 1, f01_avg: 1, f01_max: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 };
 const defaultRendite: RenditeValues = {
   mietrendite_etw: 1,
   kaufpreisfaktor_etw: 1,
@@ -83,6 +96,42 @@ const defaultRendite: RenditeValues = {
   mietrendite_mfh: 1,
   kaufpreisfaktor_mfh: 1,
 };
+
+function toFactorValue(value: unknown, fallback = 1): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function normalizeFactorValues(raw: unknown): FactorValues {
+  const source = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const legacyF01 = toFactorValue(source.f01, 1);
+  const currentAvg = toFactorValue(source.f01_avg, legacyF01);
+  return {
+    f01_min: toFactorValue(source.f01_min, currentAvg),
+    f01_avg: currentAvg,
+    f01_max: toFactorValue(source.f01_max, currentAvg),
+    f02: toFactorValue(source.f02, 1),
+    f03: toFactorValue(source.f03, 1),
+    f04: toFactorValue(source.f04, 1),
+    f05: toFactorValue(source.f05, 1),
+    f06: toFactorValue(source.f06, 1),
+  };
+}
+
+function getFactorRangeError(label: string, values: FactorValues): string | null {
+  if (values.f01_min > values.f01_avg) return `${label}: Min darf nicht größer als Avg sein.`;
+  if (values.f01_avg > values.f01_max) return `${label}: Avg darf nicht größer als Max sein.`;
+  return null;
+}
+
+function validateFactorSnapshot(snapshot: FactorSnapshot): string | null {
+  return (
+    getFactorRangeError('Kauf Haus', snapshot.kauf_haus)
+    ?? getFactorRangeError('Kauf Wohnung', snapshot.kauf_wohnung)
+    ?? getFactorRangeError('Kauf Grundstück', snapshot.kauf_grundstueck)
+    ?? getFactorRangeError('Miete Haus', snapshot.miete_haus)
+    ?? getFactorRangeError('Miete Wohnung', snapshot.miete_wohnung)
+  );
+}
 
 const makeFactorSnapshot = (
   nextSf: StandortFaktoren = defaultSf,
@@ -215,7 +264,7 @@ type FactorGridProps = {
   title: string;
   data: FactorValues;
   setter: (next: FactorValues) => void;
-  previewBase?: FactorValues;
+  previewBase?: PreviewFactorValues;
   unitLabel?: string;
   onActivate?: (value: number) => void;
   showActivate: boolean;
@@ -236,10 +285,51 @@ function FactorGrid({
   yearLabelByFactor,
   fmt,
 }: FactorGridProps) {
-  const factorKeys: Array<keyof FactorValues> = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
+  const factorKeys: Array<keyof FactorValues> = ['f02', 'f03', 'f04', 'f05', 'f06'];
+  const rangeError = getFactorRangeError(title, data);
   return (
     <div style={{ padding: '15px 0' }}>
       <h5 style={gridTitleStyle}>{title}</h5>
+      <InputRow
+        label={`${yearLabelByFactor.f01} · Min`}
+        value={data.f01_min}
+        onChange={(v) => {
+          setter({ ...data, f01_min: v });
+        }}
+        previewBase={previewBase?.f01_min}
+        unitLabel={unitLabel}
+        showActivate={showActivate}
+        onActivate={onActivate}
+        isDirty={Number(data?.f01_min) !== Number(persistedData?.f01_min)}
+        fmt={fmt}
+      />
+      <InputRow
+        label={`${yearLabelByFactor.f01} · Avg`}
+        value={data.f01_avg}
+        onChange={(v) => {
+          setter({ ...data, f01_avg: v });
+        }}
+        previewBase={previewBase?.f01_avg}
+        unitLabel={unitLabel}
+        showActivate={showActivate}
+        onActivate={onActivate}
+        isDirty={Number(data?.f01_avg) !== Number(persistedData?.f01_avg)}
+        fmt={fmt}
+      />
+      <InputRow
+        label={`${yearLabelByFactor.f01} · Max`}
+        value={data.f01_max}
+        onChange={(v) => {
+          setter({ ...data, f01_max: v });
+        }}
+        previewBase={previewBase?.f01_max}
+        unitLabel={unitLabel}
+        showActivate={showActivate}
+        onActivate={onActivate}
+        isDirty={Number(data?.f01_max) !== Number(persistedData?.f01_max)}
+        fmt={fmt}
+      />
+      {rangeError ? <div style={factorRangeErrorStyle}>{rangeError}</div> : null}
       {factorKeys.map((f) => (
         <InputRow
           key={f}
@@ -478,6 +568,10 @@ const FactorForm = forwardRef<FactorFormHandle, {
     () => makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite),
     [sf, trend, kh, kw, kg, mh, mw, rendite],
   );
+  const factorValidationError = useMemo(
+    () => validateFactorSnapshot(currentFactors),
+    [currentFactors],
+  );
   const hasFactorChanges = useMemo(
     () => JSON.stringify(currentFactors) !== JSON.stringify(persistedFactors),
     [currentFactors, persistedFactors],
@@ -486,7 +580,7 @@ const FactorForm = forwardRef<FactorFormHandle, {
     () => JSON.stringify(currentFactors) !== JSON.stringify(lastRebuiltFactors),
     [currentFactors, lastRebuiltFactors],
   );
-  const canRebuild = hasFactorChanges || hasPendingRebuild;
+  const canRebuild = !factorValidationError && (hasFactorChanges || hasPendingRebuild);
 
   useEffect(() => {
     if (!onLoadingChange) return;
@@ -567,11 +661,11 @@ const FactorForm = forwardRef<FactorFormHandle, {
             immobilienmarkt: Number(rawTrend?.immobilienmarkt) === 1 ? 0 : Number(rawTrend?.immobilienmarkt ?? 0),
             mietmarkt: Number(rawTrend?.mietmarkt) === 1 ? 0 : Number(rawTrend?.mietmarkt ?? 0),
           };
-          const nextKh = data.kauf_haus || defaultF;
-          const nextKw = data.kauf_wohnung || defaultF;
-          const nextKg = data.kauf_grundstueck || defaultF;
-          const nextMh = data.miete_haus || defaultF;
-          const nextMw = data.miete_wohnung || defaultF;
+          const nextKh = normalizeFactorValues(data.kauf_haus);
+          const nextKw = normalizeFactorValues(data.kauf_wohnung);
+          const nextKg = normalizeFactorValues(data.kauf_grundstueck);
+          const nextMh = normalizeFactorValues(data.miete_haus);
+          const nextMw = normalizeFactorValues(data.miete_wohnung);
           const nextRendite = data.rendite || defaultRendite;
           setSf(nextSf);
           setTrend(nextTrend);
@@ -643,6 +737,11 @@ const FactorForm = forwardRef<FactorFormHandle, {
       }
 
       const factors = snapshot ?? makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
+      const validationError = validateFactorSnapshot(factors);
+      if (validationError) {
+        setMessage(`❌ ${validationError}`);
+        return false;
+      }
       const payload = {
         auth_user_id: user.id,
         area_id: config.area_id,
@@ -782,7 +881,7 @@ const FactorForm = forwardRef<FactorFormHandle, {
         'miete_haus',
         'miete_wohnung',
       ];
-      const yearKeys: Array<keyof FactorValues> = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
+      const yearKeys: Array<keyof FactorValues> = ['f01_min', 'f01_avg', 'f01_max', 'f02', 'f03', 'f04', 'f05', 'f06'];
       type SettingsRow = { id: string; area_id: string } & Record<string, unknown>;
       type UpdateRow = { id: string } & Record<string, unknown>;
       const updates: UpdateRow[] = [];
@@ -799,17 +898,17 @@ const FactorForm = forwardRef<FactorFormHandle, {
             const nextGroup = nextSnapshot?.[key] as FactorValues | undefined;
             const prevVal = Number(prevGroup?.[yearKey] ?? 1);
             const nextVal = Number(nextGroup?.[yearKey] ?? 1);
-            if (!force && prevVal === nextVal) continue;
-          const rowGroup = row[key] as Record<string, unknown> | undefined;
-          const currentValRaw = rowGroup?.[yearKey];
-          const currentVal = currentValRaw === undefined || currentValRaw === null ? null : Number(currentValRaw);
-          if (force || currentVal === null || Number.isNaN(currentVal) || currentVal === prevVal || currentVal === 1) {
-            const base = (update[key] as Record<string, number> | undefined)
-              ?? (row[key] as Record<string, number> | undefined)
-              ?? {};
-            update[key] = { ...base, [yearKey]: nextVal };
-            changed = true;
-          }
+            const rowGroup = row[key] as Record<string, unknown> | undefined;
+            const currentValRaw = rowGroup?.[yearKey];
+            const currentVal = currentValRaw === undefined || currentValRaw === null ? null : Number(currentValRaw);
+            if (!force && prevVal === nextVal && currentVal !== null && !Number.isNaN(currentVal)) continue;
+            if (force || currentVal === null || Number.isNaN(currentVal) || currentVal === prevVal || currentVal === 1) {
+              const base = (update[key] as Record<string, number> | undefined)
+                ?? (row[key] as Record<string, number> | undefined)
+                ?? {};
+              update[key] = { ...base, [yearKey]: nextVal };
+              changed = true;
+            }
           }
         }
 
@@ -1009,6 +1108,10 @@ const FactorForm = forwardRef<FactorFormHandle, {
   const isKreis = !isOrtslage;
 
   const handleOrtslageActivate = async () => {
+    if (factorValidationError) {
+      setMessage(`❌ ${factorValidationError}`);
+      return;
+    }
     setBusyStep('Ortslage speichern…', 1, 1);
     const saved = await saveSettings();
     if (saved) {
@@ -1019,6 +1122,10 @@ const FactorForm = forwardRef<FactorFormHandle, {
   };
 
   const handleKreisActivate = async () => {
+    if (factorValidationError) {
+      setMessage(`❌ ${factorValidationError}`);
+      return;
+    }
     setBusyStep('Kreis speichern…', 1, 2);
     const saved = await saveSettings();
     if (!saved) return;
@@ -1153,7 +1260,7 @@ const FactorForm = forwardRef<FactorFormHandle, {
             title="Miete Häuser"
             data={mh}
             setter={setMh}
-            previewBase={previewBase?.miete_haus_avg}
+            previewBase={previewBase?.miete_haus}
             unitLabel="€/m²"
             showActivate={showActivate}
             onActivate={handleActivate}
@@ -1165,7 +1272,7 @@ const FactorForm = forwardRef<FactorFormHandle, {
             title="Miete Wohnungen"
             data={mw}
             setter={setMw}
-            previewBase={previewBase?.miete_wohnung_avg}
+            previewBase={previewBase?.miete_wohnung}
             unitLabel="€/m²"
             showActivate={showActivate}
             onActivate={handleActivate}
@@ -1435,7 +1542,12 @@ const FactorForm = forwardRef<FactorFormHandle, {
         <div style={{ flex: 1 }}></div>
         {rebuildMessage && null}
         {/* Upload-Summary bewusst ausgeblendet */}
-        {message && <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#2f855a' }}>{message}</span>}
+        {factorValidationError ? <span style={validationMessageStyle}>⚠ {factorValidationError}</span> : null}
+        {message ? (
+          <span style={{ fontWeight: 'bold', fontSize: '18px', color: message.startsWith('❌') ? '#b91c1c' : '#2f855a' }}>
+            {message}
+          </span>
+        ) : null}
         <button
           onClick={handleRebuild}
           disabled={rebuildLoading || !canRebuild}
@@ -1470,6 +1582,17 @@ const gridTitleStyle = {
   color: '#2d3748', fontSize: '15px', textTransform: 'uppercase' as const, letterSpacing: '1px'
 };
 
+const factorRangeErrorStyle = {
+  marginBottom: '14px',
+  padding: '10px 12px',
+  borderRadius: '8px',
+  border: '1px solid #fecaca',
+  backgroundColor: '#fef2f2',
+  color: '#b91c1c',
+  fontSize: '12px',
+  fontWeight: 700,
+};
+
 const textareaStyle = {
   width: '100%', minHeight: '100px', padding: '15px', borderRadius: '10px', 
   border: '2px solid #cbd5e0', marginTop: '10px', fontSize: '16px', fontFamily: 'inherit'
@@ -1478,6 +1601,12 @@ const textareaStyle = {
 const footerStyle = {
   marginTop: '30px', padding: '30px', borderTop: '2px solid #e2e8f0', 
   display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: '#f7fafc', borderRadius: '15px'
+};
+
+const validationMessageStyle = {
+  fontWeight: 700,
+  fontSize: '14px',
+  color: '#b91c1c',
 };
 
 const rebuildButtonStyle = (active: boolean) => ({
