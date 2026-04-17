@@ -1,4 +1,5 @@
 import { readCrmResourceLimits } from "@/lib/integrations/settings";
+import { extractReferenceChallengeCategories } from "@/lib/reference-challenges";
 import type {
   CrmSyncMode,
   CrmSyncResource,
@@ -1319,6 +1320,7 @@ function mapUnitReference(
   const sourceTitle = firstString([normalizePropstackTitle(unit.title), normalizePropstackText(unit.name)]);
   const sourceDescription =
     normalizePropstackText(unit.long_description_note) ?? normalizePropstackText(unit.description_note);
+  const challengeNoteSource = normalizePropstackText(unit.other_note);
   const city = String(unit.city ?? "").trim();
   const district = buildDistrict(unit);
   const locationLabel = district ? `${city} ${district}` : city || "der Region";
@@ -1338,6 +1340,8 @@ function mapUnitReference(
     area_sqm: normalizePropstackArea(unit),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
     reference_text_seed: sourceDescription,
+    challenge_note_source: challengeNoteSource,
+    challenge_categories: challengeNoteSource ? extractReferenceChallengeCategories(challengeNoteSource) : [],
     description: sourceDescription,
     image_url: gallery[0] ?? null,
     status: normalizePropstackStatusName(status),

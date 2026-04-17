@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
 import { createClient } from '@/utils/supabase/client';
 
 type RawReferenceRow = {
@@ -216,27 +217,50 @@ function parseMediaAssets(payload: Record<string, unknown>): MediaAsset[] {
 }
 
 function buildDefaultForm(row: RawReferenceRow, override?: OverrideRow | null): OverrideRow {
-  const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-  const title = asText(row.title);
-  const description = getPayloadText(payload, ['description', 'reference_text_seed', 'short_description', 'long_description', 'title']);
-  const location = getPayloadText(payload, ['location_text', 'location', 'region', 'city']);
-  const features = getPayloadText(payload, ['features_text']);
-  const highlights = getPayloadList(payload, 'highlights');
   return {
     partner_id: row.partner_id,
     source: row.provider,
     external_id: row.external_id,
-    seo_title: override?.seo_title ?? title,
-    seo_description: override?.seo_description ?? description,
-    seo_h1: override?.seo_h1 ?? title,
-    short_description: override?.short_description ?? description,
-    long_description: override?.long_description ?? description,
-    location_text: override?.location_text ?? location,
-    features_text: override?.features_text ?? features,
-    highlights: override?.highlights ?? highlights,
+    seo_title: override?.seo_title ?? '',
+    seo_description: override?.seo_description ?? '',
+    seo_h1: override?.seo_h1 ?? '',
+    short_description: override?.short_description ?? '',
+    long_description: override?.long_description ?? '',
+    location_text: override?.location_text ?? '',
+    features_text: override?.features_text ?? '',
+    highlights: override?.highlights ?? [],
     image_alt_texts: override?.image_alt_texts ?? [],
     status: override?.status ?? 'draft',
   };
+}
+
+function buildReferenceAiSourceContext(row: RawReferenceRow | null, payload: Record<string, unknown>): string {
+  if (!row) return '';
+  const categories = Array.isArray(payload.challenge_categories)
+    ? payload.challenge_categories
+        .filter((entry): entry is ReferenceChallengeCategory => typeof entry === 'string')
+        .reduce<ReferenceChallengeCategory[]>((acc, entry) => {
+          const normalized = entry.trim();
+          if (normalized) acc.push(normalized as ReferenceChallengeCategory);
+          return acc;
+        }, [])
+    : [];
+  const facts = [
+    ['Interner Titel', asText(row.title)],
+    ['Quelltitel', getPayloadText(payload, ['source_title'])],
+    ['Vermarktungsart', getPayloadText(payload, ['offer_type', 'vermarktungsart'])],
+    ['Objektart', getPayloadText(payload, ['object_type'])],
+    ['Transaktion', getPayloadText(payload, ['transaction_result'])],
+    ['Ort', getReferenceLocationLabel(payload)],
+    ['Wohnfläche', asNumber(payload.area_sqm) != null ? `${asNumber(payload.area_sqm)} m²` : ''],
+    ['Zimmer', asNumber(payload.rooms) != null ? String(asNumber(payload.rooms)) : ''],
+    ['Referenztext-Quelle', getPayloadText(payload, ['description', 'reference_text_seed'])],
+    ['Herausforderungs-Quelle', getPayloadText(payload, ['challenge_note_source'])],
+    ['Abgeleitete Kategorien', categories.map((entry) => formatReferenceChallengeCategory(entry)).join(', ')],
+  ]
+    .filter(([, value]) => String(value).trim().length > 0)
+    .map(([label, value]) => `${label}: ${value}`);
+  return facts.join('\n');
 }
 
 const shellStyle: CSSProperties = { display: 'grid', gap: '10px' };
@@ -745,7 +769,9 @@ export default function ReferencesWorkspaceManager() {
   async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
     if (!form || !selectedRow) return;
     const currentText = String(form[key] ?? '');
-    if (!currentText.trim()) return;
+    const sourceContext = buildReferenceAiSourceContext(selectedRow, selectedPayload);
+    const inputText = currentText.trim() || sourceContext;
+    if (!inputText.trim()) return;
     setRewritingKey(String(key));
     setStatus('KI-Optimierung läuft...');
     try {
@@ -759,7 +785,7 @@ export default function ReferencesWorkspaceManager() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: currentText,
+          text: inputText,
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
@@ -804,7 +830,7 @@ export default function ReferencesWorkspaceManager() {
   function getStandardPromptText(label: string, areaName: string) {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('referenz-titel') || lowerLabel.includes('h1')) {
-      return `Formuliere einen prägnanten, sachlichen Referenz-Titel für ${areaName}. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine erfundenen Fakten, keine Übertreibungen.`;
+      return `Formuliere einen prägnanten, sachlichen Referenz-Titel für ${areaName}. Nutze nur belegbare Fakten aus den importierten Referenzdaten. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine Übertreibungen.`;
     }
     if (lowerLabel.includes('seo-titel')) {
       return `Schreibe einen SEO-Titel für eine Immobilienreferenz in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
@@ -812,17 +838,11 @@ export default function ReferencesWorkspaceManager() {
     if (lowerLabel.includes('seo-description')) {
       return `Schreibe eine SEO-Description für eine Immobilienreferenz in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
     }
-    if (lowerLabel.includes('teaser')) {
-      return `Formuliere einen kurzen Teaser zur Referenz in ${areaName}. 1 bis 2 Sätze, sachlich, glaubwürdig und ohne Übertreibung.`;
+    if (lowerLabel.includes('referenztext')) {
+      return `Schreibe einen hochwertigen Referenztext für ${areaName}. 2 bis 4 Sätze, sachlich und glaubwürdig. Beschreibe knapp, was erfolgreich vermittelt wurde und ordne Objektart, Vermarktungsart und Lage sauber ein. Keine neuen Fakten erfinden.`;
     }
-    if (lowerLabel.includes('langtext')) {
-      return `Optimiere den Referenz-Langtext für bessere Lesbarkeit und Struktur. Sachlicher Stil, keine neuen Fakten, keine unnötigen Wiederholungen. Kontext: ${areaName}.`;
-    }
-    if (lowerLabel.includes('lage')) {
-      return `Formuliere den Lage-Text für eine Referenz in ${areaName} klar und informativ. Fokus auf Ort, Umfeld und regionale Einordnung. Keine erfundenen Fakten.`;
-    }
-    if (lowerLabel.includes('ausstatt')) {
-      return `Formuliere den Ausstattungs- oder Zusatztext für eine Referenz klar und sachlich. Nur aus den vorhandenen Referenzdaten ableitbare Aussagen verwenden.`;
+    if (lowerLabel.includes('herausforderung')) {
+      return `Prüfe die importierten Hinweise auf belastbare Herausforderungen im Verkaufs- oder Vermietungsprozess. Wenn keine klaren Hinweise vorliegen, gib einen leeren String zurück. Wenn Hinweise vorliegen, formuliere maximal 1 bis 2 kurze, neutrale Sätze. Nenne sensible private Auslöser wie Scheidung, Trennung, Erbe oder Nachlass nicht direkt, sondern abstrahiere sie sachlich.`;
     }
     if (lowerLabel.includes('highlights')) {
       return `Schreibe maximal 6 Highlights, jeweils 1 Zeile. Kurz, konkret, belegbar, keine Wiederholungen und keine vagen Werbeformulierungen.`;
@@ -999,16 +1019,24 @@ export default function ReferencesWorkspaceManager() {
   const selectedMode = getPayloadText(selectedPayload, ['offer_type']) || '—';
   const selectedArea = asNumber(selectedPayload.area_sqm);
   const selectedRooms = asNumber(selectedPayload.rooms);
-  const selectedLocation = getPayloadText(selectedPayload, ['location_text', 'location']) || [getPayloadText(selectedPayload, ['city']), getPayloadText(selectedPayload, ['district'])].filter(Boolean).join(' ') || '—';
   const selectedDescription = getPayloadText(selectedPayload, ['description', 'reference_text_seed']);
   const selectedSourceTitle = getPayloadText(selectedPayload, ['source_title']) || '—';
   const selectedStatus = getPayloadText(selectedPayload, ['status']) || '—';
   const selectedStatusId = getPayloadText(selectedPayload, ['status_id']) || '—';
   const selectedRegion = getPayloadText(selectedPayload, ['region']) || '—';
+  const selectedLocation = getReferenceLocationLabel(selectedPayload) || '—';
   const selectedLocationScope = getPayloadText(selectedPayload, ['location_scope']) || '—';
   const rawDescription = selectedDescription;
-  const rawLocationText = getPayloadText(selectedPayload, ['location']) || [getPayloadText(selectedPayload, ['city']), getPayloadText(selectedPayload, ['district'])].filter(Boolean).join(' ');
-  const rawFeatures = getPayloadText(selectedPayload, ['features_text']);
+  const rawChallengeText = getPayloadText(selectedPayload, ['challenge_note_source']);
+  const selectedChallengeCategories = Array.isArray(selectedPayload.challenge_categories)
+    ? selectedPayload.challenge_categories
+        .filter((entry): entry is ReferenceChallengeCategory => typeof entry === 'string')
+        .reduce<ReferenceChallengeCategory[]>((acc, entry) => {
+          const normalized = entry.trim();
+          if (normalized) acc.push(normalized as ReferenceChallengeCategory);
+          return acc;
+        }, [])
+    : [];
   const rawHighlights = getPayloadList(selectedPayload, 'highlights');
 
   if (loading) return <FullscreenLoader show label="Referenzen werden geladen..." />;
@@ -1183,10 +1211,8 @@ export default function ReferencesWorkspaceManager() {
               {activeTab === 'texts' ? (
                 <div style={{ display: 'grid', gap: 18 }}>
                   {renderTextField('Referenz-Titel', 'seo_h1', selectedRow.title ?? '', { multiline: false })}
-                  {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
-                  {renderTextField('Langtext', 'long_description', rawDescription, { multiline: true })}
-                  {renderTextField('Lagetext', 'location_text', rawLocationText, { multiline: true })}
-                  {renderTextField('Ausstattungs-/Zusatztext', 'features_text', rawFeatures, { multiline: true })}
+                  {renderTextField('Referenztext', 'long_description', rawDescription, { multiline: true })}
+                  {renderTextField('Herausforderungen (optional)', 'features_text', rawChallengeText, { multiline: true, placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen' })}
 
                   <div style={previewGridStyle}>
                     <div style={previewCardStyle}>
@@ -1194,18 +1220,22 @@ export default function ReferencesWorkspaceManager() {
                       <div style={previewContentStyle}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
                     </div>
                     <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Teaser</div>
-                      <div style={previewContentStyle}>{form.short_description || 'Kein Teaser gepflegt.'}</div>
+                      <div style={previewLabelStyle}>Referenztext</div>
+                      <div style={previewContentStyle}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
                     </div>
                     <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Langtext</div>
-                      <div style={previewContentStyle}>{form.long_description || 'Kein Langtext gepflegt.'}</div>
-                    </div>
-                    <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Lage</div>
-                      <div style={previewContentStyle}>{form.location_text || 'Kein Lage-Text gepflegt.'}</div>
+                      <div style={previewLabelStyle}>Herausforderungen</div>
+                      <div style={previewContentStyle}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
                     </div>
                   </div>
+                  {selectedChallengeCategories.length > 0 ? (
+                    <div style={sectionCardStyle}>
+                      <div style={summaryHeaderStyle}>Erkannte Herausforderungskategorien</div>
+                      <div style={previewContentStyle}>
+                        {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => void saveOverride()} disabled={saving} style={saveButtonStyle}>

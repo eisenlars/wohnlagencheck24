@@ -14,6 +14,7 @@ import type {
   RawRequest,
   ResourceSyncData,
 } from "@/lib/providers/types";
+import { extractReferenceChallengeCategories } from "@/lib/reference-challenges";
 import { cleanRequestRegionTargetLabel, isRadiusContextSegment } from "@/lib/request-region-targets";
 
 type OnOfficeRecord = {
@@ -1176,6 +1177,7 @@ function mapEstateToReference(
         ? "vermietet"
         : "verkauft";
   const locationLabel = city || "der Region";
+  const challengeNoteSource = String(elements["sonstige_angaben"] ?? "").trim() || null;
   const referenceTitle =
     saleType === "reserviert"
       ? `Reserviert in ${locationLabel}`
@@ -1197,6 +1199,8 @@ function mapEstateToReference(
       saleType === "reserviert"
         ? "Das Objekt ist aktuell reserviert."
         : `Das Objekt wurde erfolgreich ${saleType}.`,
+    challenge_note_source: challengeNoteSource,
+    challenge_categories: challengeNoteSource ? extractReferenceChallengeCategories(challengeNoteSource) : [],
     description:
       saleType === "reserviert"
         ? "Das Objekt ist aktuell reserviert."
