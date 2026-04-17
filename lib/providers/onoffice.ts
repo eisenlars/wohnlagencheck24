@@ -1839,20 +1839,27 @@ export async function fetchOnOfficeEstates(
   const records = response.records.filter((record) => {
     const elements = (record.elements ?? {}) as Record<string, unknown>;
     const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
+    const rentedFlag = normalizeOnOfficeFlag(elements["vermietet"]);
     const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
+
+    // Once onOffice marks a listing as completed, it must not stay in the active offer feed.
+    if (soldFlag === "1" || rentedFlag === "1") {
+      return false;
+    }
+
     if (isReservedOnOfficeStatus(fieldValue)) {
       return settings.listing_reserved_target === "offers";
     }
 
     if (settings.listing_status_field_key && allowedStatusValues.size > 0) {
-      return fieldValue.length > 0 && allowedStatusValues.has(fieldValue) && soldFlag !== "1";
+      return fieldValue.length > 0 && allowedStatusValues.has(fieldValue);
     }
 
     if (settings.listing_exclude_sold) {
-      return soldFlag !== "1";
+      return true;
     }
 
-    return soldFlag !== "1";
+    return true;
   });
   return {
     ...response,
