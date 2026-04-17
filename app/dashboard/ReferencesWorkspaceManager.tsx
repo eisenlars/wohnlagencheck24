@@ -532,6 +532,22 @@ const referenceOverviewGridStyle: CSSProperties = {
   columnGap: 12,
 };
 
+const referenceTextWorkspaceStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 0.75fr)',
+  gap: 18,
+  alignItems: 'start',
+};
+
+const referenceContextCardStyle: CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 14,
+  background: '#f8fafc',
+  padding: 14,
+  display: 'grid',
+  gap: 12,
+};
+
 const referenceListFilterRowStyle: CSSProperties = {
   display: 'flex',
   justifyContent: 'center',
@@ -733,6 +749,19 @@ export default function ReferencesWorkspaceManager() {
   async function saveOverride(nextForm?: OverrideRow) {
     const payload = nextForm ?? form;
     if (!payload) return;
+    const nextTitle = asText(payload.seo_h1);
+    const nextDescription = asText(payload.long_description);
+    const sourceTitle = asText(selectedRow?.title);
+    const sourceDescription = asText(rawDescription);
+    if (
+      nextTitle.length === 0 ||
+      nextDescription.length === 0 ||
+      nextTitle === sourceTitle ||
+      nextDescription === sourceDescription
+    ) {
+      setStatus('Speichern nicht möglich: Referenz-Titel und Referenztext müssen als eigener Referenztext gepflegt sein.');
+      return;
+    }
     setSaving(true);
     setStatus('Speichere Referenz-Overrides...');
     const upsertPayload = {
@@ -857,7 +886,7 @@ export default function ReferencesWorkspaceManager() {
     label: string,
     key: keyof OverrideRow,
     rawValue: string,
-    options?: { multiline?: boolean; placeholder?: string },
+    options?: { multiline?: boolean; placeholder?: string; showPreview?: boolean },
   ) => {
     if (!form) return null;
     const keyName = String(key);
@@ -867,6 +896,7 @@ export default function ReferencesWorkspaceManager() {
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Referenz');
+    const showPreview = options?.showPreview ?? true;
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -878,7 +908,7 @@ export default function ReferencesWorkspaceManager() {
             </button>
           </div>
         </div>
-        <div style={editorGridStyle}>
+        <div style={showPreview ? editorGridStyle : textareaWrapperStyle}>
           <div style={textareaWrapperStyle}>
             {options?.multiline === false ? (
               <input
@@ -928,10 +958,12 @@ export default function ReferencesWorkspaceManager() {
               </div>
             ) : null}
           </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM-Original</div>
-            <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
-          </div>
+          {showPreview ? (
+            <div style={previewBoxStyle}>
+              <div style={previewHeaderStyle}>CRM-Original</div>
+              <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -1038,6 +1070,15 @@ export default function ReferencesWorkspaceManager() {
         }, [])
     : [];
   const rawHighlights = getPayloadList(selectedPayload, 'highlights');
+  const requiredReferenceTitle = asText(form?.seo_h1);
+  const requiredReferenceText = asText(form?.long_description);
+  const rawReferenceTitle = asText(selectedRow?.title);
+  const rawReferenceText = asText(rawDescription);
+  const canSaveReferenceContent =
+    requiredReferenceTitle.length > 0 &&
+    requiredReferenceText.length > 0 &&
+    requiredReferenceTitle !== rawReferenceTitle &&
+    requiredReferenceText !== rawReferenceText;
 
   if (loading) return <FullscreenLoader show label="Referenzen werden geladen..." />;
 
@@ -1209,38 +1250,110 @@ export default function ReferencesWorkspaceManager() {
               </div>
 
               {activeTab === 'texts' ? (
-                <div style={{ display: 'grid', gap: 18 }}>
-                  {renderTextField('Referenz-Titel', 'seo_h1', selectedRow.title ?? '', { multiline: false })}
-                  {renderTextField('Referenztext', 'long_description', rawDescription, { multiline: true })}
-                  {renderTextField('Herausforderungen (optional)', 'features_text', rawChallengeText, { multiline: true, placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen' })}
+                <div style={referenceTextWorkspaceStyle}>
+                  <div style={{ display: 'grid', gap: 18 }}>
+                    {renderTextField('Referenz-Titel', 'seo_h1', selectedRow.title ?? '', {
+                      multiline: false,
+                      showPreview: false,
+                      placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                    })}
+                    {renderTextField('Referenztext', 'long_description', rawDescription, {
+                      multiline: true,
+                      showPreview: false,
+                      placeholder: 'Referenztext wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                    })}
+                    {renderTextField('Herausforderungen (optional)', 'features_text', rawChallengeText, {
+                      multiline: true,
+                      showPreview: false,
+                      placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen',
+                    })}
 
-                  <div style={previewGridStyle}>
-                    <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Referenz-Titel</div>
-                      <div style={previewContentStyle}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
-                    </div>
-                    <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Referenztext</div>
-                      <div style={previewContentStyle}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
-                    </div>
-                    <div style={previewCardStyle}>
-                      <div style={previewLabelStyle}>Herausforderungen</div>
-                      <div style={previewContentStyle}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
-                    </div>
-                  </div>
-                  {selectedChallengeCategories.length > 0 ? (
-                    <div style={sectionCardStyle}>
-                      <div style={summaryHeaderStyle}>Erkannte Herausforderungskategorien</div>
-                      <div style={previewContentStyle}>
-                        {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
+                    <div style={previewGridStyle}>
+                      <div style={previewCardStyle}>
+                        <div style={previewLabelStyle}>Referenz-Titel</div>
+                        <div style={previewContentStyle}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
+                      </div>
+                      <div style={previewCardStyle}>
+                        <div style={previewLabelStyle}>Referenztext</div>
+                        <div style={previewContentStyle}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
+                      </div>
+                      <div style={previewCardStyle}>
+                        <div style={previewLabelStyle}>Herausforderungen</div>
+                        <div style={previewContentStyle}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
                       </div>
                     </div>
-                  ) : null}
+                    {selectedChallengeCategories.length > 0 ? (
+                      <div style={sectionCardStyle}>
+                        <div style={summaryHeaderStyle}>Erkannte Herausforderungskategorien</div>
+                        <div style={previewContentStyle}>
+                          {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
+                        </div>
+                      </div>
+                    ) : null}
 
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="button" onClick={() => void saveOverride()} disabled={saving} style={saveButtonStyle}>
-                      {saving ? 'Speichert...' : 'Referenztexte speichern'}
-                    </button>
+                    {!canSaveReferenceContent ? (
+                      <div style={sectionHintStyle}>
+                        Für die Veröffentlichung und das Speichern werden ein eigener Referenz-Titel und ein eigener Referenztext benötigt. Rohdaten aus CRM-Titel oder Objektbeschreibung reichen nicht aus.
+                      </div>
+                    ) : null}
+
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button type="button" onClick={() => void saveOverride()} disabled={saving || !canSaveReferenceContent} style={saveButtonStyle}>
+                        {saving ? 'Speichert...' : 'Referenztexte speichern'}
+                      </button>
+                    </div>
+                  </div>
+                  <div style={referenceContextCardStyle}>
+                    <div style={summaryHeaderStyle}>Objekthauptbild</div>
+                    {activeImage ? (
+                      <div style={{ display: 'grid', gap: 12 }}>
+                        <div style={mediaStageStyle}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={activeImage.url}
+                            alt={activeImage.title ?? selectedRow.title ?? 'Referenzbild'}
+                            style={mediaImageStyle}
+                            loading="eager"
+                            decoding="async"
+                          />
+                        </div>
+                        <div style={previewContentStyle}>
+                          {activeImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={sectionHintStyle}>Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
+                    )}
+                    <div style={summaryGridStyle}>
+                      <div>
+                        <div style={summaryLabelStyle}>Quelltitel</div>
+                        <div style={summaryValueStyle}>{selectedSourceTitle}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Vermarktung</div>
+                        <div style={summaryValueStyle}>{selectedMode}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Objektart</div>
+                        <div style={summaryValueStyle}>{selectedType}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Transaktion</div>
+                        <div style={summaryValueStyle}>{selectedTransaction}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Ort</div>
+                        <div style={summaryValueStyle}>{getReferenceLocationLabel(selectedPayload)}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Zimmer</div>
+                        <div style={summaryValueStyle}>{selectedRooms ?? '—'}</div>
+                      </div>
+                      <div>
+                        <div style={summaryLabelStyle}>Fläche</div>
+                        <div style={summaryValueStyle}>{selectedArea != null ? `${selectedArea} m²` : '—'}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -1267,7 +1380,7 @@ export default function ReferencesWorkspaceManager() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="button" onClick={() => void saveOverride()} disabled={saving} style={saveButtonStyle}>
+                    <button type="button" onClick={() => void saveOverride()} disabled={saving || !canSaveReferenceContent} style={saveButtonStyle}>
                       {saving ? 'Speichert...' : 'Referenztexte speichern'}
                     </button>
                   </div>

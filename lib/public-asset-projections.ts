@@ -1272,12 +1272,9 @@ export async function rebuildPublicReferenceEntriesForPartner(
     const city = asNullableText(payload["city"]);
     const district = asNullableText(payload["district"]);
     const imageUrl = asNullableText(payload["image_url"]);
-    const description =
-      asNullableText(override?.short_description)
-      ?? asNullableText(override?.long_description)
-      ?? asNullableText(override?.seo_description)
-      ?? asNullableText(payload["description"])
-      ?? asNullableText(payload["reference_text_seed"]);
+    const publicTitle = asNullableText(override?.seo_h1);
+    const publicReferenceText = asNullableText(override?.long_description);
+    if (!publicTitle || !publicReferenceText) continue;
 
     for (const visibleAreaId of visibleAreaIds) {
       projectionRows.push({
@@ -1287,7 +1284,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
         reference_id: referenceId,
         provider,
         external_id: externalId,
-        title: asNullableText(override?.seo_h1) ?? asNullableText(reference.title) ?? "Erfolgreich vermittelt",
+        title: publicTitle,
         seo_title: asNullableText(override?.seo_title),
         seo_description: asNullableText(override?.seo_description),
         seo_h1: asNullableText(override?.seo_h1),
@@ -1297,7 +1294,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
         features_text: asNullableText(override?.features_text),
         highlights: asArrayJson(override?.highlights),
         image_alt_texts: asArrayJson(override?.image_alt_texts),
-        description,
+        description: publicReferenceText,
         image_url: imageUrl,
         city,
         district,
@@ -1310,7 +1307,8 @@ export async function rebuildPublicReferenceEntriesForPartner(
         const { locale, row: translation } = translationEntry;
         const translatedTitle =
           asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
-        if (!translatedTitle) continue;
+        const translatedReferenceText = asNullableText(translation.translated_long_description);
+        if (!translatedTitle || !translatedReferenceText) continue;
         projectionRows.push({
           partner_id: partnerId,
           visible_area_id: visibleAreaId,
@@ -1328,9 +1326,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
           features_text: asNullableText(translation.translated_features_text),
           highlights: asArrayJson(translation.translated_highlights),
           image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
-          description: asNullableText(translation.translated_short_description)
-            ?? asNullableText(translation.translated_long_description)
-            ?? asNullableText(translation.translated_seo_description),
+          description: translatedReferenceText,
           image_url: imageUrl,
           city,
           district,
