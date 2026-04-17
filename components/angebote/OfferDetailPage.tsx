@@ -436,12 +436,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           marker: !hasApproximateMap,
         })
       : null;
-  const externalMapHref =
-    mapDisplayLat != null && mapDisplayLng != null
-      ? hasApproximateMap
-        ? `https://www.openstreetmap.org/#map=12/${mapDisplayLat}/${mapDisplayLng}`
-        : `https://www.openstreetmap.org/?mlat=${mapDisplayLat}&mlon=${mapDisplayLng}#map=15/${mapDisplayLat}/${mapDisplayLng}`
-      : null;
   const hasMapsMedia = locationMapAssets.length > 0 || hasCoordinateMap;
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
@@ -902,16 +896,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   >
                     {isEnglish ? "Reset map" : "Karte zurücksetzen"}
                   </button>
-                  <a
-                    className="offer-detail-map-embed__link"
-                    href={externalMapHref ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {hasApproximateMap
-                      ? (isEnglish ? "Open area map in new tab" : "Gebietskarte in neuem Tab öffnen")
-                      : (isEnglish ? "Open map in new tab" : "Karte in neuem Tab öffnen")}
-                  </a>
                 </div>
               ) : activeLocationMap ? (
                 <div className="offer-detail-panel-media">
