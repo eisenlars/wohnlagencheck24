@@ -290,63 +290,69 @@ function FactorGrid({
   return (
     <div style={{ padding: '15px 0' }}>
       <h5 style={gridTitleStyle}>{title}</h5>
-      <InputRow
-        label={`${yearLabelByFactor.f01} · Min`}
-        value={data.f01_min}
-        onChange={(v) => {
-          setter({ ...data, f01_min: v });
-        }}
-        previewBase={previewBase?.f01_min}
-        unitLabel={unitLabel}
-        showActivate={showActivate}
-        onActivate={onActivate}
-        isDirty={Number(data?.f01_min) !== Number(persistedData?.f01_min)}
-        fmt={fmt}
-      />
-      <InputRow
-        label={`${yearLabelByFactor.f01} · Avg`}
-        value={data.f01_avg}
-        onChange={(v) => {
-          setter({ ...data, f01_avg: v });
-        }}
-        previewBase={previewBase?.f01_avg}
-        unitLabel={unitLabel}
-        showActivate={showActivate}
-        onActivate={onActivate}
-        isDirty={Number(data?.f01_avg) !== Number(persistedData?.f01_avg)}
-        fmt={fmt}
-      />
-      <InputRow
-        label={`${yearLabelByFactor.f01} · Max`}
-        value={data.f01_max}
-        onChange={(v) => {
-          setter({ ...data, f01_max: v });
-        }}
-        previewBase={previewBase?.f01_max}
-        unitLabel={unitLabel}
-        showActivate={showActivate}
-        onActivate={onActivate}
-        isDirty={Number(data?.f01_max) !== Number(persistedData?.f01_max)}
-        fmt={fmt}
-      />
-      {rangeError ? <div style={factorRangeErrorStyle}>{rangeError}</div> : null}
-      {factorKeys.map((f) => (
+      <div style={currentYearPanelStyle}>
+        <div style={factorGroupLabelStyle}>Aktuelles Jahr</div>
         <InputRow
-          key={f}
-          label={yearLabelByFactor[f] ?? f}
-          value={data[f]}
+          label={`${yearLabelByFactor.f01} · Min`}
+          value={data.f01_min}
           onChange={(v) => {
-            const key = f as keyof FactorValues;
-            setter({ ...data, [key]: v });
+            setter({ ...data, f01_min: v });
           }}
-          previewBase={previewBase?.[f]}
+          previewBase={previewBase?.f01_min}
           unitLabel={unitLabel}
           showActivate={showActivate}
           onActivate={onActivate}
-          isDirty={Number(data?.[f]) !== Number(persistedData?.[f])}
+          isDirty={Number(data?.f01_min) !== Number(persistedData?.f01_min)}
           fmt={fmt}
         />
-      ))}
+        <InputRow
+          label={`${yearLabelByFactor.f01} · Avg`}
+          value={data.f01_avg}
+          onChange={(v) => {
+            setter({ ...data, f01_avg: v });
+          }}
+          previewBase={previewBase?.f01_avg}
+          unitLabel={unitLabel}
+          showActivate={showActivate}
+          onActivate={onActivate}
+          isDirty={Number(data?.f01_avg) !== Number(persistedData?.f01_avg)}
+          fmt={fmt}
+        />
+        <InputRow
+          label={`${yearLabelByFactor.f01} · Max`}
+          value={data.f01_max}
+          onChange={(v) => {
+            setter({ ...data, f01_max: v });
+          }}
+          previewBase={previewBase?.f01_max}
+          unitLabel={unitLabel}
+          showActivate={showActivate}
+          onActivate={onActivate}
+          isDirty={Number(data?.f01_max) !== Number(persistedData?.f01_max)}
+          fmt={fmt}
+        />
+        {rangeError ? <div style={factorRangeErrorStyle}>{rangeError}</div> : null}
+      </div>
+      <div style={historyPanelStyle}>
+        <div style={factorGroupLabelStyle}>Vorjahre</div>
+        {factorKeys.map((f) => (
+          <InputRow
+            key={f}
+            label={yearLabelByFactor[f] ?? f}
+            value={data[f]}
+            onChange={(v) => {
+              const key = f as keyof FactorValues;
+              setter({ ...data, [key]: v });
+            }}
+            previewBase={previewBase?.[f]}
+            unitLabel={unitLabel}
+            showActivate={showActivate}
+            onActivate={onActivate}
+            isDirty={Number(data?.[f]) !== Number(persistedData?.[f])}
+            fmt={fmt}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -1591,6 +1597,30 @@ const factorRangeErrorStyle = {
   color: '#b91c1c',
   fontSize: '12px',
   fontWeight: 700,
+};
+
+const currentYearPanelStyle = {
+  marginBottom: '18px',
+  padding: '16px 18px 6px',
+  borderRadius: '12px',
+  border: '1px solid #bfdbfe',
+  backgroundColor: '#f8fbff',
+};
+
+const historyPanelStyle = {
+  padding: '14px 18px 6px',
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  backgroundColor: '#ffffff',
+};
+
+const factorGroupLabelStyle = {
+  marginBottom: '14px',
+  fontSize: '12px',
+  fontWeight: 800,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase' as const,
+  color: '#475569',
 };
 
 const textareaStyle = {
