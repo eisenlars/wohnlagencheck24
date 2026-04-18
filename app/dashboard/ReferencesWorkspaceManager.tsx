@@ -1030,6 +1030,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
+    const effectivePrompt = customPrompt.trim() || standardPrompt;
     const showPreview = options?.showPreview ?? true;
     return (
       <div style={fieldCardStyle}>
@@ -1057,7 +1058,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label, customPrompt)}
+                onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
                 {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
@@ -1112,6 +1113,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
+    const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -1129,7 +1131,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label, customPrompt)}
+                onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
                 {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}

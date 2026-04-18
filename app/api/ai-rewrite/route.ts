@@ -457,6 +457,7 @@ export async function POST(req: Request) {
     const areaId = asString(body?.area_id);
     const selectedLlmIntegrationId = asString(body?.llm_integration_id);
     const selectedGlobalProviderId = asString(body?.llm_global_provider_id);
+    const debugPrompt = body?.debug_prompt === true || String(body?.debug_prompt ?? '').trim() === '1';
 
     if (I18N_MOCK_TRANSLATION && mockContext === 'i18n') {
       return NextResponse.json({ optimizedText: buildMockTranslation(targetLocale, String(text ?? '')) });
@@ -484,9 +485,21 @@ export async function POST(req: Request) {
     const prompt = custom
       ? {
           system: basePrompt.system,
-          user: `${basePrompt.user}\n\nZusaetzliche Nutzeranweisung:\n${custom}`,
+          user: `${custom}\n\nKontext: ${areaName}\n\nAusgangsdaten:\n${text}`,
         }
       : basePrompt;
+
+    if (debugPrompt) {
+      return NextResponse.json({
+        prompt: {
+          system: prompt.system,
+          user: prompt.user,
+          usesCustomPrompt: Boolean(custom),
+          basePrompt,
+          customPrompt: custom,
+        },
+      });
+    }
 
     let optimizedText: string | null = null;
     let usagePromptTokens: number | null = null;
