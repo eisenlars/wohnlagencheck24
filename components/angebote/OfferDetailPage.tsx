@@ -781,52 +781,32 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <div className="offer-detail-panel">
 
             {activeMediaTab === "floorplans" ? (
-              activeFloorplan ? (
-                <div className="offer-detail-panel-media">
-                  <button
-                    type="button"
-                    className="offer-detail-panel-media-frame offer-detail-panel-media-frame--interactive is-floorplan"
-                    onClick={() => setActiveLightboxMedia("floorplans")}
-                    aria-haspopup="dialog"
-                    aria-controls={galleryLightboxId}
-                    aria-label="Grundriss in Vollbild öffnen"
-                  >
-                    <Image
-                      key={activeFloorplan.url}
-                      src={activeFloorplan.url}
-                        alt={activeFloorplan.title ?? texts.floor_plan}
+              floorplanAssets.length > 0 ? (
+                <div className="offer-detail-floorplan-stack">
+                  {floorplanAssets.map((asset, index) => (
+                    <button
+                      key={`${asset.url}-${index}`}
+                      type="button"
+                      className="offer-detail-panel-media-frame offer-detail-panel-media-frame--interactive is-floorplan"
+                      onClick={() => {
+                        setActiveFloorplanIndex(index);
+                        setActiveLightboxMedia("floorplans");
+                      }}
+                      aria-haspopup="dialog"
+                      aria-controls={galleryLightboxId}
+                      aria-label={`Grundriss ${index + 1} in Vollbild öffnen`}
+                    >
+                      <Image
+                        src={asset.url}
+                        alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
                         fill
                         loading="lazy"
                         quality={64}
                         sizes="(max-width: 991px) 100vw, 72vw"
                         style={{ objectFit: "contain" }}
                       />
-                  </button>
-                  {floorplanAssets.length > 1 ? (
-                    <div className="offer-detail-panel-thumbs">
-                      {floorplanAssets.map((asset, index) => (
-                        <button
-                          key={`${asset.url}-${index}`}
-                          type="button"
-                          className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
-                          onClick={() => setActiveFloorplanIndex(index)}
-                          aria-label={`Grundriss ${index + 1} anzeigen`}
-                        >
-                          <div className="offer-detail-thumb-frame">
-                            <Image
-                              src={asset.url}
-                              alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
-                              fill
-                              loading="lazy"
-                              quality={42}
-                              sizes="84px"
-                              style={{ objectFit: "cover" }}
-                            />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
+                    </button>
+                  ))}
                 </div>
               ) : (
                 <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>

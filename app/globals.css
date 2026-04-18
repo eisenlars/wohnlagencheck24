@@ -3213,6 +3213,11 @@ h6 {
   gap: 0.85rem;
 }
 
+.offer-detail-floorplan-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
 .offer-detail-panel-media-frame {
   background: #f1f2f4;
   border-radius: 1rem;
