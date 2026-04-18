@@ -894,16 +894,14 @@ export default function RequestsWorkspaceManager(props: Props) {
                   onClick={() => setSelectedId(row.id)}
                   style={offerRowStyle(selectedId === row.id)}
                 >
-                  <span style={requestListTitleRowStyle}>
-                    <span style={requestListTitleTextStyle}>{row.title || 'Gesuch'}</span>
-                    <span
-                      aria-hidden="true"
-                      style={requestListStatusDotStyle(rowIsReady)}
-                    />
-                  </span>
+                  <span style={requestListTitleTextStyle}>{row.title || 'Gesuch'}</span>
                   <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
                     {`${formatRequestModeLabel(getPayloadText(payload, ['request_type']) || '—')} · ${formatRequestObjectTypeLabel(getPayloadText(payload, ['object_type']) || null)} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
                   </span>
+                  <span
+                    aria-hidden="true"
+                    style={requestListStatusDotStyle(rowIsReady)}
+                  />
                 </button>
               );
             })}
@@ -1523,15 +1521,8 @@ const offerRowStyle = (active: boolean): CSSProperties => ({
   gap: '4px',
   minHeight: `${REQUEST_LIST_ROW_HEIGHT}px`,
   justifyContent: 'center',
+  position: 'relative',
 });
-
-const requestListTitleRowStyle: CSSProperties = {
-  fontWeight: 600,
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: '10px',
-};
 
 const requestListTitleTextStyle: CSSProperties = {
   fontWeight: 600,
@@ -1541,6 +1532,7 @@ const requestListTitleTextStyle: CSSProperties = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   lineHeight: 1.35,
+  paddingRight: '16px',
 };
 
 const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
@@ -1548,8 +1540,9 @@ const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
   height: '10px',
   borderRadius: '999px',
   backgroundColor: active ? '#16a34a' : '#dc2626',
-  flex: '0 0 auto',
-  marginTop: '3px',
+  position: 'absolute',
+  top: '10px',
+  right: '10px',
 });
 
 const primaryButtonStyle = (disabled = false): CSSProperties => ({
