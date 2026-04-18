@@ -117,19 +117,53 @@ function normalizeFactorValues(raw: unknown): FactorValues {
   };
 }
 
-function getFactorRangeError(label: string, values: FactorValues): string | null {
+function getResultingCurrentRange(
+  values: FactorValues,
+  previewValues?: PreviewFactorValues | null,
+): { min: number; avg: number; max: number } | null {
+  const baseMin = previewValues?.f01_min;
+  const baseAvg = previewValues?.f01_avg;
+  const baseMax = previewValues?.f01_max;
+  if (
+    typeof baseMin !== 'number'
+    || !Number.isFinite(baseMin)
+    || typeof baseAvg !== 'number'
+    || !Number.isFinite(baseAvg)
+    || typeof baseMax !== 'number'
+    || !Number.isFinite(baseMax)
+  ) {
+    return null;
+  }
+  return {
+    min: baseMin * values.f01_min,
+    avg: baseAvg * values.f01_avg,
+    max: baseMax * values.f01_max,
+  };
+}
+
+function getFactorRangeError(
+  label: string,
+  values: FactorValues,
+  previewValues?: PreviewFactorValues | null,
+): string | null {
+  const resultingRange = getResultingCurrentRange(values, previewValues);
+  if (resultingRange) {
+    if (resultingRange.min > resultingRange.avg) return `${label}: Min darf nicht größer als Avg sein.`;
+    if (resultingRange.avg > resultingRange.max) return `${label}: Avg darf nicht größer als Max sein.`;
+    return null;
+  }
   if (values.f01_min > values.f01_avg) return `${label}: Min darf nicht größer als Avg sein.`;
   if (values.f01_avg > values.f01_max) return `${label}: Avg darf nicht größer als Max sein.`;
   return null;
 }
 
-function validateFactorSnapshot(snapshot: FactorSnapshot): string | null {
+function validateFactorSnapshot(snapshot: FactorSnapshot, previewBase?: PreviewBase | null): string | null {
   return (
-    getFactorRangeError('Kauf Haus', snapshot.kauf_haus)
-    ?? getFactorRangeError('Kauf Wohnung', snapshot.kauf_wohnung)
-    ?? getFactorRangeError('Kauf Grundstück', snapshot.kauf_grundstueck)
-    ?? getFactorRangeError('Miete Haus', snapshot.miete_haus)
-    ?? getFactorRangeError('Miete Wohnung', snapshot.miete_wohnung)
+    getFactorRangeError('Kauf Haus', snapshot.kauf_haus, previewBase?.haus_kaufpreis)
+    ?? getFactorRangeError('Kauf Wohnung', snapshot.kauf_wohnung, previewBase?.wohnung_kaufpreis)
+    ?? getFactorRangeError('Kauf Grundstück', snapshot.kauf_grundstueck, previewBase?.grundstueck_kaufpreis)
+    ?? getFactorRangeError('Miete Haus', snapshot.miete_haus, previewBase?.miete_haus)
+    ?? getFactorRangeError('Miete Wohnung', snapshot.miete_wohnung, previewBase?.miete_wohnung)
   );
 }
 
@@ -286,7 +320,7 @@ function FactorGrid({
   fmt,
 }: FactorGridProps) {
   const factorKeys: Array<keyof FactorValues> = ['f02', 'f03', 'f04', 'f05', 'f06'];
-  const rangeError = getFactorRangeError(title, data);
+  const rangeError = getFactorRangeError(title, data, previewBase);
   return (
     <div style={{ padding: '15px 0' }}>
       <h5 style={gridTitleStyle}>{title}</h5>
@@ -575,8 +609,8 @@ const FactorForm = forwardRef<FactorFormHandle, {
     [sf, trend, kh, kw, kg, mh, mw, rendite],
   );
   const factorValidationError = useMemo(
-    () => validateFactorSnapshot(currentFactors),
-    [currentFactors],
+    () => validateFactorSnapshot(currentFactors, previewBase),
+    [currentFactors, previewBase],
   );
   const hasFactorChanges = useMemo(
     () => JSON.stringify(currentFactors) !== JSON.stringify(persistedFactors),
@@ -743,7 +777,7 @@ const FactorForm = forwardRef<FactorFormHandle, {
       }
 
       const factors = snapshot ?? makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
-      const validationError = validateFactorSnapshot(factors);
+      const validationError = validateFactorSnapshot(factors, previewBase);
       if (validationError) {
         setMessage(`❌ ${validationError}`);
         return false;
