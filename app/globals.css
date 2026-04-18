@@ -2750,6 +2750,10 @@ h6 {
   margin-left: auto;
 }
 
+.offer-detail-media {
+  --offer-detail-media-height: clamp(320px, 37vw, 430px);
+}
+
 .offer-detail-media-tab {
   border: 1px solid #d7dde2;
   background: #fff;
@@ -2769,7 +2773,6 @@ h6 {
 }
 
 .offer-detail-map-embed {
-  --offer-detail-media-height: clamp(320px, 37vw, 430px);
   position: relative;
   overflow: hidden;
   border-radius: 1.35rem;
