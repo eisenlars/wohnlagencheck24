@@ -234,12 +234,31 @@ function buildDefaultForm(row: RawReferenceRow, override?: OverrideRow | null): 
   };
 }
 
+function getReferenceSourceTitle(row: RawReferenceRow | null, payload: Record<string, unknown>): string {
+  if (!row) return '';
+  return getPayloadText(payload, ['source_title']) || asText(row.title);
+}
+
+function getReferenceRawText(payload: Record<string, unknown>): string {
+  return asText(getPayloadText(payload, ['description', 'reference_text_seed']));
+}
+
+function getReferencePromptContext(row: RawReferenceRow | null, payload: Record<string, unknown>): string {
+  if (!row) return 'Immobilienreferenz';
+  const objectType = getPayloadText(payload, ['object_type']) || 'Immobilie';
+  const location = getReferenceLocationLabel(payload);
+  if (location && location !== '—') return `${objectType} in ${location}`;
+  const sourceTitle = getReferenceSourceTitle(row, payload);
+  if (sourceTitle) return sourceTitle;
+  return `${objectType}-Referenz`;
+}
+
 function isReferenceReadyForPublish(row: RawReferenceRow, override?: OverrideRow | null): boolean {
   const curatedTitle = asText(override?.seo_h1);
   const curatedText = asText(override?.long_description);
-  const rawTitle = asText(row.title);
   const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-  const rawText = asText(getPayloadText(payload, ['description', 'reference_text_seed']));
+  const rawTitle = getReferenceSourceTitle(row, payload);
+  const rawText = getReferenceRawText(payload);
   return (
     curatedTitle.length > 0 &&
     curatedText.length > 0 &&
@@ -260,8 +279,7 @@ function buildReferenceAiSourceContext(row: RawReferenceRow | null, payload: Rec
         }, [])
     : [];
   const facts = [
-    ['Interner Titel', asText(row.title)],
-    ['Quelltitel', getPayloadText(payload, ['source_title'])],
+    ['Quelltitel', getReferenceSourceTitle(row, payload)],
     ['Vermarktungsart', getPayloadText(payload, ['offer_type', 'vermarktungsart'])],
     ['Objektart', getPayloadText(payload, ['object_type'])],
     ['Transaktion', getPayloadText(payload, ['transaction_result'])],
@@ -352,6 +370,7 @@ const thumbButtonStyle = (active: boolean): CSSProperties => ({
 });
 const thumbImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
 const saveButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: 'none', backgroundColor: '#0f172a', color: '#fff', fontWeight: 600, cursor: 'pointer' };
+const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' };
 
 function tabButtonStyle(active: boolean): CSSProperties {
   return {
@@ -784,8 +803,8 @@ export default function ReferencesWorkspaceManager() {
     if (!payload) return;
     const nextTitle = asText(payload.seo_h1);
     const nextDescription = asText(payload.long_description);
-    const sourceTitle = asText(selectedRow?.title);
-    const sourceDescription = asText(rawDescription);
+    const sourceTitle = getReferenceSourceTitle(selectedRow, selectedPayload);
+    const sourceDescription = getReferenceRawText(selectedPayload);
     if (
       nextTitle.length === 0 ||
       nextDescription.length === 0 ||
@@ -828,11 +847,83 @@ export default function ReferencesWorkspaceManager() {
     setSaving(false);
   }
 
+  async function resetReferenceTextOverrides() {
+    if (!selectedRow || !form) return;
+    setSaving(true);
+    setStatus('Setze Referenztexte zurück...');
+    const nextForm: OverrideRow = {
+      ...form,
+      seo_h1: '',
+      long_description: '',
+      features_text: '',
+      last_updated: new Date().toISOString(),
+    };
+    const hasOtherContent =
+      asText(nextForm.seo_title).length > 0 ||
+      asText(nextForm.seo_description).length > 0 ||
+      asText(nextForm.short_description).length > 0 ||
+      asText(nextForm.location_text).length > 0 ||
+      (Array.isArray(nextForm.highlights) && nextForm.highlights.length > 0) ||
+      (Array.isArray(nextForm.image_alt_texts) && nextForm.image_alt_texts.length > 0);
+    if (!hasOtherContent && selectedOverride?.id) {
+      const { error } = await supabase
+        .from('partner_reference_overrides')
+        .delete()
+        .eq('partner_id', selectedRow.partner_id)
+        .eq('source', selectedRow.provider)
+        .eq('external_id', selectedRow.external_id);
+      if (error) {
+        setStatus(`Zurücksetzen fehlgeschlagen: ${error.message}`);
+        setSaving(false);
+        return;
+      }
+      setOverrides((prev) =>
+        prev.filter(
+          (entry) =>
+            !(
+              entry.partner_id === selectedRow.partner_id &&
+              entry.source === selectedRow.provider &&
+              entry.external_id === selectedRow.external_id
+            ),
+        ),
+      );
+      setForm(buildDefaultForm(selectedRow, null));
+      setStatus('Referenztexte zurückgesetzt.');
+      setSaving(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('partner_reference_overrides')
+      .upsert(nextForm, { onConflict: 'partner_id,source,external_id' })
+      .select('*')
+      .single();
+    if (error) {
+      setStatus(`Zurücksetzen fehlgeschlagen: ${error.message}`);
+      setSaving(false);
+      return;
+    }
+    setOverrides((prev) => {
+      const filtered = prev.filter(
+        (entry) =>
+          !(
+            entry.partner_id === nextForm.partner_id &&
+            entry.source === nextForm.source &&
+            entry.external_id === nextForm.external_id
+          ),
+      );
+      return [...filtered, data as OverrideRow];
+    });
+    setForm(nextForm);
+    setStatus('Referenztexte zurückgesetzt.');
+    setSaving(false);
+  }
+
   async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
     if (!form || !selectedRow) return;
     const currentText = String(form[key] ?? '');
     const sourceContext = buildReferenceAiSourceContext(selectedRow, selectedPayload);
-    const inputText = currentText.trim() || sourceContext;
+    const generateFromSource = key === 'seo_h1' || key === 'long_description' || key === 'features_text';
+    const inputText = generateFromSource ? sourceContext : currentText.trim() || sourceContext;
     if (!inputText.trim()) return;
     setRewritingKey(String(key));
     setStatus('KI-Optimierung läuft...');
@@ -848,7 +939,7 @@ export default function ReferencesWorkspaceManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: inputText,
-          areaName: selectedRow.title || selectedRow.external_id,
+          areaName: getReferencePromptContext(selectedRow, selectedPayload),
           type: 'general',
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
@@ -885,19 +976,19 @@ export default function ReferencesWorkspaceManager() {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
-  function getStandardPromptText(label: string, areaName: string) {
+  function getStandardPromptText(label: string, contextLabel: string) {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('referenz-titel') || lowerLabel.includes('h1')) {
-      return `Formuliere einen hochwertigen Referenz-Titel für eine erfolgreich vermittelte Immobilie in ${areaName}. Der Titel soll wie eine Erfolgsbotschaft wirken, nicht wie eine Objektbeschreibung, nicht wie ein Exposé und nicht wie eine Datenliste. Stelle die erfolgreiche Vermittlung in den Vordergrund und ordne Objektart und Ort natürlich ein. Nutze nur belegbare Fakten aus den importierten Referenzdaten. Keine Doppelpunkte, keine Schlagwortlisten, keine Übertreibungen, keine Clickbait-Formulierungen. Maximal 70 Zeichen.`;
+      return `Formuliere einen hochwertigen Referenz-Titel für eine erfolgreich vermittelte Immobilie. Nutze dafür nur den folgenden Objektkontext: ${contextLabel}. Der Titel soll wie eine Erfolgsbotschaft wirken, nicht wie eine Objektbeschreibung, nicht wie ein Exposé und nicht wie eine Datenliste. Stelle die erfolgreiche Vermittlung in den Vordergrund und ordne Objektart und Ort natürlich ein. Nutze nur belegbare Fakten aus den importierten Referenzdaten. Keine Doppelpunkte, keine Schlagwortlisten, keine Übertreibungen, keine Clickbait-Formulierungen. Maximal 70 Zeichen. Gib ausschließlich den finalen Titel zurück. Keine Markdown-Formatierung, keine Anführungszeichen, keine Zusatzsätze.`;
     }
     if (lowerLabel.includes('seo-titel')) {
-      return `Schreibe einen SEO-Titel für eine Immobilienreferenz in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
+      return `Schreibe einen SEO-Titel für eine Immobilienreferenz. Nutze dafür nur den folgenden Objektkontext: ${contextLabel}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten. Gib ausschließlich den finalen SEO-Titel zurück. Keine Markdown-Formatierung und keine Zusatzsätze.`;
     }
     if (lowerLabel.includes('seo-description')) {
-      return `Schreibe eine SEO-Description für eine Immobilienreferenz in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
+      return `Schreibe eine SEO-Description für eine Immobilienreferenz. Nutze dafür nur den folgenden Objektkontext: ${contextLabel}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten. Gib ausschließlich die finale SEO-Description zurück. Keine Markdown-Formatierung und keine Zusatzsätze.`;
     }
     if (lowerLabel.includes('referenztext')) {
-      return `Schreibe einen hochwertigen Referenztext für eine erfolgreich vermittelte Immobilie in ${areaName}. Der Text soll wie eine professionelle Erfolgsreferenz eines Maklers wirken, nicht wie eine Objektbeschreibung, kein Exposé und keine Datenliste.
+      return `Schreibe einen hochwertigen Referenztext für eine erfolgreich vermittelte Immobilie. Nutze dafür nur den folgenden Objektkontext: ${contextLabel}. Der Text soll wie eine professionelle Erfolgsreferenz eines Maklers wirken, nicht wie eine Objektbeschreibung, kein Exposé und keine Datenliste.
 
 Wichtige Regeln:
 - 2 bis 4 flüssige Sätze
@@ -912,10 +1003,10 @@ Wichtige Regeln:
 - keine erfundenen Fakten
 - Ton: sachlich, hochwertig, vertrauensbildend
 
-Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet wurde. Vermeide ausdrücklich Exposé-Sprache, reine Merkmalsaufzählungen und werbliche Übertreibungen.`;
+Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet wurde. Vermeide ausdrücklich Exposé-Sprache, reine Merkmalsaufzählungen und werbliche Übertreibungen. Gib ausschließlich den finalen Referenztext zurück. Keine Markdown-Formatierung, keine Zwischenüberschrift, keine Listen und keine Zusatzhinweise.`;
     }
     if (lowerLabel.includes('herausforderung')) {
-      return `Prüfe die importierten Hinweise auf belastbare Herausforderungen im Verkaufs- oder Vermietungsprozess. Wenn keine klaren Hinweise vorliegen, gib einen leeren String zurück. Wenn Hinweise vorliegen, formuliere maximal 1 bis 2 kurze, neutrale Sätze. Nenne sensible private Auslöser wie Scheidung, Trennung, Erbe oder Nachlass nicht direkt, sondern abstrahiere sie sachlich.`;
+      return `Prüfe die importierten Hinweise auf belastbare Herausforderungen im Verkaufs- oder Vermietungsprozess. Wenn keine klaren Hinweise vorliegen, gib einen leeren String zurück. Wenn Hinweise vorliegen, formuliere maximal 1 bis 2 kurze, neutrale Sätze. Nenne sensible private Auslöser wie Scheidung, Trennung, Erbe oder Nachlass nicht direkt, sondern abstrahiere sie sachlich. Gib ausschließlich den finalen Text oder einen leeren String zurück. Keine Markdown-Formatierung und keine Zusatzhinweise.`;
     }
     if (lowerLabel.includes('highlights')) {
       return `Schreibe maximal 6 Highlights, jeweils 1 Zeile. Kurz, konkret, belegbar, keine Wiederholungen und keine vagen Werbeformulierungen.`;
@@ -923,7 +1014,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     if (lowerLabel.includes('alt-texte') || lowerLabel.includes('alttexte')) {
       return `Erstelle kurze, sachliche Alt-Texte, jeweils 1 Zeile pro Bild. Beschreibe das Motiv konkret, ohne erfundene Details und ohne Keyword-Stuffing.`;
     }
-    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${contextLabel}.`;
   }
 
   const renderTextField = (
@@ -938,7 +1029,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
-    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Referenz');
+    const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
     const showPreview = options?.showPreview ?? true;
     return (
       <div style={fieldCardStyle}>
@@ -1020,7 +1111,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
-    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Referenz');
+    const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -1098,7 +1189,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
   const selectedRentedFlag = getPayloadText(selectedPayload, ['vermietet']) || '—';
   const selectedReservedFlag = getPayloadText(selectedPayload, ['reserviert']) || '—';
   const selectedPublishFlag = getPayloadText(selectedPayload, ['veroeffentlichen']) || '—';
-  const rawDescription = selectedDescription;
+  const rawDescription = getReferenceRawText(selectedPayload);
   const rawChallengeText = getPayloadText(selectedPayload, ['challenge_note_source']);
   const selectedChallengeCategories = Array.isArray(selectedPayload.challenge_categories)
     ? selectedPayload.challenge_categories
@@ -1112,8 +1203,8 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
   const rawHighlights = getPayloadList(selectedPayload, 'highlights');
   const requiredReferenceTitle = asText(form?.seo_h1);
   const requiredReferenceText = asText(form?.long_description);
-  const rawReferenceTitle = asText(selectedRow?.title);
-  const rawReferenceText = asText(rawDescription);
+  const rawReferenceTitle = getReferenceSourceTitle(selectedRow, selectedPayload);
+  const rawReferenceText = getReferenceRawText(selectedPayload);
   const canSaveReferenceContent =
     requiredReferenceTitle.length > 0 &&
     requiredReferenceText.length > 0 &&
@@ -1306,7 +1397,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               {activeTab === 'texts' ? (
                 <div style={referenceTextWorkspaceStyle}>
                   <div style={{ display: 'grid', gap: 18 }}>
-                    {renderTextField('Referenz-Titel', 'seo_h1', selectedRow.title ?? '', {
+                    {renderTextField('Referenz-Titel', 'seo_h1', getReferenceSourceTitle(selectedRow, selectedPayload), {
                       multiline: false,
                       showPreview: false,
                       placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1351,9 +1442,17 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                       </div>
                     ) : null}
 
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button type="button" onClick={() => void saveOverride()} disabled={saving || !canSaveReferenceContent} style={saveButtonStyle}>
                         {saving ? 'Speichert...' : 'Referenztexte speichern'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void resetReferenceTextOverrides()}
+                        disabled={saving || (!requiredReferenceTitle && !requiredReferenceText && !asText(form.features_text))}
+                        style={secondaryActionButtonStyle}
+                      >
+                        Referenztexte zurücksetzen
                       </button>
                     </div>
                   </div>
@@ -1414,7 +1513,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
 
               {activeTab === 'seo' ? (
                 <div style={{ display: 'grid', gap: 18 }}>
-                  {renderTextField('SEO-Titel', 'seo_title', selectedRow.title ?? '', { multiline: false })}
+                  {renderTextField('SEO-Titel', 'seo_title', getReferenceSourceTitle(selectedRow, selectedPayload), { multiline: false })}
                   {renderTextField('SEO-Description', 'seo_description', rawDescription, { multiline: true })}
                   {renderListField('Highlights', 'highlights', rawHighlights, 'Ein Highlight pro Zeile')}
                   {renderListField('Alt-Texte (eine Zeile = ein Bild)', 'image_alt_texts', [], 'Ein Alt-Text pro Zeile')}
