@@ -300,6 +300,13 @@ const onlineStatusDotStyle = (ready: boolean): CSSProperties => ({
   top: 10,
   right: 10,
 });
+const onlineStatusBadgeDotStyle = (ready: boolean): CSSProperties => ({
+  width: 10,
+  height: 10,
+  borderRadius: 999,
+  backgroundColor: ready ? '#16a34a' : '#dc2626',
+  flex: '0 0 auto',
+});
 const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -1245,7 +1252,7 @@ export default function ReferencesWorkspaceManager() {
                     <div style={summaryHeaderStyle}>Überblick</div>
                     <div style={referenceOverviewHeaderActionsStyle}>
                       <span style={onlineStatusBadgeStyle(isReferenceReady)}>
-                        <span aria-hidden="true" style={onlineStatusDotStyle(isReferenceReady)} />
+                        <span aria-hidden="true" style={onlineStatusBadgeDotStyle(isReferenceReady)} />
                         <span>{isReferenceReady ? 'Onlinefertig' : 'Nicht onlinefertig'}</span>
                       </span>
                       <button
