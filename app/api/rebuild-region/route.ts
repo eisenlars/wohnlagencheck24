@@ -41,6 +41,18 @@ type FactorGroup = {
   f05?: number;
   f06?: number;
 };
+type CurrentRangeBase = {
+  min: number | null;
+  avg: number | null;
+  max: number | null;
+};
+type CurrentRangeBases = {
+  kauf_haus: CurrentRangeBase;
+  kauf_wohnung: CurrentRangeBase;
+  kauf_grundstueck: CurrentRangeBase;
+  miete_haus: CurrentRangeBase;
+  miete_wohnung: CurrentRangeBase;
+};
 
 function isEnabled() {
   return process.env.REBUILD_REGION_ENABLED === "1";
@@ -725,6 +737,42 @@ function safeTrendDelta(value: unknown) {
   return Math.max(-100, Math.min(100, value));
 }
 
+function resolveCurrentRangeBases(
+  meta: AnyRecord | null | undefined,
+  data: AnyRecord | null | undefined,
+  scopeKey: "kreis" | "ortslage",
+): CurrentRangeBases {
+  const existingBaseValues = toRecord(meta?.base_values);
+  const scopeBaseValues = toRecord(existingBaseValues[scopeKey]);
+  return {
+    kauf_haus: {
+      min: toNumber(scopeBaseValues.haus_kaufpreis_min) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_min),
+      avg: toNumber(scopeBaseValues.haus_kaufpreis_avg) ?? toNumber(scopeBaseValues.haus_kaufpreis) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_avg),
+      max: toNumber(scopeBaseValues.haus_kaufpreis_max) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_max),
+    },
+    kauf_wohnung: {
+      min: toNumber(scopeBaseValues.wohnung_kaufpreis_min) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_min),
+      avg: toNumber(scopeBaseValues.wohnung_kaufpreis_avg) ?? toNumber(scopeBaseValues.wohnung_kaufpreis) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_avg),
+      max: toNumber(scopeBaseValues.wohnung_kaufpreis_max) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_max),
+    },
+    kauf_grundstueck: {
+      min: toNumber(scopeBaseValues.grundstueck_kaufpreis_min) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_min),
+      avg: toNumber(scopeBaseValues.grundstueck_kaufpreis_avg) ?? toNumber(scopeBaseValues.grundstueck_kaufpreis) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_avg),
+      max: toNumber(scopeBaseValues.grundstueck_kaufpreis_max) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_max),
+    },
+    miete_haus: {
+      min: toNumber(scopeBaseValues.miete_haus_min) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_min),
+      avg: toNumber(scopeBaseValues.miete_haus_avg) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg),
+      max: toNumber(scopeBaseValues.miete_haus_max) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_max),
+    },
+    miete_wohnung: {
+      min: toNumber(scopeBaseValues.miete_wohnung_min) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_min),
+      avg: toNumber(scopeBaseValues.miete_wohnung_avg) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg),
+      max: toNumber(scopeBaseValues.miete_wohnung_max) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_max),
+    },
+  };
+}
+
 function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors {
   const source = raw && typeof raw === "object" ? raw : {};
   const kaufHaus = source.kauf_haus && typeof source.kauf_haus === "object" ? (source.kauf_haus as AnyRecord) : {};
@@ -771,15 +819,27 @@ function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors 
   };
 }
 
-function validateNormalizedFactors(factors: NormalizedFactors): string | null {
-  const checks: Array<[string, { f01_min: number; f01_avg: number; f01_max: number }]> = [
-    ["Kauf Haus", factors.kauf_haus],
-    ["Kauf Wohnung", factors.kauf_wohnung],
-    ["Kauf Grundstück", factors.kauf_grundstueck],
-    ["Miete Haus", factors.miete_haus],
-    ["Miete Wohnung", factors.miete_wohnung],
+function validateNormalizedFactors(factors: NormalizedFactors, currentRangeBases: CurrentRangeBases): string | null {
+  const checks: Array<[string, { f01_min: number; f01_avg: number; f01_max: number }, CurrentRangeBase]> = [
+    ["Kauf Haus", factors.kauf_haus, currentRangeBases.kauf_haus],
+    ["Kauf Wohnung", factors.kauf_wohnung, currentRangeBases.kauf_wohnung],
+    ["Kauf Grundstück", factors.kauf_grundstueck, currentRangeBases.kauf_grundstueck],
+    ["Miete Haus", factors.miete_haus, currentRangeBases.miete_haus],
+    ["Miete Wohnung", factors.miete_wohnung, currentRangeBases.miete_wohnung],
   ];
-  for (const [label, group] of checks) {
+  for (const [label, group, base] of checks) {
+    if (
+      typeof base.min === "number"
+      && Number.isFinite(base.min)
+      && typeof base.avg === "number"
+      && Number.isFinite(base.avg)
+      && typeof base.max === "number"
+      && Number.isFinite(base.max)
+    ) {
+      if (base.min * group.f01_min > base.avg * group.f01_avg) return `${label}: Min darf nicht größer als Avg sein.`;
+      if (base.avg * group.f01_avg > base.max * group.f01_max) return `${label}: Avg darf nicht größer als Max sein.`;
+      continue;
+    }
     if (group.f01_min > group.f01_avg) return `${label}: Min darf nicht größer als Avg sein.`;
     if (group.f01_avg > group.f01_max) return `${label}: Avg darf nicht größer als Max sein.`;
   }
@@ -949,6 +1009,7 @@ export async function POST(req: Request) {
     const text = report?.text ?? {};
     const textInputs = data?.textgen_inputs ?? {};
     const scopeInputs = scope === "ortslage" ? textInputs?.ortslage : textInputs?.kreis;
+    const scopeKey = scope === "ortslage" ? "ortslage" : "kreis";
 
     if (!scopeInputs) {
       return NextResponse.json({ error: "textgen_inputs missing in report JSON." }, { status: 400 });
@@ -1006,7 +1067,8 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       targetFactors = normalizeFactors(settings ?? DEFAULT_FACTORS);
-      const factorValidationError = validateNormalizedFactors(targetFactors);
+      const currentRangeBases = resolveCurrentRangeBases(meta, data, scopeKey);
+      const factorValidationError = validateNormalizedFactors(targetFactors, currentRangeBases);
       if (factorValidationError) {
         return NextResponse.json({ error: factorValidationError }, { status: 400 });
       }
@@ -1043,30 +1105,29 @@ export async function POST(req: Request) {
         };
       }
 
-      const scopeKey = scope === "ortslage" ? "ortslage" : "kreis";
       const existingBaseValues = toRecord(meta.base_values);
       const scopeBaseValues = toRecord(existingBaseValues[scopeKey]);
       meta.base_values = {
         ...existingBaseValues,
         [scopeKey]: {
           haus_kaufpreis: toNumber(scopeBaseValues.haus_kaufpreis) ?? toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
-          haus_kaufpreis_avg: toNumber(scopeBaseValues.haus_kaufpreis_avg) ?? toNumber(scopeBaseValues.haus_kaufpreis) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_avg),
-          haus_kaufpreis_min: toNumber(scopeBaseValues.haus_kaufpreis_min) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_min),
-          haus_kaufpreis_max: toNumber(scopeBaseValues.haus_kaufpreis_max) ?? toNumber(getFirstRow(data, "haus_kaufpreisspanne")?.preis_haus_max),
+          haus_kaufpreis_avg: currentRangeBases.kauf_haus.avg,
+          haus_kaufpreis_min: currentRangeBases.kauf_haus.min,
+          haus_kaufpreis_max: currentRangeBases.kauf_haus.max,
           wohnung_kaufpreis: toNumber(scopeBaseValues.wohnung_kaufpreis) ?? toNumber(getFirstRow(data, "wohnung_kaufpreis")?.kaufpreis_wohnung),
-          wohnung_kaufpreis_avg: toNumber(scopeBaseValues.wohnung_kaufpreis_avg) ?? toNumber(scopeBaseValues.wohnung_kaufpreis) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_avg),
-          wohnung_kaufpreis_min: toNumber(scopeBaseValues.wohnung_kaufpreis_min) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_min),
-          wohnung_kaufpreis_max: toNumber(scopeBaseValues.wohnung_kaufpreis_max) ?? toNumber(getFirstRow(data, "wohnung_kaufpreisspanne")?.preis_wohnung_max),
+          wohnung_kaufpreis_avg: currentRangeBases.kauf_wohnung.avg,
+          wohnung_kaufpreis_min: currentRangeBases.kauf_wohnung.min,
+          wohnung_kaufpreis_max: currentRangeBases.kauf_wohnung.max,
           grundstueck_kaufpreis: toNumber(scopeBaseValues.grundstueck_kaufpreis) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreis")?.kaufpreis_grundstueck),
-          grundstueck_kaufpreis_avg: toNumber(scopeBaseValues.grundstueck_kaufpreis_avg) ?? toNumber(scopeBaseValues.grundstueck_kaufpreis) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_avg),
-          grundstueck_kaufpreis_min: toNumber(scopeBaseValues.grundstueck_kaufpreis_min) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_min),
-          grundstueck_kaufpreis_max: toNumber(scopeBaseValues.grundstueck_kaufpreis_max) ?? toNumber(getFirstRow(data, "grundstueck_kaufpreisspanne")?.preis_grundstueck_max),
-          miete_haus_avg: toNumber(scopeBaseValues.miete_haus_avg) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg),
-          miete_haus_min: toNumber(scopeBaseValues.miete_haus_min) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_min),
-          miete_haus_max: toNumber(scopeBaseValues.miete_haus_max) ?? toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_max),
-          miete_wohnung_avg: toNumber(scopeBaseValues.miete_wohnung_avg) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg),
-          miete_wohnung_min: toNumber(scopeBaseValues.miete_wohnung_min) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_min),
-          miete_wohnung_max: toNumber(scopeBaseValues.miete_wohnung_max) ?? toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_max),
+          grundstueck_kaufpreis_avg: currentRangeBases.kauf_grundstueck.avg,
+          grundstueck_kaufpreis_min: currentRangeBases.kauf_grundstueck.min,
+          grundstueck_kaufpreis_max: currentRangeBases.kauf_grundstueck.max,
+          miete_haus_avg: currentRangeBases.miete_haus.avg,
+          miete_haus_min: currentRangeBases.miete_haus.min,
+          miete_haus_max: currentRangeBases.miete_haus.max,
+          miete_wohnung_avg: currentRangeBases.miete_wohnung.avg,
+          miete_wohnung_min: currentRangeBases.miete_wohnung.min,
+          miete_wohnung_max: currentRangeBases.miete_wohnung.max,
           immobilien_kaufpreis: toNumber(scopeBaseValues.immobilien_kaufpreis) ?? toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
           mietpreise_gesamt: toNumber(scopeBaseValues.mietpreise_gesamt) ?? toNumber(getFirstRow(data, "mietpreise_gesamt")?.preis_kaltmiete),
         },
