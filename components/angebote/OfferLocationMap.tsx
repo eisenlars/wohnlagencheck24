@@ -9,7 +9,7 @@ const DEFAULT_BEARING = -18;
 const EXACT_2D_ZOOM = 15.2;
 const APPROXIMATE_2D_ZOOM = 12.8;
 const EXACT_3D_ZOOM = 17.2;
-const APPROXIMATE_3D_ZOOM = 15.8;
+const APPROXIMATE_3D_ZOOM = 14.8;
 
 function setBuildingExtrusions(map: MapLibreMap, enabled: boolean) {
   const layer = map.getLayer(BUILDINGS_LAYER_ID);
