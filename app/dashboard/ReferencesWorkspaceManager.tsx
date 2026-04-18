@@ -1189,6 +1189,7 @@ export default function ReferencesWorkspaceManager() {
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const previewImageUrl = getReferencePreviewImageUrl(payload);
+              const sourceTitle = getPayloadText(payload, ['source_title']) || row.title || row.external_id;
               const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
               const objectType = getPayloadText(payload, ['object_type']) || '—';
               const location = getReferenceLocationLabel(payload);
@@ -1211,7 +1212,7 @@ export default function ReferencesWorkspaceManager() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={previewImageUrl}
-                        alt={row.title || 'Referenzbild'}
+                        alt={sourceTitle || 'Referenzbild'}
                         style={referenceRowImageStyle}
                         loading="lazy"
                         decoding="async"
@@ -1224,7 +1225,7 @@ export default function ReferencesWorkspaceManager() {
                     <span style={referenceRowTopStyle}>
                       <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
                     </span>
-                    <span style={referenceRowTitleStyle}>{row.title || row.external_id}</span>
+                    <span style={referenceRowTitleStyle}>{sourceTitle}</span>
                     <span style={referenceRowMetaStyle}>
                       {`${marketingType} · ${objectType} · ${location}`}
                     </span>
