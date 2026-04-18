@@ -888,7 +888,7 @@ export default function ReferencesWorkspaceManager() {
   function getStandardPromptText(label: string, areaName: string) {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('referenz-titel') || lowerLabel.includes('h1')) {
-      return `Formuliere einen prägnanten, sachlichen Referenz-Titel für ${areaName}. Nutze nur belegbare Fakten aus den importierten Referenzdaten. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine Übertreibungen.`;
+      return `Formuliere einen hochwertigen Referenz-Titel für eine erfolgreich vermittelte Immobilie in ${areaName}. Der Titel soll wie eine Erfolgsbotschaft wirken, nicht wie eine Objektbeschreibung, nicht wie ein Exposé und nicht wie eine Datenliste. Stelle die erfolgreiche Vermittlung in den Vordergrund und ordne Objektart und Ort natürlich ein. Nutze nur belegbare Fakten aus den importierten Referenzdaten. Keine Doppelpunkte, keine Schlagwortlisten, keine Übertreibungen, keine Clickbait-Formulierungen. Maximal 70 Zeichen.`;
     }
     if (lowerLabel.includes('seo-titel')) {
       return `Schreibe einen SEO-Titel für eine Immobilienreferenz in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
@@ -897,7 +897,22 @@ export default function ReferencesWorkspaceManager() {
       return `Schreibe eine SEO-Description für eine Immobilienreferenz in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
     }
     if (lowerLabel.includes('referenztext')) {
-      return `Schreibe einen hochwertigen Referenztext für ${areaName}. 2 bis 4 Sätze, sachlich und glaubwürdig. Beschreibe knapp, was erfolgreich vermittelt wurde und ordne Objektart, Vermarktungsart und Lage sauber ein. Keine neuen Fakten erfinden.`;
+      return `Schreibe einen hochwertigen Referenztext für eine erfolgreich vermittelte Immobilie in ${areaName}. Der Text soll wie eine professionelle Erfolgsreferenz eines Maklers wirken, nicht wie eine Objektbeschreibung, kein Exposé und keine Datenliste.
+
+Wichtige Regeln:
+- 2 bis 4 flüssige Sätze
+- Fokus auf erfolgreiche Vermittlung und Vermarktungsergebnis
+- Objektart, Ort und bei Bedarf 1 bis 2 sinnvolle Merkmale natürlich einordnen
+- keine Aufzählungen
+- keine Überschriften
+- keine Bulletpoints
+- keine Formulierungen wie „Objektdaten auf einen Blick“
+- keine Wiederholung des vollständigen Titels
+- keine spekulativen Aussagen
+- keine erfundenen Fakten
+- Ton: sachlich, hochwertig, vertrauensbildend
+
+Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet wurde. Vermeide ausdrücklich Exposé-Sprache, reine Merkmalsaufzählungen und werbliche Übertreibungen.`;
     }
     if (lowerLabel.includes('herausforderung')) {
       return `Prüfe die importierten Hinweise auf belastbare Herausforderungen im Verkaufs- oder Vermietungsprozess. Wenn keine klaren Hinweise vorliegen, gib einen leeren String zurück. Wenn Hinweise vorliegen, formuliere maximal 1 bis 2 kurze, neutrale Sätze. Nenne sensible private Auslöser wie Scheidung, Trennung, Erbe oder Nachlass nicht direkt, sondern abstrahiere sie sachlich.`;
