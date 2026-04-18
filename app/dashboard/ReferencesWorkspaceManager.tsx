@@ -369,7 +369,16 @@ const thumbButtonStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 const thumbImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
-const saveButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: 'none', backgroundColor: '#0f172a', color: '#fff', fontWeight: 600, cursor: 'pointer' };
+const saveButtonStyle = (disabled: boolean): CSSProperties => ({
+  padding: '10px 14px',
+  borderRadius: 10,
+  border: 'none',
+  backgroundColor: disabled ? '#cbd5e1' : '#0f172a',
+  color: disabled ? '#64748b' : '#fff',
+  fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.85 : 1,
+});
 const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' };
 
 function tabButtonStyle(active: boolean): CSSProperties {
@@ -843,6 +852,14 @@ export default function ReferencesWorkspaceManager() {
       );
       return [...filtered, data as OverrideRow];
     });
+    const rebuildRes = await fetch('/api/partner/public-projections/references/rebuild', {
+      method: 'POST',
+    });
+    if (!rebuildRes.ok) {
+      setStatus('Referenz-Overrides gespeichert, aber die öffentliche Projektion konnte nicht aktualisiert werden.');
+      setSaving(false);
+      return;
+    }
     setStatus('Referenz-Overrides gespeichert.');
     setSaving(false);
   }
@@ -1445,7 +1462,12 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                     ) : null}
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button type="button" onClick={() => void saveOverride()} disabled={saving || !canSaveReferenceContent} style={saveButtonStyle}>
+                      <button
+                        type="button"
+                        onClick={() => void saveOverride()}
+                        disabled={saving || !canSaveReferenceContent}
+                        style={saveButtonStyle(saving || !canSaveReferenceContent)}
+                      >
                         {saving ? 'Speichert...' : 'Referenztexte speichern'}
                       </button>
                       <button
@@ -1535,7 +1557,12 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="button" onClick={() => void saveOverride()} disabled={saving || !canSaveReferenceContent} style={saveButtonStyle}>
+                    <button
+                      type="button"
+                      onClick={() => void saveOverride()}
+                      disabled={saving || !canSaveReferenceContent}
+                      style={saveButtonStyle(saving || !canSaveReferenceContent)}
+                    >
                       {saving ? 'Speichert...' : 'Referenztexte speichern'}
                     </button>
                   </div>
