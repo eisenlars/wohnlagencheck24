@@ -6,6 +6,10 @@ import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
 const OPEN_FREE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
 const BUILDINGS_LAYER_ID = "wc24-3d-buildings";
 const DEFAULT_BEARING = -18;
+const EXACT_2D_ZOOM = 15.2;
+const APPROXIMATE_2D_ZOOM = 12.8;
+const EXACT_3D_ZOOM = 17.2;
+const APPROXIMATE_3D_ZOOM = 15.8;
 
 function setBuildingExtrusions(map: MapLibreMap, enabled: boolean) {
   const layer = map.getLayer(BUILDINGS_LAYER_ID);
@@ -76,7 +80,9 @@ export function OfferLocationMap(props: OfferLocationMapProps) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<MapLibreMarker | null>(null);
   const [is3dEnabled, setIs3dEnabled] = useState(false);
-  const initialZoom = approximate ? 12.8 : 15.2;
+  const initialZoom = is3dEnabled
+    ? (approximate ? APPROXIMATE_3D_ZOOM : EXACT_3D_ZOOM)
+    : (approximate ? APPROXIMATE_2D_ZOOM : EXACT_2D_ZOOM);
   const initialPitch = is3dEnabled ? 58 : 0;
   const initialBearing = is3dEnabled ? DEFAULT_BEARING : 0;
 
