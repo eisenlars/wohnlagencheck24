@@ -635,6 +635,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   function openMapsMedia() {
     if (!hasMapsMedia) return;
     setActiveMediaTab("maps");
+    setMapResetKey((current) => current + 1);
     const mediaElement = document.getElementById(mediaSectionId);
     mediaElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -836,7 +837,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   <button
                     type="button"
                     className="offer-detail-map-embed__badge offer-detail-map-embed__badge--button"
-                    onClick={() => setMapResetKey((current) => current + 1)}
+                    onClick={openMapsMedia}
                   >
                     <span className="offer-detail-location-link__icon"><LocationPinIcon /></span>
                     <span>
