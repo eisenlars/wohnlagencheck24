@@ -7,6 +7,7 @@ import { getReportBySlugs } from "@/lib/data";
 import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { getExperienceReferencesForRequest } from "@/lib/referenzen";
 import { getRegionalRequestByIdForKreis } from "@/lib/request-detail";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -74,10 +75,19 @@ async function MietgesuchKreisDetailPageContent({
   const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.kreis, { id: "mietgesuche", label: normalizedLocale === "de" ? "Mietgesuche" : "Rental requests" }];
   const texts = await getPortalSystemTexts(normalizedLocale);
   const formatProfile = await loadPortalFormatProfile(normalizedLocale);
+  const references = await getExperienceReferencesForRequest({
+    bundeslandSlug: bundesland,
+    kreisSlug: kreis,
+    objectType: requestData.objectType,
+    mode: "miete",
+    locale: normalizedLocale,
+    limit: 12,
+  });
 
   return (
     <RequestDetailPage
       request={requestData}
+      references={references}
       mode="miete"
       texts={texts}
       formatProfile={formatProfile}

@@ -7,7 +7,9 @@ import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import type { RequestMode } from "@/lib/gesuche";
 import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
 import type { RequestDetail } from "@/lib/request-detail";
+import type { RegionalReference } from "@/lib/referenzen";
 import { formatMetric } from "@/utils/format";
+import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
 
 type Props = {
@@ -33,6 +35,7 @@ type Props = {
       kreisName?: string;
     };
   };
+  references?: RegionalReference[];
 };
 
 function formatDateLabel(value: string | null | undefined, locale: string): string {
@@ -47,7 +50,7 @@ function formatDateLabel(value: string | null | undefined, locale: string): stri
 }
 
 export function RequestDetailPage(props: Props) {
-  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb } = props;
+  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb, references = [] } = props;
   const isGerman = locale === "de";
   const labels = isGerman
     ? {
@@ -283,6 +286,14 @@ export function RequestDetailPage(props: Props) {
           </div>
         </aside>
       </section>
+
+      {references.length > 0 ? (
+        <ReferenceExperienceMap
+          items={references}
+          heading="Vermittlungserfahrung für diese Objektart"
+          intro="Diese Kartenansicht zeigt vergleichbare Referenzen aus dem Gebiet. So wird für Eigentümer direkt sichtbar, dass der Makler bei dieser Objektart bereits konkrete Vermittlungserfahrung mitbringt."
+        />
+      ) : null}
     </div>
   );
 }
