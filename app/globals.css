@@ -2769,6 +2769,7 @@ h6 {
 }
 
 .offer-detail-map-embed {
+  --offer-detail-media-height: clamp(320px, 37vw, 430px);
   position: relative;
   overflow: hidden;
   border-radius: 1.35rem;
@@ -2777,7 +2778,7 @@ h6 {
     radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 28%),
     linear-gradient(180deg, rgba(241, 245, 249, 0.96), rgba(255, 255, 255, 0.98)),
     #f8fafc;
-  height: clamp(320px, 46vw, 520px);
+  height: var(--offer-detail-media-height);
 }
 
 .offer-detail-map-canvas {
@@ -3009,7 +3010,7 @@ h6 {
   overflow: hidden;
   border: none;
   position: relative;
-  min-height: clamp(320px, 37vw, 430px);
+  min-height: var(--offer-detail-media-height);
 }
 
 .offer-detail-gallery-hero--center {
@@ -3238,7 +3239,7 @@ h6 {
 }
 
 .offer-detail-panel-media-frame.is-floorplan {
-  min-height: 340px;
+  min-height: var(--offer-detail-media-height);
 }
 
 .offer-detail-panel-media-frame img {
