@@ -79,7 +79,7 @@ export function OfferLocationMap(props: OfferLocationMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<MapLibreMarker | null>(null);
-  const [is3dEnabled, setIs3dEnabled] = useState(false);
+  const [is3dEnabled, setIs3dEnabled] = useState(true);
   const initialZoom = is3dEnabled
     ? (approximate ? APPROXIMATE_3D_ZOOM : EXACT_3D_ZOOM)
     : (approximate ? APPROXIMATE_2D_ZOOM : EXACT_2D_ZOOM);
