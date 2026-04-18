@@ -296,8 +296,9 @@ const onlineStatusDotStyle = (ready: boolean): CSSProperties => ({
   height: 10,
   borderRadius: 999,
   backgroundColor: ready ? '#16a34a' : '#dc2626',
-  flex: '0 0 auto',
-  marginTop: 3,
+  position: 'absolute',
+  top: 10,
+  right: 10,
 });
 const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
   display: 'inline-flex',
@@ -372,6 +373,7 @@ function listRowStyle(active: boolean): CSSProperties {
     gap: 12,
     alignItems: 'center',
     minHeight: 84,
+    position: 'relative',
   };
 }
 
@@ -498,13 +500,7 @@ const referenceRowContentStyle: CSSProperties = {
   gap: 5,
   minWidth: 0,
   justifyContent: 'center',
-};
-
-const referenceRowTopStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  alignItems: 'flex-start',
-  minHeight: 13,
+  paddingRight: 16,
 };
 
 const referenceRowTitleStyle: CSSProperties = {
@@ -1222,14 +1218,12 @@ export default function ReferencesWorkspaceManager() {
                     )}
                   </span>
                   <span style={referenceRowContentStyle}>
-                    <span style={referenceRowTopStyle}>
-                      <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
-                    </span>
                     <span style={referenceRowTitleStyle}>{sourceTitle}</span>
                     <span style={referenceRowMetaStyle}>
                       {`${marketingType} · ${objectType} · ${location}`}
                     </span>
                   </span>
+                  <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
                 </button>
               );
             })}
