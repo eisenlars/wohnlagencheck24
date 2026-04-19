@@ -1209,6 +1209,8 @@ function mapEstateToReference(
     documents: mediaBundle.documents,
     floorplan_url: mediaBundle.floorplan_url,
     map_url: mediaBundle.map_url,
+    lat: elements["breitengrad"] ?? null,
+    lng: elements["laengengrad"] ?? null,
     geaendert_am: elements["geaendert_am"] ?? null,
     status: elements["status"] ?? null,
     status2: elements["status2"] ?? null,

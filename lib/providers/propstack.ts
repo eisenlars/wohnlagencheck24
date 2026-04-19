@@ -1344,6 +1344,8 @@ function mapUnitReference(
     challenge_categories: challengeNoteSource ? extractReferenceChallengeCategories(challengeNoteSource) : [],
     description: sourceDescription,
     image_url: gallery[0] ?? null,
+    lat: unit.lat ?? null,
+    lng: unit.lng ?? null,
     status: normalizePropstackStatusName(status),
     status_id: normalizePropstackStatusId(status),
     status_raw: status ?? null,
