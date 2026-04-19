@@ -11,8 +11,8 @@ import type { RegionalReference } from "@/lib/referenzen";
 import type { RequestMarketRangeContext } from "@/lib/request-market-range";
 import { formatMetric } from "@/utils/format";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
-import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
-import { RequestMarketRangeBox } from "./RequestMarketRangeBox";
+import { RequestFitTabs } from "./RequestFitTabs";
+import { RequestTipsterBox } from "./RequestTipsterBox";
 
 type Props = {
   request: RequestDetail;
@@ -121,6 +121,14 @@ export function RequestDetailPage(props: Props) {
       ? `${request.minRooms !== null ? formatRooms(request.minRooms) : "—"} bis ${request.maxRooms !== null ? formatRooms(request.maxRooms) : "—"} ${texts.rooms}`
       : "—";
   const locationLabel = request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified;
+  const initialAreaSqm =
+    request.minAreaSqm !== null && request.maxAreaSqm !== null
+      ? (request.minAreaSqm + request.maxAreaSqm) / 2
+      : request.minAreaSqm ?? request.maxAreaSqm;
+  const initialRooms =
+    request.minRooms !== null && request.maxRooms !== null
+      ? (request.minRooms + request.maxRooms) / 2
+      : request.minRooms ?? request.maxRooms;
   const qualificationCopy = mode === "miete"
     ? "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermietungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine."
     : "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermarktungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine.";
@@ -213,13 +221,19 @@ export function RequestDetailPage(props: Props) {
             </div>
           </div>
 
-          <RequestOfferLeadInlineForm
+          <RequestFitTabs
             locale={locale}
             mode={mode}
             pagePath={listPath}
             regionLabel={breadcrumb.names?.regionName ?? request.title}
             request={{ id: request.id, title: request.title, objectType: request.objectType }}
             context={breadcrumb.ctx ?? {}}
+            marketRangeContext={marketRangeContext}
+            initialAreaSqm={initialAreaSqm}
+            initialRooms={initialRooms}
+            numberLocale={formatProfile.intlLocale}
+            currencyCode={formatProfile.currencyCode}
+            hasReferences={references.length > 0}
           />
         </div>
 
@@ -286,35 +300,26 @@ export function RequestDetailPage(props: Props) {
                 <div style={{ fontWeight: 600 }}>{locationLabel}</div>
               </div>
             </div>
-            <RequestMarketRangeBox
-              mode={mode}
-              objectType={request.objectType}
-              marketRangeContext={marketRangeContext}
-              regionLabel={breadcrumb.names?.regionName ?? locationLabel}
-              initialAreaSqm={
-                request.minAreaSqm !== null && request.maxAreaSqm !== null
-                  ? (request.minAreaSqm + request.maxAreaSqm) / 2
-                  : request.minAreaSqm ?? request.maxAreaSqm
-              }
-              initialRooms={
-                request.minRooms !== null && request.maxRooms !== null
-                  ? (request.minRooms + request.maxRooms) / 2
-                  : request.minRooms ?? request.maxRooms
-              }
+            <RequestTipsterBox
               locale={locale}
-              numberLocale={formatProfile.intlLocale}
-              currencyCode={formatProfile.currencyCode}
+              mode={mode}
+              pagePath={listPath}
+              regionLabel={breadcrumb.names?.regionName ?? locationLabel}
+              request={{ id: request.id, title: request.title, objectType: request.objectType }}
+              context={breadcrumb.ctx ?? {}}
             />
           </div>
         </aside>
       </section>
 
       {references.length > 0 ? (
-        <ReferenceExperienceMap
-          items={references}
-          heading="Vermittlungserfahrung für diese Objektart"
-          intro="Diese Kartenansicht zeigt vergleichbare Referenzen aus dem Gebiet. So wird für Eigentümer direkt sichtbar, dass der Makler bei dieser Objektart bereits konkrete Vermittlungserfahrung mitbringt."
-        />
+        <div id="request-reference-map">
+          <ReferenceExperienceMap
+            items={references}
+            heading="Vermittlungserfahrung für diese Objektart"
+            intro="Diese Kartenansicht zeigt vergleichbare Referenzen aus dem Gebiet. So wird für Eigentümer direkt sichtbar, dass der Makler bei dieser Objektart bereits konkrete Vermittlungserfahrung mitbringt."
+          />
+        </div>
       ) : null}
     </div>
   );

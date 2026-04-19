@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, type CSSProperties, type FormEvent } from "react";
+import type { RequestMode } from "@/lib/gesuche";
 
 type RequestOfferLeadButtonProps = {
   label: string;
   locale?: string;
   className?: string;
   style?: CSSProperties;
+  mode?: RequestMode;
+  intent?: "offer" | "tip";
   pagePath: string;
   regionLabel: string;
   request: {
@@ -71,35 +74,74 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
   });
 
   const locale = props.locale === "en" ? "en" : "de";
+  const isTip = props.intent === "tip";
   const copy = locale === "en"
-    ? {
-        title: "Offer property",
-        intro: "Submit your property in a few steps. The request goes directly to the responsible advisor.",
-        name: "Name",
-        email: "Email",
-        phone: "Phone",
-        propertyLocation: "Property location",
-        note: "Short message",
-        cancel: "Cancel",
-        send: "Send offer",
-        sending: "Sending...",
-        success: "Your property offer has been sent.",
-        error: "The offer could not be sent right now.",
-      }
-    : {
-        title: "Objekt anbieten",
-        intro: "Biete dein Objekt in wenigen Schritten an. Die Anfrage geht direkt an den zuständigen Berater.",
-        name: "Name",
-        email: "E-Mail",
-        phone: "Telefon",
-        propertyLocation: "Standort des Objekts",
-        note: "Kurze Nachricht",
-        cancel: "Abbrechen",
-        send: "Objekt anbieten",
-        sending: "Wird gesendet...",
-        success: "Dein Objektangebot wurde versendet.",
-        error: "Das Objektangebot konnte gerade nicht versendet werden.",
-      };
+    ? isTip
+      ? {
+          title: "Send a property tip",
+          intro: "Share a confidential hint. The request goes directly to the responsible advisor.",
+          name: "Your name",
+          email: "Email",
+          phone: "Phone",
+          propertyLocation: "Known location",
+          note: "Who or what should we know about?",
+          locationPlaceholder: "City, district or rough location",
+          notePlaceholder: "Briefly describe the owner or property hint",
+          cancel: "Cancel",
+          send: "Send tip",
+          sending: "Sending...",
+          success: "Your tip has been sent.",
+          error: "The tip could not be sent right now.",
+        }
+      : {
+          title: "Offer property",
+          intro: "Submit your property in a few steps. The request goes directly to the responsible advisor.",
+          name: "Name",
+          email: "Email",
+          phone: "Phone",
+          propertyLocation: "Property location",
+          note: "Short message",
+          locationPlaceholder: "City, district or address",
+          notePlaceholder: "Briefly describe the property",
+          cancel: "Cancel",
+          send: "Send offer",
+          sending: "Sending...",
+          success: "Your property offer has been sent.",
+          error: "The offer could not be sent right now.",
+        }
+    : isTip
+      ? {
+          title: "Tipp geben",
+          intro: "Geben Sie einen vertraulichen Hinweis. Die Nachricht geht direkt an den zuständigen Berater.",
+          name: "Ihr Name",
+          email: "E-Mail",
+          phone: "Telefon",
+          propertyLocation: "Bekannter Standort",
+          note: "Wen oder welches Objekt sollten wir kennen?",
+          locationPlaceholder: "Ort, Stadtteil oder grobe Lage",
+          notePlaceholder: "Beschreiben Sie den Tipp kurz",
+          cancel: "Abbrechen",
+          send: "Tipp senden",
+          sending: "Wird gesendet...",
+          success: "Ihr Hinweis wurde versendet.",
+          error: "Der Hinweis konnte gerade nicht versendet werden.",
+        }
+      : {
+          title: "Objekt anbieten",
+          intro: "Biete dein Objekt in wenigen Schritten an. Die Anfrage geht direkt an den zuständigen Berater.",
+          name: "Name",
+          email: "E-Mail",
+          phone: "Telefon",
+          propertyLocation: "Standort des Objekts",
+          note: "Kurze Nachricht",
+          locationPlaceholder: "Ort, Stadtteil oder Adresse",
+          notePlaceholder: "Beschreibe das Objekt kurz",
+          cancel: "Abbrechen",
+          send: "Objekt anbieten",
+          sending: "Wird gesendet...",
+          success: "Dein Objektangebot wurde versendet.",
+          error: "Das Objektangebot konnte gerade nicht versendet werden.",
+        };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +167,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
         },
         property: {
           location: form.propertyLocation.trim(),
-          message: form.note.trim(),
+          message: isTip ? `[Tippgeber-Hinweis] ${form.note.trim()}` : form.note.trim(),
         },
       }),
     });
@@ -210,7 +252,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                     className="form-control"
                     value={form.propertyLocation}
                     onChange={(event) => setForm((current) => ({ ...current, propertyLocation: event.target.value }))}
-                    placeholder={locale === "en" ? "City, district or address" : "Ort, Stadtteil oder Adresse"}
+                    placeholder={copy.locationPlaceholder}
                     required
                   />
                 </div>
@@ -222,7 +264,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                     rows={4}
                     value={form.note}
                     onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
-                    placeholder={locale === "en" ? "Briefly describe the property" : "Beschreibe das Objekt kurz"}
+                    placeholder={copy.notePlaceholder}
                     required
                   />
                 </div>

@@ -18,6 +18,7 @@ type Props = {
     kreisSlug?: string;
     ortSlug?: string;
   };
+  hideHeading?: boolean;
 };
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
@@ -113,10 +114,14 @@ export function RequestOfferLeadInlineForm(props: Props) {
 
   return (
     <div id="request-offer-form" className="request-offer-inline-block">
-      <div>
-        <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
+      {!props.hideHeading ? (
+        <div>
+          <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
+          <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{copy.intro}</p>
+        </div>
+      ) : (
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{copy.intro}</p>
-      </div>
+      )}
 
       <form onSubmit={handleSubmit} className="request-offer-form-grid">
         <div>

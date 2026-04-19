@@ -17,6 +17,8 @@ type Props = {
   locale?: string;
   numberLocale: string;
   currencyCode: string;
+  embedded?: boolean;
+  hideCta?: boolean;
 };
 
 type ObjectKind = "house" | "apartment";
@@ -174,6 +176,8 @@ export function RequestMarketRangeBox({
   locale = "de",
   numberLocale,
   currencyCode,
+  embedded = false,
+  hideCta = false,
 }: Props) {
   const copy = locale === "en" ? COPY.en : COPY.de;
   const objectKind = resolveObjectKind(objectType);
@@ -230,7 +234,7 @@ export function RequestMarketRangeBox({
   const objectLabel = objectKind === "house" ? copy.housePlural : copy.apartmentPlural;
 
   return (
-    <div style={boxStyle}>
+    <div style={embedded ? embeddedBoxStyle : boxStyle}>
       <div style={eyebrowStyle}>{isRent ? copy.rentEyebrow : copy.purchaseEyebrow}</div>
       <h3 style={titleStyle}>
         {isRent ? copy.rentTitle : copy.purchaseTitle}
@@ -311,9 +315,11 @@ export function RequestMarketRangeBox({
         </div>
       ) : null}
 
-      <a href="#request-offer-form" style={ctaStyle}>
-        {copy.cta}
-      </a>
+      {!hideCta ? (
+        <a href="#request-offer-form" style={ctaStyle}>
+          {copy.cta}
+        </a>
+      ) : null}
     </div>
   );
 }
@@ -322,6 +328,11 @@ const boxStyle: CSSProperties = {
   marginTop: 24,
   paddingTop: 24,
   borderTop: "1px solid #e2e8f0",
+  display: "grid",
+  gap: 14,
+};
+
+const embeddedBoxStyle: CSSProperties = {
   display: "grid",
   gap: 14,
 };
