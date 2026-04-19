@@ -1940,6 +1940,8 @@ export async function fetchOnOfficeReferences(
     "ort",
     "strasse",
     "hausnummer",
+    "breitengrad",
+    "laengengrad",
   ], [
     "img",
   ], catalog);
