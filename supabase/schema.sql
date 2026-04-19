@@ -913,6 +913,7 @@ CREATE TABLE public.partner_reference_overrides (
   long_description text,
   location_text text,
   features_text text,
+  image_url text,
   highlights jsonb,
   image_alt_texts jsonb,
   status text DEFAULT 'draft'::text,

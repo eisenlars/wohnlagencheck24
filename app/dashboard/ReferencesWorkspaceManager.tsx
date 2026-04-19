@@ -34,6 +34,7 @@ type OverrideRow = {
   features_text?: string | null;
   highlights?: string[] | null;
   image_alt_texts?: string[] | null;
+  image_url?: string | null;
   status?: string | null;
   last_updated?: string | null;
 };
@@ -248,6 +249,7 @@ function buildDefaultForm(row: RawReferenceRow, override?: OverrideRow | null): 
     features_text: override?.features_text ?? '',
     highlights: override?.highlights ?? [],
     image_alt_texts: override?.image_alt_texts ?? [],
+    image_url: override?.image_url ?? null,
     status: override?.status ?? 'draft',
   };
 }
@@ -387,6 +389,72 @@ const thumbButtonStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 const thumbImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
+const imageChoiceGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+  gap: 10,
+};
+const imageChoiceCardStyle = (active: boolean): CSSProperties => ({
+  display: 'grid',
+  gap: 8,
+  padding: 8,
+  borderRadius: 12,
+  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
+  backgroundColor: active ? '#ecfeff' : '#fff',
+  cursor: 'pointer',
+  textAlign: 'left',
+});
+const imageChoiceImageStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: 88,
+  objectFit: 'cover',
+  borderRadius: 8,
+  backgroundColor: '#e2e8f0',
+};
+const imageChoiceTitleStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#0f172a',
+  lineHeight: 1.35,
+};
+const imageChoiceActionsRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  justifyContent: 'flex-end',
+  flexWrap: 'wrap',
+};
+const imageChoicePrimaryButtonStyle = (disabled: boolean): CSSProperties => ({
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid transparent',
+  backgroundColor: disabled ? '#94a3b8' : '#486b7a',
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.7 : 1,
+});
+const imageChoiceResetButtonStyle = (disabled: boolean): CSSProperties => ({
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#fff',
+  color: '#0f172a',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.65 : 1,
+});
+const imageSelectionStatusStyle: CSSProperties = {
+  borderRadius: 10,
+  backgroundColor: '#fef2f2',
+  border: '1px solid #fecaca',
+  color: '#b91c1c',
+  padding: '10px 12px',
+  fontSize: 12,
+  lineHeight: 1.45,
+};
 const saveButtonStyle = (disabled: boolean): CSSProperties => ({
   padding: '10px 14px',
   borderRadius: 10,
@@ -672,6 +740,8 @@ export default function ReferencesWorkspaceManager(props: Props) {
   const [filterType, setFilterType] = useState<ReferenceListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [pendingReferenceImageUrl, setPendingReferenceImageUrl] = useState<string | null>(null);
+  const [referenceImageSelectionStatus, setReferenceImageSelectionStatus] = useState<string | null>(null);
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -827,23 +897,43 @@ export default function ReferencesWorkspaceManager(props: Props) {
     setActiveImageIndex(0);
   }, [selectedOverride, selectedRow]);
 
+  useEffect(() => {
+    setPendingReferenceImageUrl(asText(form?.image_url) || null);
+    setReferenceImageSelectionStatus(null);
+  }, [form?.image_url, selectedId]);
+
   const mediaAssets = useMemo(() => parseMediaAssets(selectedPayload), [selectedPayload]);
   const imageAssets = useMemo(() => mediaAssets.filter((asset) => asset.kind === 'image'), [mediaAssets]);
   const documentAssets = useMemo(() => mediaAssets.filter((asset) => asset.kind === 'document'), [mediaAssets]);
   const activeImage = imageAssets[activeImageIndex] ?? imageAssets[0] ?? null;
+  const selectedReferenceImageOverrideUrl = asText(form?.image_url);
+  const pendingReferenceImage =
+    pendingReferenceImageUrl
+      ? imageAssets.find((asset) => asset.url === pendingReferenceImageUrl) ?? { url: pendingReferenceImageUrl, title: 'Ausgewähltes Referenzbild' }
+      : null;
+  const selectedReferenceImage =
+    selectedReferenceImageOverrideUrl
+      ? imageAssets.find((asset) => asset.url === selectedReferenceImageOverrideUrl) ?? { url: selectedReferenceImageOverrideUrl, title: 'Ausgewähltes Referenzbild' }
+      : null;
+  const effectiveReferenceImage = pendingReferenceImage ?? selectedReferenceImage ?? activeImage;
+  const hasPendingReferenceImageSelection = (pendingReferenceImageUrl ?? '') !== selectedReferenceImageOverrideUrl;
 
-  async function saveOverride(nextForm?: OverrideRow) {
+  async function saveOverride(nextForm?: OverrideRow, options?: { requireContent?: boolean }) {
     const payload = nextForm ?? form;
     if (!payload) return;
     const nextTitle = asText(payload.seo_h1);
     const nextDescription = asText(payload.long_description);
     const sourceTitle = getReferenceSourceTitle(selectedRow, selectedPayload);
     const sourceDescription = getReferenceRawText(selectedPayload);
+    const requireContent = options?.requireContent !== false;
     if (
-      nextTitle.length === 0 ||
-      nextDescription.length === 0 ||
-      nextTitle === sourceTitle ||
-      nextDescription === sourceDescription
+      requireContent &&
+      (
+        nextTitle.length === 0 ||
+        nextDescription.length === 0 ||
+        nextTitle === sourceTitle ||
+        nextDescription === sourceDescription
+      )
     ) {
       setStatus('Speichern nicht möglich: Referenz-Titel und Referenztext müssen als eigener Referenztext gepflegt sein.');
       return;
@@ -855,14 +945,35 @@ export default function ReferencesWorkspaceManager(props: Props) {
       highlights: payload.highlights ?? [],
       image_alt_texts: payload.image_alt_texts ?? [],
       last_updated: new Date().toISOString(),
-    };
-    const { data, error } = await supabase
-      .from('partner_reference_overrides')
-      .upsert(upsertPayload, { onConflict: 'partner_id,source,external_id' })
-      .select('*')
-      .single();
+    } as Record<string, unknown>;
+    const normalizedImageUrl = asText(payload.image_url);
+    if (normalizedImageUrl) {
+      upsertPayload.image_url = normalizedImageUrl;
+    } else if (selectedOverride?.image_url) {
+      upsertPayload.image_url = null;
+    } else {
+      delete upsertPayload.image_url;
+    }
+
+    async function executeUpsert(candidatePayload: Record<string, unknown>) {
+      return supabase
+        .from('partner_reference_overrides')
+        .upsert(candidatePayload, { onConflict: 'partner_id,source,external_id' })
+        .select('*')
+        .single();
+    }
+
+    let { data, error } = await executeUpsert(upsertPayload);
+    if (error && String(error.message || '').includes('image_url')) {
+      delete upsertPayload.image_url;
+      ({ data, error } = await executeUpsert(upsertPayload));
+      if (!error) {
+        setReferenceImageSelectionStatus('Die alternative Referenzbildauswahl benötigt noch den SQL-Rollout für image_url.');
+      }
+    }
     if (error) {
       setStatus(`Speichern fehlgeschlagen (partner_reference_overrides): ${error.message}`);
+      setReferenceImageSelectionStatus(`Bildauswahl konnte nicht gespeichert werden: ${error.message}`);
       setSaving(false);
       return;
     }
@@ -905,6 +1016,7 @@ export default function ReferencesWorkspaceManager(props: Props) {
       asText(nextForm.seo_description).length > 0 ||
       asText(nextForm.short_description).length > 0 ||
       asText(nextForm.location_text).length > 0 ||
+      asText(nextForm.image_url).length > 0 ||
       (Array.isArray(nextForm.highlights) && nextForm.highlights.length > 0) ||
       (Array.isArray(nextForm.image_alt_texts) && nextForm.image_alt_texts.length > 0);
     if (!hasOtherContent && selectedOverride?.id) {
@@ -958,6 +1070,14 @@ export default function ReferencesWorkspaceManager(props: Props) {
     setForm(nextForm);
     setStatus('Referenztexte zurückgesetzt.');
     setSaving(false);
+  }
+
+  async function applyReferenceImageSelection(imageUrl: string | null) {
+    if (!form) return;
+    setReferenceImageSelectionStatus(null);
+    const next: OverrideRow = { ...form, image_url: imageUrl };
+    setForm(next);
+    await saveOverride(next, { requireContent: false });
   }
 
   async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
@@ -1520,54 +1640,82 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                   </div>
                   <div style={referenceContextCardStyle}>
                     <div style={summaryHeaderStyle}>Objekthauptbild</div>
-                    {activeImage ? (
+                    {effectiveReferenceImage ? (
                       <div style={{ display: 'grid', gap: 12 }}>
                         <div style={mediaStageStyle}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={activeImage.url}
-                            alt={activeImage.title ?? selectedRow.title ?? 'Referenzbild'}
+                            src={effectiveReferenceImage.url}
+                            alt={effectiveReferenceImage.title ?? selectedRow.title ?? 'Referenzbild'}
                             style={mediaImageStyle}
                             loading="eager"
                             decoding="async"
                           />
                         </div>
                         <div style={previewContentStyle}>
-                          {activeImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
+                          {effectiveReferenceImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
                         </div>
                       </div>
                     ) : (
                       <div style={sectionHintStyle}>Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
                     )}
-                    <div style={summaryGridStyle}>
-                      <div>
-                        <div style={summaryLabelStyle}>Quelltitel</div>
-                        <div style={summaryValueStyle}>{selectedSourceTitle}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Vermarktung</div>
-                        <div style={summaryValueStyle}>{selectedMode}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Objektart</div>
-                        <div style={summaryValueStyle}>{selectedType}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Transaktion</div>
-                        <div style={summaryValueStyle}>{selectedTransaction}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Ort</div>
-                        <div style={summaryValueStyle}>{getReferenceLocationLabel(selectedPayload)}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Zimmer</div>
-                        <div style={summaryValueStyle}>{selectedRooms ?? '—'}</div>
-                      </div>
-                      <div>
-                        <div style={summaryLabelStyle}>Fläche</div>
-                        <div style={summaryValueStyle}>{selectedArea != null ? `${selectedArea} m²` : '—'}</div>
-                      </div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <div style={summaryLabelStyle}>Alternative Bildauswahl (übertragene Bilder)</div>
+                      {imageAssets.length > 0 ? (
+                        <>
+                          <div style={imageChoiceGridStyle}>
+                            {imageAssets.map((asset, index) => {
+                              const active = pendingReferenceImageUrl
+                                ? pendingReferenceImageUrl === asset.url
+                                : selectedReferenceImageOverrideUrl === asset.url;
+                              return (
+                                <button
+                                  key={`${asset.url}-${index}`}
+                                  type="button"
+                                  style={imageChoiceCardStyle(active)}
+                                  onClick={() => setPendingReferenceImageUrl(asset.url)}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={asset.url}
+                                    alt={asset.title ?? `Referenzbild ${index + 1}`}
+                                    style={imageChoiceImageStyle}
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                  <span style={imageChoiceTitleStyle}>{asset.title ?? `Referenzbild ${index + 1}`}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div style={imageChoiceActionsRowStyle}>
+                            <button
+                              type="button"
+                              style={imageChoicePrimaryButtonStyle(!hasPendingReferenceImageSelection || saving)}
+                              disabled={!hasPendingReferenceImageSelection || saving}
+                              onClick={() => void applyReferenceImageSelection(pendingReferenceImageUrl)}
+                            >
+                              Bild wählen
+                            </button>
+                            <button
+                              type="button"
+                              style={imageChoiceResetButtonStyle(!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
+                              disabled={saving || (!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
+                              onClick={() => {
+                                setPendingReferenceImageUrl(null);
+                                void applyReferenceImageSelection(null);
+                              }}
+                            >
+                              Objekthauptbild nutzen
+                            </button>
+                          </div>
+                          {referenceImageSelectionStatus ? (
+                            <div style={imageSelectionStatusStyle}>{referenceImageSelectionStatus}</div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <div style={sectionHintStyle}>Im aktuellen Referenz-Payload sind keine übertragenen Bilder verfügbar.</div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -441,14 +441,10 @@ export default function RequestsWorkspaceManager(props: Props) {
     setSaving(true);
     setStatus('Speichere Gesuch-Overrides...');
     setImageSelectionStatus(null);
-    const normalizedTitle = String(
-      payload.seo_h1 ?? payload.seo_title ?? selectedOverride?.seo_h1 ?? selectedOverride?.seo_title ?? '',
-    ).trim();
+    const normalizedTitle = String(payload.seo_h1 ?? payload.seo_title ?? '').trim();
     const normalizedDescription = String(
       payload.long_description
       ?? payload.short_description
-      ?? selectedOverride?.long_description
-      ?? selectedOverride?.short_description
       ?? payload.seo_description
       ?? '',
     ).trim();
@@ -795,6 +791,25 @@ export default function RequestsWorkspaceManager(props: Props) {
   async function applyRequestImageSelection(catalogId: string | null) {
     if (!form) return;
     const next = { ...form, request_image_catalog_id: catalogId };
+    setForm(next);
+    await saveOverride(next);
+  }
+
+  async function resetRequestTextOverrides() {
+    if (!form) return;
+    const next: OverrideRow = {
+      ...form,
+      seo_title: '',
+      seo_description: '',
+      seo_h1: '',
+      short_description: '',
+      long_description: '',
+      location_text: null,
+      features_text: null,
+      highlights: [],
+      image_alt_texts: [],
+      status: 'draft',
+    };
     setForm(next);
     await saveOverride(next);
   }
@@ -1156,9 +1171,19 @@ export default function RequestsWorkspaceManager(props: Props) {
                             )}
                           </div>
                         </div>
-                        <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
-                          {saving ? 'Speichern...' : 'Gesuch speichern'}
-                        </button>
+                        <div style={requestActionButtonRowStyle}>
+                          <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
+                            {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void resetRequestTextOverrides()}
+                            disabled={saving || (!currentRequestTitle && !currentRequestDescription)}
+                            style={secondaryActionButtonStyle(saving || (!currentRequestTitle && !currentRequestDescription))}
+                          >
+                            Gesuchetexte zurücksetzen
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -1555,6 +1580,23 @@ const primaryButtonStyle = (disabled = false): CSSProperties => ({
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.7 : 1,
 });
+
+const secondaryActionButtonStyle = (disabled = false): CSSProperties => ({
+  padding: '10px 14px',
+  borderRadius: '10px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#334155',
+  fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.65 : 1,
+});
+
+const requestActionButtonRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
 
 const previewCardStyle: CSSProperties = {
   backgroundColor: '#f8fafc',

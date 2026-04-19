@@ -851,6 +851,20 @@ export default function OffersManager(props: Props) {
     await saveOverride(updated);
   };
 
+  const resetOfferTextOverrides = async () => {
+    if (!form) return;
+    const updated: OverrideRow = {
+      ...form,
+      seo_h1: selectedOffer?.title ?? '',
+      short_description: rawDescription ?? '',
+      long_description: rawLongDescription ?? '',
+      location_text: rawLocation ?? '',
+      features_text: rawFeatures ?? '',
+    };
+    setForm(updated);
+    await saveOverride(updated);
+  };
+
   const getStandardPromptText = (label: string, areaName: string) => {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('objekt-titel') || lowerLabel.includes('h1')) {
@@ -1607,9 +1621,19 @@ export default function OffersManager(props: Props) {
                   </div>
                 </div>
 
-                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
-                  {saving ? 'Speichern...' : 'Texte speichern'}
-                </button>
+                <div style={actionButtonRowStyle}>
+                  <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                    {saving ? 'Speichern...' : 'Angebotstexte speichern'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void resetOfferTextOverrides()}
+                    disabled={saving}
+                    style={secondaryActionButtonStyle(saving)}
+                  >
+                    Angebotstexte zurücksetzen
+                  </button>
+                </div>
               </>
             ) : null}
 
@@ -2356,6 +2380,23 @@ const primaryButtonStyle: React.CSSProperties = {
   color: '#fff',
   fontWeight: 600,
   cursor: 'pointer',
+};
+
+const secondaryActionButtonStyle = (disabled = false): React.CSSProperties => ({
+  padding: '10px 14px',
+  borderRadius: '10px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#334155',
+  fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.65 : 1,
+});
+
+const actionButtonRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
 };
 
 const previewCardStyle: React.CSSProperties = {

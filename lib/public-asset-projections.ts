@@ -155,6 +155,7 @@ type ReferenceOverrideRow = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  image_url?: string | null;
   highlights?: unknown;
   image_alt_texts?: unknown;
 };
@@ -1248,7 +1249,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
     });
   }
 
-  const [referencesRes, overridesRes, i18nRes] = await Promise.all([
+  const [referencesRes, overridesResWithImageUrlRes, i18nRes] = await Promise.all([
     admin
       .from("partner_references")
       .select("id, partner_id, provider, external_id, title, source_updated_at, updated_at, normalized_payload")
@@ -1256,7 +1257,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
       .eq("is_active", true),
     admin
       .from("partner_reference_overrides")
-      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
+      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, image_url, highlights, image_alt_texts")
       .eq("partner_id", partnerId),
     admin
       .from("partner_reference_i18n")
@@ -1264,14 +1265,24 @@ export async function rebuildPublicReferenceEntriesForPartner(
       .eq("partner_id", partnerId)
       .eq("status", "approved"),
   ]);
+  let overridesError = overridesResWithImageUrlRes.error;
+  let overridesData = (overridesResWithImageUrlRes.data ?? []) as ReferenceOverrideRow[];
+  if (overridesError && String(overridesError.message || "").includes("image_url")) {
+    const fallbackOverridesRes = await admin
+      .from("partner_reference_overrides")
+      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
+      .eq("partner_id", partnerId);
+    overridesError = fallbackOverridesRes.error;
+    overridesData = (fallbackOverridesRes.data ?? []) as ReferenceOverrideRow[];
+  }
 
   if (referencesRes.error) throw new Error(`partner_references lookup failed: ${referencesRes.error.message}`);
-  if (overridesRes.error) throw new Error(`partner_reference_overrides lookup failed: ${overridesRes.error.message}`);
+  if (overridesError) throw new Error(`partner_reference_overrides lookup failed: ${overridesError.message}`);
   if (i18nRes.error) throw new Error(`partner_reference_i18n lookup failed: ${i18nRes.error.message}`);
 
   const references = (referencesRes.data ?? []) as ReferenceRow[];
   const overridesByKey = groupByKey(
-    (overridesRes.data ?? []) as ReferenceOverrideRow[],
+    overridesData,
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
   );
   const translationsByEntityId = groupTranslationsByEntityId(
@@ -1291,7 +1302,7 @@ export async function rebuildPublicReferenceEntriesForPartner(
     const override = overridesByKey.get(`${partnerId}::${provider}::${externalId}`);
     const city = asNullableText(payload["city"]);
     const district = asNullableText(payload["district"]);
-    const imageUrl = asNullableText(payload["image_url"]);
+    const imageUrl = asNullableText(override?.image_url) ?? asNullableText(payload["image_url"]);
     const publicTitle = asNullableText(override?.seo_h1);
     const publicReferenceText = asNullableText(override?.long_description);
     if (!publicTitle || !publicReferenceText) continue;
