@@ -1168,7 +1168,11 @@ function mapEstateToReference(
   const elements = (record.elements ?? {}) as Record<string, unknown>;
   const mediaBundle = media ?? EMPTY_ONOFFICE_ESTATE_MEDIA;
   const gallery = mediaBundle.gallery.length > 0 ? mediaBundle.gallery : extractImages(elements);
-  const city = String(elements["ort"] ?? "").trim();
+  const zipCode = String(elements["plz"] ?? "").trim() || null;
+  const parsedLocation = splitOnOfficeCityDistrict(elements["ort"]);
+  const city = parsedLocation.city;
+  const district = parsedLocation.district;
+  const region = normalizeOnOfficeAreaHint(elements["lage"]);
   const statusValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
   const saleType =
     isReservedOnOfficeStatus(statusValue)
@@ -1176,7 +1180,12 @@ function mapEstateToReference(
       : normalizeOfferType(String(elements["vermarktungsart"] ?? "")) === "miete"
         ? "vermietet"
         : "verkauft";
-  const locationLabel = city || "der Region";
+  const locationLabel =
+    district
+      ? `${city ?? ""} ${district}`.trim() || district
+      : city && region && !region.toLowerCase().includes(city.toLowerCase())
+        ? `${city} ${region}`
+        : city ?? region ?? "der Region";
   const challengeNoteSource = String(elements["sonstige_angaben"] ?? "").trim() || null;
   const sourceTitle = String(elements["objekttitel"] ?? "").trim() || null;
   const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
@@ -1184,9 +1193,11 @@ function mapEstateToReference(
     title: sourceTitle,
     source_title: sourceTitle,
     transaction_result: saleType,
-    city: city || null,
-    district: null,
-    location_scope: "stadt",
+    zip_code: zipCode,
+    city,
+    district,
+    region,
+    location_scope: district ? "stadtteil" : city ? "stadt" : "region",
     location: locationLabel,
     offer_type: normalizeOfferType(String(elements["vermarktungsart"] ?? "")),
     object_type: normalizeObjectType(String(elements["objektart"] ?? "")),

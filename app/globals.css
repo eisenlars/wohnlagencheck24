@@ -2593,6 +2593,10 @@ h6 {
   height: clamp(260px, 30vw, 360px);
 }
 
+.reference-experience-map__canvas .maplibregl-marker {
+  z-index: 3;
+}
+
 .reference-experience__legend {
   display: flex;
   justify-content: space-between;

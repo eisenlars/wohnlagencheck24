@@ -85,9 +85,11 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<MapLibreMarker[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setMapReady(false);
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return;
@@ -127,6 +129,8 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
 
       mapRef.current = map;
       map.on("load", () => {
+        if (cancelled) return;
+        setMapReady(true);
         focusMap(map, items, null, interactive);
       });
     }
@@ -142,7 +146,7 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
   }, [interactive, items]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !mapReady) return;
 
     for (const marker of markersRef.current) marker.remove();
     markersRef.current = [];
@@ -176,7 +180,7 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
     return () => {
       cancelled = true;
     };
-  }, [activeId, interactive, items, onSelect]);
+  }, [activeId, interactive, items, mapReady, onSelect]);
 
   return <div ref={containerRef} className={className ?? "reference-experience-map__canvas"} />;
 }

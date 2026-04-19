@@ -641,6 +641,7 @@ CREATE TABLE public.partner_area_map (
   is_public_live boolean NOT NULL DEFAULT false,
   admin_review_note text,
   partner_preview_signoff_at timestamp with time zone,
+  reference_visibility_mode text NOT NULL DEFAULT 'partner_wide'::text CHECK (reference_visibility_mode = ANY (ARRAY['partner_wide'::text, 'strict_local'::text])),
   CONSTRAINT partner_area_map_pkey PRIMARY KEY (id),
   CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT partner_area_map_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)

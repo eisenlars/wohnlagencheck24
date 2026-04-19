@@ -20,16 +20,13 @@ type ProjectionCounts = {
   references: number;
 };
 
-type PartnerAreaMapRow = {
-  area_id?: string | null;
-};
-
 type PartnerAreaConfigRow = {
   area_id?: string | null;
   is_active?: boolean | null;
   is_public_live?: boolean | null;
   offer_visibility_mode?: string | null;
   request_visibility_mode?: string | null;
+  reference_visibility_mode?: string | null;
   areas?: {
     id?: string | null;
     name?: string | null;
@@ -241,6 +238,17 @@ function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local
   return asText(value).toLowerCase() === "strict_local" ? "strict_local" : "partner_wide";
 }
 
+function extractReferenceGeoSignals(payload: Record<string, unknown>) {
+  return extractOfferGeoSignals({
+    zip_code: payload["zip_code"] ?? payload["postal_code"] ?? payload["plz"] ?? null,
+    city: payload["city"] ?? null,
+    region: payload["region"] ?? payload["district"] ?? null,
+    country: payload["country"] ?? null,
+    lat: payload["lat"] ?? null,
+    lng: payload["lng"] ?? null,
+  });
+}
+
 function groupByKey<T>(rows: T[], buildKey: (row: T) => string): Map<string, T> {
   const map = new Map<string, T>();
   for (const row of rows) {
@@ -318,6 +326,7 @@ function isMissingVisibilityModeColumn(error: unknown): boolean {
   return (
     message.includes("partner_area_map.offer_visibility_mode")
     || message.includes("partner_area_map.request_visibility_mode")
+    || message.includes("partner_area_map.reference_visibility_mode")
   ) && (message.includes("does not exist") || message.includes("schema cache"));
 }
 
@@ -384,26 +393,13 @@ async function reconcileProjectionRows(args: {
   return desiredByKey.size;
 }
 
-async function loadPublicLiveAreaIdsForPartner(admin: AdminClient, partnerId: string): Promise<string[]> {
-  const { data, error } = await admin
-    .from("partner_area_map")
-    .select("area_id")
-    .eq("auth_user_id", partnerId)
-    .eq("is_public_live", true);
-
-  if (error) throw new Error(`partner_area_map lookup failed: ${error.message}`);
-  return Array.from(
-    new Set(((data ?? []) as PartnerAreaMapRow[]).map((row) => asText(row.area_id)).filter(Boolean)),
-  );
-}
-
 async function loadPublicLiveAreaConfigsForPartner(
   admin: AdminClient,
   partnerId: string,
 ): Promise<PartnerAreaConfigRow[]> {
   let { data, error } = await admin
     .from("partner_area_map")
-    .select("area_id, is_public_live, offer_visibility_mode, request_visibility_mode, areas(id, name, slug, parent_slug, bundesland_slug)")
+    .select("area_id, is_public_live, offer_visibility_mode, request_visibility_mode, reference_visibility_mode, areas(id, name, slug, parent_slug, bundesland_slug)")
     .eq("auth_user_id", partnerId)
     .eq("is_public_live", true)
     .order("area_id", { ascending: true });
@@ -419,6 +415,7 @@ async function loadPublicLiveAreaConfigsForPartner(
       ...row,
       offer_visibility_mode: "partner_wide",
       request_visibility_mode: "partner_wide",
+      reference_visibility_mode: "partner_wide",
     }));
     error = fallback.error;
   }
@@ -1197,7 +1194,30 @@ export async function rebuildPublicReferenceEntriesForPartner(
   partnerId: string,
   admin = createAdminClient(),
 ): Promise<number> {
-  const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
+  const [visibleAreaConfigs, offerAreaCandidates] = await Promise.all([
+    loadPublicLiveAreaConfigsForPartner(admin, partnerId),
+    loadOfferAreaCandidatesForPartner(admin, partnerId),
+  ]);
+  const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
+  const offerMatchAreaIdsByVisibleAreaId = buildOfferMatchAreaIdsByVisibleAreaId(visibleAreaConfigs, offerAreaCandidates);
+  type PostalLookupEntry = readonly [
+    `${string}/${string}`,
+    { readonly bundeslandSlug: string; readonly kreisSlug: string },
+  ];
+
+  const postalLookupEntries = offerAreaCandidates
+    .filter((candidate) => asText(candidate.id).split("-").length <= 3)
+    .map((candidate) => {
+      const bundeslandSlug = asText(candidate.bundeslandSlug);
+      const kreisSlug = asText(candidate.slug);
+      if (!bundeslandSlug || !kreisSlug) return null;
+      return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
+    })
+    .filter((entry): entry is PostalLookupEntry => entry !== null);
+  const postalLookupTargets = Array.from(
+    new Map(postalLookupEntries).values(),
+  );
+  const postalLookupByZipCode = await loadReportPostalLookupForDistricts(postalLookupTargets);
   if (visibleAreaIds.length === 0) {
     return reconcileProjectionRows({
       admin,
@@ -1275,8 +1295,25 @@ export async function rebuildPublicReferenceEntriesForPartner(
     const publicTitle = asNullableText(override?.seo_h1);
     const publicReferenceText = asNullableText(override?.long_description);
     if (!publicTitle || !publicReferenceText) continue;
+    const geoSignals = extractReferenceGeoSignals(payload);
+    const postalMatchedAreaIds = new Set(
+      (postalLookupByZipCode.get(normalizePostalCode(geoSignals.zipCode) ?? "") ?? []).map((entry) => entry.areaId),
+    );
+    const rankedMatches = filterOfferAreaMatches(
+      rankOfferAreaMatches(geoSignals, offerAreaCandidates, postalMatchedAreaIds),
+    );
+    const matchedAreaIds = new Set(rankedMatches.map((match) => match.areaId));
 
-    for (const visibleAreaId of visibleAreaIds) {
+    for (const visibleAreaConfig of visibleAreaConfigs) {
+      const visibleAreaId = asText(visibleAreaConfig.area_id);
+      if (!visibleAreaId) continue;
+      const referenceVisibilityMode = normalizeVisibilityMode(visibleAreaConfig.reference_visibility_mode);
+      const allowedMatchAreaIds = offerMatchAreaIdsByVisibleAreaId.get(visibleAreaId) ?? new Set<string>([visibleAreaId]);
+      const hasLocalReferenceMatch = Array.from(matchedAreaIds).some((areaId) => allowedMatchAreaIds.has(areaId));
+      if (referenceVisibilityMode === "strict_local" && !hasLocalReferenceMatch) {
+        continue;
+      }
+
       projectionRows.push({
         partner_id: partnerId,
         visible_area_id: visibleAreaId,

@@ -60,6 +60,24 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
 type ReferenceListFilter = 'all' | 'kauf' | 'miete';
+type VisibilityMode = 'partner_wide' | 'strict_local';
+type VisibilityTone = 'info' | 'success' | 'error';
+
+type VisibilityConfig = {
+  area_id: string;
+  areas?: {
+    name?: string;
+  };
+};
+
+type Props = {
+  visibilityConfig?: VisibilityConfig | null;
+  visibilityMode?: VisibilityMode;
+  visibilityBusy?: boolean;
+  visibilityMessage?: string | null;
+  visibilityTone?: VisibilityTone;
+  onVisibilityModeChange?: (value: VisibilityMode) => void | Promise<void>;
+};
 
 type ReferencesWorkspaceLoadDebug = {
   references: number;
@@ -631,7 +649,15 @@ const filterButtonStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 
-export default function ReferencesWorkspaceManager() {
+export default function ReferencesWorkspaceManager(props: Props) {
+  const {
+    visibilityConfig = null,
+    visibilityMode = 'partner_wide',
+    visibilityBusy = false,
+    visibilityMessage = null,
+    visibilityTone = 'info',
+    onVisibilityModeChange,
+  } = props;
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
@@ -1241,9 +1267,25 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
             <div style={visibilityLabelStyle}>
               <div style={visibilityInfoTitleStyle}>KI-Arbeitsmodus für Referenzen</div>
               <div style={visibilityInfoTextStyle}>
-                Wählen Sie das Modell zentral für den gesamten Referenz-Arbeitsbereich. Alle KI-Aktionen in den Tabs nutzen diese Auswahl.
+                Wählen Sie Sichtbarkeit und KI-Modell zentral für den gesamten Referenz-Arbeitsbereich.
               </div>
             </div>
+            {visibilityConfig ? (
+              <div style={visibilityModeWrapStyle}>
+                <span style={visibilitySelectWrapStyle}>
+                  <select
+                    value={visibilityMode}
+                    onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                    disabled={visibilityBusy}
+                    style={visibilityModeSelectStyle}
+                  >
+                    <option value="partner_wide">Referenzen partnerweit anzeigen</option>
+                    <option value="strict_local">Referenzen nur lokal anzeigen</option>
+                  </select>
+                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                </span>
+              </div>
+            ) : null}
             <div style={visibilityModelWrapStyle}>
               {llmOptions.length > 0 || !llmOptionsLoaded ? (
                 <span style={visibilitySelectWrapStyle}>
@@ -1268,6 +1310,9 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               )}
             </div>
           </div>
+          {visibilityMessage ? (
+            <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
+          ) : null}
         </div>
       </section>
       <div style={workspaceStyle}>
@@ -1916,6 +1961,13 @@ const visibilityModelWrapStyle: CSSProperties = {
   alignItems: 'center',
 };
 
+const visibilityModeWrapStyle: CSSProperties = {
+  flex: '0 1 300px',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+};
+
 const visibilitySelectWrapStyle: CSSProperties = {
   position: 'relative',
   display: 'inline-block',
@@ -1943,6 +1995,12 @@ const visibilityModelSelectStyle: CSSProperties = {
   maxWidth: '100%',
 };
 
+const visibilityModeSelectStyle: CSSProperties = {
+  ...visibilitySelectStyle,
+  minWidth: '300px',
+  maxWidth: '100%',
+};
+
 const visibilitySelectChevronStyle: CSSProperties = {
   position: 'absolute',
   right: '14px',
@@ -1953,6 +2011,40 @@ const visibilitySelectChevronStyle: CSSProperties = {
   color: '#475569',
   pointerEvents: 'none',
 };
+
+function visibilityMessageStyle(tone: VisibilityTone): CSSProperties {
+  if (tone === 'success') {
+    return {
+      borderRadius: '999px',
+      background: '#ecfdf5',
+      color: '#166534',
+      padding: '8px 12px',
+      fontSize: '12px',
+      fontWeight: 600,
+      width: 'fit-content',
+    };
+  }
+  if (tone === 'error') {
+    return {
+      borderRadius: '999px',
+      background: '#fef2f2',
+      color: '#b91c1c',
+      padding: '8px 12px',
+      fontSize: '12px',
+      fontWeight: 600,
+      width: 'fit-content',
+    };
+  }
+  return {
+    borderRadius: '999px',
+    background: '#eff6ff',
+    color: '#1d4ed8',
+    padding: '8px 12px',
+    fontSize: '12px',
+    fontWeight: 600,
+    width: 'fit-content',
+  };
+}
 
 const aiButtonStyle: CSSProperties = {
   alignSelf: 'flex-start',

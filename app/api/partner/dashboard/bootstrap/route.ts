@@ -24,6 +24,7 @@ type PartnerAreaConfig = {
   activation_status?: string | null;
   offer_visibility_mode?: string | null;
   request_visibility_mode?: string | null;
+  reference_visibility_mode?: string | null;
   partner_preview_signoff_at?: string | null;
   admin_review_note?: string | null;
   [key: string]: unknown;
@@ -65,6 +66,7 @@ function isMissingAreaVisibilityModeColumn(error: unknown): boolean {
   return (
     msg.includes("partner_area_map.offer_visibility_mode")
     || msg.includes("partner_area_map.request_visibility_mode")
+    || msg.includes("partner_area_map.reference_visibility_mode")
   ) && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
@@ -170,6 +172,7 @@ async function loadPartnerConfigs(
       activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
       offer_visibility_mode: typeof baseRow.offer_visibility_mode === "string" ? baseRow.offer_visibility_mode : "partner_wide",
       request_visibility_mode: typeof baseRow.request_visibility_mode === "string" ? baseRow.request_visibility_mode : "partner_wide",
+      reference_visibility_mode: typeof baseRow.reference_visibility_mode === "string" ? baseRow.reference_visibility_mode : "partner_wide",
       partner_preview_signoff_at: typeof baseRow.partner_preview_signoff_at === "string" ? baseRow.partner_preview_signoff_at : null,
       admin_review_note: typeof baseRow.admin_review_note === "string" ? baseRow.admin_review_note : null,
       areas: normalizedAreas[0],
@@ -178,7 +181,7 @@ async function loadPartnerConfigs(
 
   const initialQuery = await admin
     .from("partner_area_map")
-    .select("area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
+    .select("area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, reference_visibility_mode, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
     .eq("auth_user_id", userId)
     .order("area_id", { ascending: true });
   let rawRows: unknown[] = initialQuery.data ?? [];
@@ -203,7 +206,7 @@ async function loadPartnerConfigs(
           "is_active",
           "is_public_live",
           "activation_status",
-          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode"] : []),
+          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode", "reference_visibility_mode"] : []),
           "areas(id, name, slug, parent_slug, bundesland_slug)",
         ].join(", "))
         .eq("auth_user_id", userId)
@@ -220,6 +223,9 @@ async function loadPartnerConfigs(
             : "partner_wide",
           request_visibility_mode: !missingVisibilityMode
             ? (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
+            : "partner_wide",
+          reference_visibility_mode: !missingVisibilityMode
+            ? (baseRow as { reference_visibility_mode?: string | null }).reference_visibility_mode ?? "partner_wide"
             : "partner_wide",
           partner_preview_signoff_at: null,
           admin_review_note: null,
@@ -243,6 +249,7 @@ async function loadPartnerConfigs(
           activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
           offer_visibility_mode: "partner_wide",
           request_visibility_mode: "partner_wide",
+          reference_visibility_mode: "partner_wide",
           partner_preview_signoff_at: typeof baseRow.partner_preview_signoff_at === "string" ? baseRow.partner_preview_signoff_at : null,
           admin_review_note: typeof baseRow.admin_review_note === "string" ? baseRow.admin_review_note : null,
           areas: normalizeAreas(baseRow.areas),
@@ -265,6 +272,7 @@ async function loadPartnerConfigs(
           activation_status: null,
           offer_visibility_mode: "partner_wide",
           request_visibility_mode: "partner_wide",
+          reference_visibility_mode: "partner_wide",
           partner_preview_signoff_at: null,
           admin_review_note: null,
           areas: normalizeAreas(baseRow.areas),
@@ -308,6 +316,7 @@ async function loadPartnerConfigs(
       activation_status: parentDistrict.activation_status ?? "active",
       offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
       request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
+      reference_visibility_mode: parentDistrict.reference_visibility_mode ?? "partner_wide",
     };
   });
 
@@ -333,6 +342,7 @@ async function loadPartnerConfigs(
       is_public_live: Boolean(parentDistrict.is_public_live),
       offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
       request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
+      reference_visibility_mode: parentDistrict.reference_visibility_mode ?? "partner_wide",
       areas: {
         id: areaId,
         name: String(area.name ?? ""),

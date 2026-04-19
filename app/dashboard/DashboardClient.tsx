@@ -61,6 +61,7 @@ type PartnerAreaConfig = {
   activation_status?: string | null;
   offer_visibility_mode?: string | null;
   request_visibility_mode?: string | null;
+  reference_visibility_mode?: string | null;
   partner_preview_signoff_at?: string | null;
   admin_review_note?: string | null;
   [key: string]: unknown;
@@ -1297,6 +1298,7 @@ export default function DashboardClient({
 
   const effectiveOfferVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.offer_visibility_mode);
   const effectiveRequestVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.request_visibility_mode);
+  const effectiveReferenceVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.reference_visibility_mode);
   const scopedContentAreaConfig = effectiveAreaConfig ?? effectiveSelectedConfig;
 
   useEffect(() => {
@@ -1537,7 +1539,7 @@ export default function DashboardClient({
   };
 
   const handleVisibilityModeChange = async (
-    field: 'offer_visibility_mode' | 'request_visibility_mode',
+    field: 'offer_visibility_mode' | 'request_visibility_mode' | 'reference_visibility_mode',
     value: VisibilityMode,
   ) => {
     if (!effectiveAreaConfig || visibilitySaveBusy) return;
@@ -2416,7 +2418,14 @@ export default function DashboardClient({
                 onVisibilityModeChange={(value) => handleVisibilityModeChange('offer_visibility_mode', value)}
               />
             ) : activeMainTab === 'referenzen' ? (
-              <ReferencesManager />
+              <ReferencesManager
+                visibilityConfig={scopedContentAreaConfig}
+                visibilityMode={effectiveReferenceVisibilityMode}
+                visibilityBusy={visibilitySaveBusy}
+                visibilityMessage={visibilitySaveMessage}
+                visibilityTone={visibilitySaveTone}
+                onVisibilityModeChange={(value) => handleVisibilityModeChange('reference_visibility_mode', value)}
+              />
             ) : activeMainTab === 'gesuche' && scopedContentAreaConfig ? (
               <RequestsManager
                 visibilityConfig={scopedContentAreaConfig}

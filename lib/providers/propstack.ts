@@ -1330,6 +1330,7 @@ function mapUnitReference(
     title: sourceTitle,
     source_title: sourceTitle,
     transaction_result: null,
+    zip_code: unit.zip_code ?? null,
     city: city || null,
     district,
     region: unit.region ?? null,

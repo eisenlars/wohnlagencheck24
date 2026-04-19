@@ -11,6 +11,7 @@ type VisibilityMode = "partner_wide" | "strict_local";
 type VisibilityBody = {
   offer_visibility_mode?: VisibilityMode;
   request_visibility_mode?: VisibilityMode;
+  reference_visibility_mode?: VisibilityMode;
 };
 
 function isMissingVisibilityModeColumn(error: unknown): boolean {
@@ -18,6 +19,7 @@ function isMissingVisibilityModeColumn(error: unknown): boolean {
   return (
     msg.includes("partner_area_map.offer_visibility_mode")
     || msg.includes("partner_area_map.request_visibility_mode")
+    || msg.includes("partner_area_map.reference_visibility_mode")
   ) && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
@@ -105,6 +107,9 @@ export async function PATCH(
     const requestVisibilityMode = body.request_visibility_mode !== undefined
       ? normalizeVisibilityMode(body.request_visibility_mode)
       : null;
+    const referenceVisibilityMode = body.reference_visibility_mode !== undefined
+      ? normalizeVisibilityMode(body.reference_visibility_mode)
+      : null;
 
     if (body.offer_visibility_mode !== undefined && !offerVisibilityMode) {
       return NextResponse.json({ error: "Invalid offer_visibility_mode" }, { status: 400 });
@@ -112,7 +117,14 @@ export async function PATCH(
     if (body.request_visibility_mode !== undefined && !requestVisibilityMode) {
       return NextResponse.json({ error: "Invalid request_visibility_mode" }, { status: 400 });
     }
-    if (body.offer_visibility_mode === undefined && body.request_visibility_mode === undefined) {
+    if (body.reference_visibility_mode !== undefined && !referenceVisibilityMode) {
+      return NextResponse.json({ error: "Invalid reference_visibility_mode" }, { status: 400 });
+    }
+    if (
+      body.offer_visibility_mode === undefined
+      && body.request_visibility_mode === undefined
+      && body.reference_visibility_mode === undefined
+    ) {
       return NextResponse.json({ error: "Missing visibility mode payload" }, { status: 400 });
     }
 
@@ -122,6 +134,7 @@ export async function PATCH(
     const patch: Record<string, unknown> = {};
     if (offerVisibilityMode) patch.offer_visibility_mode = offerVisibilityMode;
     if (requestVisibilityMode) patch.request_visibility_mode = requestVisibilityMode;
+    if (referenceVisibilityMode) patch.reference_visibility_mode = referenceVisibilityMode;
 
     const { data: existing, error: existingError } = await admin
       .from("partner_area_map")
@@ -141,11 +154,11 @@ export async function PATCH(
       .update(patch)
       .eq("auth_user_id", userId)
       .in("area_id", targetAreaIds)
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, admin_review_note, created_at");
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, reference_visibility_mode, partner_preview_signoff_at, admin_review_note, created_at");
 
     if (error && isMissingVisibilityModeColumn(error)) {
       return NextResponse.json(
-        { error: "partner_area_map.offer_visibility_mode/request_visibility_mode fehlt. Bitte DB-Migration zuerst ausführen." },
+        { error: "partner_area_map.*_visibility_mode fehlt. Bitte DB-Migration zuerst ausführen." },
         { status: 500 },
       );
     }
@@ -170,6 +183,7 @@ export async function PATCH(
         affected_area_ids: targetAreaIds,
         offer_visibility_mode: (rootMapping as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? null,
         request_visibility_mode: (rootMapping as { request_visibility_mode?: string | null }).request_visibility_mode ?? null,
+        reference_visibility_mode: (rootMapping as { reference_visibility_mode?: string | null }).reference_visibility_mode ?? null,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
