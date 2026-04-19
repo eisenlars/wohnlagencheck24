@@ -112,7 +112,7 @@ export function RequestOfferLeadInlineForm(props: Props) {
   }
 
   return (
-    <div className="request-offer-inline-block">
+    <div id="request-offer-form" className="request-offer-inline-block">
       <div>
         <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{copy.intro}</p>

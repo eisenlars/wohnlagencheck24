@@ -8,9 +8,11 @@ import type { RequestMode } from "@/lib/gesuche";
 import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
 import type { RequestDetail } from "@/lib/request-detail";
 import type { RegionalReference } from "@/lib/referenzen";
+import type { RequestMarketRangeContext } from "@/lib/request-market-range";
 import { formatMetric } from "@/utils/format";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
+import { RequestMarketRangeBox } from "./RequestMarketRangeBox";
 
 type Props = {
   request: RequestDetail;
@@ -36,6 +38,7 @@ type Props = {
     };
   };
   references?: RegionalReference[];
+  marketRangeContext?: RequestMarketRangeContext | null;
 };
 
 function formatDateLabel(value: string | null | undefined, locale: string): string {
@@ -50,7 +53,7 @@ function formatDateLabel(value: string | null | undefined, locale: string): stri
 }
 
 export function RequestDetailPage(props: Props) {
-  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb, references = [] } = props;
+  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb, references = [], marketRangeContext = null } = props;
   const isGerman = locale === "de";
   const labels = isGerman
     ? {
@@ -283,6 +286,25 @@ export function RequestDetailPage(props: Props) {
                 <div style={{ fontWeight: 600 }}>{locationLabel}</div>
               </div>
             </div>
+            <RequestMarketRangeBox
+              mode={mode}
+              objectType={request.objectType}
+              marketRangeContext={marketRangeContext}
+              regionLabel={breadcrumb.names?.regionName ?? locationLabel}
+              initialAreaSqm={
+                request.minAreaSqm !== null && request.maxAreaSqm !== null
+                  ? (request.minAreaSqm + request.maxAreaSqm) / 2
+                  : request.minAreaSqm ?? request.maxAreaSqm
+              }
+              initialRooms={
+                request.minRooms !== null && request.maxRooms !== null
+                  ? (request.minRooms + request.maxRooms) / 2
+                  : request.minRooms ?? request.maxRooms
+              }
+              locale={locale}
+              numberLocale={formatProfile.intlLocale}
+              currencyCode={formatProfile.currencyCode}
+            />
           </div>
         </aside>
       </section>

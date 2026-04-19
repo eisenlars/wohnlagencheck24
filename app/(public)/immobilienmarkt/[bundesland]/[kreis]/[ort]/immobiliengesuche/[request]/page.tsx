@@ -8,6 +8,7 @@ import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { getExperienceReferencesForRequest } from "@/lib/referenzen";
+import { buildRequestMarketRangeContext } from "@/lib/request-market-range";
 import { getRegionalRequestByIdForOrtslage } from "@/lib/request-detail";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -73,6 +74,7 @@ async function ImmobiliengesuchOrtDetailPageContent({
   const kreisName = getRegionDisplayName({ meta: kreisMeta, level: "kreis", fallbackSlug: kreis });
   const bundeslandName = asString(kreisMeta["bundesland_name"]) ?? formatRegionFallback(bundesland);
   const ortReport = await getReportBySlugs([bundesland, kreis, ort]);
+  const marketRangeContext = buildRequestMarketRangeContext(ortReport);
   const ortMeta = asRecord(asArray(ortReport?.meta)[0] ?? ortReport?.meta) ?? {};
   const ortName = getRegionDisplayName({ meta: ortMeta, level: "ort", fallbackSlug: ort });
 
@@ -107,6 +109,7 @@ async function ImmobiliengesuchOrtDetailPageContent({
     <RequestDetailPage
       request={requestData}
       references={references}
+      marketRangeContext={marketRangeContext}
       mode="kauf"
       texts={texts}
       formatProfile={formatProfile}
