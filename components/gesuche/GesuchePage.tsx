@@ -12,6 +12,7 @@ import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { slugifyRequestTitle } from "@/utils/slug";
+import { RequestImageDisclaimer } from "./RequestImageDisclaimer";
 import { RequestOfferLeadButton } from "./RequestOfferLeadButton";
 
 type GesuchePageProps = {
@@ -192,6 +193,7 @@ export function GesuchePage(props: GesuchePageProps) {
                         style={{ objectFit: "cover" }}
                       />
                     )}
+                    <RequestImageDisclaimer locale={normalizedLocale} />
                   </div>
                 ) : null}
                 <div className="angebote-card-body list-card__body">

@@ -12,6 +12,7 @@ import type { RequestMarketRangeContext } from "@/lib/request-market-range";
 import { formatMetric } from "@/utils/format";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import { RequestFitTabs } from "./RequestFitTabs";
+import { RequestImageDisclaimer } from "./RequestImageDisclaimer";
 import { RequestTipsterBox } from "./RequestTipsterBox";
 
 type Props = {
@@ -264,6 +265,7 @@ export function RequestDetailPage(props: Props) {
                 style={{ objectFit: "cover" }}
                 priority
               />
+              <RequestImageDisclaimer locale={locale} />
             </div>
             <div
               style={{

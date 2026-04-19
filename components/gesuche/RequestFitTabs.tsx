@@ -69,9 +69,9 @@ export function RequestFitTabs({
     ? {
         eyebrow: "Owner options",
         title: "Does your property fit?",
-        intro: "Choose whether you want to contact the interested party, first estimate your property, or review local transaction experience.",
+        intro: "Choose whether you want to contact the interested party, first assess your property's value range, or review local transaction experience.",
         contact: "Meet the interested party",
-        valuation: "Property estimate",
+        valuation: "Assess value",
         references: "Track record",
         referencesIntro: "Review comparable transactions from the region before you make contact.",
         referencesCta: "View track record",
@@ -79,9 +79,9 @@ export function RequestFitTabs({
     : {
         eyebrow: "Eigentümerbereich",
         title: "Passt Ihre Immobilie?",
-        intro: "Wählen Sie, ob Sie den Interessenten kennenlernen, Ihre Immobilie zuerst preislich einordnen oder die Vermittlungserfahrung prüfen möchten.",
+        intro: "Wählen Sie, ob Sie den Interessenten kennenlernen, den Wert Ihrer Immobilie einordnen oder die Vermittlungserfahrung prüfen möchten.",
         contact: "Interessent kennenlernen",
-        valuation: "Immobilienschätzung",
+        valuation: "Wert einschätzen",
         references: "Erfahrungswerte",
         referencesIntro: "Prüfen Sie vergleichbare Vermittlungen aus der Region, bevor Sie Kontakt aufnehmen.",
         referencesCta: "Vermittlungserfahrung ansehen",
