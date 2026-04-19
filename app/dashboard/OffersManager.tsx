@@ -2172,7 +2172,7 @@ const workspaceTabsRowStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
   flexWrap: 'wrap',
-  marginTop: '18px',
+  marginTop: '26px',
   marginBottom: '16px',
 };
 
@@ -2243,12 +2243,12 @@ const textareaWrapperStyle: React.CSSProperties = {
 };
 
 const filterButtonStyle = (active: boolean): React.CSSProperties => ({
-  minWidth: '92px',
-  padding: '6px 14px',
+  flex: '1 1 0%',
+  padding: '6px 8px',
   borderRadius: '999px',
-  border: `1px solid ${active ? '#486b7a' : '#e2e8f0'}`,
-  backgroundColor: active ? '#486b7a' : '#f8fafc',
-  color: active ? '#fff' : '#1e293b',
+  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
+  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
+  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
@@ -2256,9 +2256,8 @@ const filterButtonStyle = (active: boolean): React.CSSProperties => ({
 
 const offerListFilterRowStyle: React.CSSProperties = {
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '8px',
+  rowGap: '8px',
+  columnGap: '8px',
   flexWrap: 'wrap',
   marginTop: '10px',
   marginBottom: '12px',

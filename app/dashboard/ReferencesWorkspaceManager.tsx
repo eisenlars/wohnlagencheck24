@@ -355,7 +355,7 @@ const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
   backgroundColor: ready ? '#dcfce7' : '#fee2e2',
   border: `1px solid ${ready ? '#86efac' : '#fca5a5'}`,
 });
-const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 };
+const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 26, marginBottom: 16 };
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
 const fieldCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, background: '#fff', padding: 14, display: 'grid', gap: 12 };
@@ -401,14 +401,14 @@ const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', border
 
 function tabButtonStyle(active: boolean): CSSProperties {
   return {
-    border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
+    border: `1px solid ${active ? '#486b7a' : '#dbe5ea'}`,
+    backgroundColor: active ? '#486b7a' : '#f8fafc',
+    color: active ? '#ffffff' : '#334155',
     borderRadius: 999,
-    padding: '8px 12px',
-    background: active ? '#ecfeff' : '#fff',
-    color: active ? '#0f172a' : '#334155',
+    padding: '7px 12px',
+    fontSize: 12,
+    fontWeight: active ? 700 : 600,
     cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 700,
   };
 }
 
@@ -629,21 +629,20 @@ const referenceContextCardStyle: CSSProperties = {
 
 const referenceListFilterRowStyle: CSSProperties = {
   display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: 8,
+  rowGap: '8px',
+  columnGap: '8px',
   flexWrap: 'wrap',
   marginTop: 10,
   marginBottom: 12,
 };
 
 const filterButtonStyle = (active: boolean): CSSProperties => ({
-  minWidth: 92,
-  padding: '6px 14px',
+  flex: '1 1 0%',
+  padding: '6px 8px',
   borderRadius: '999px',
-  border: `1px solid ${active ? '#486b7a' : '#e2e8f0'}`,
-  backgroundColor: active ? '#486b7a' : '#f8fafc',
-  color: active ? '#fff' : '#1e293b',
+  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
+  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
+  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
   fontSize: 12,
   fontWeight: 600,
   cursor: 'pointer',
@@ -1264,12 +1263,6 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
       <section style={visibilityShellStyle}>
         <div style={visibilityCardStyle}>
           <div style={visibilityControlsRowStyle}>
-            <div style={visibilityLabelStyle}>
-              <div style={visibilityInfoTitleStyle}>KI-Arbeitsmodus für Referenzen</div>
-              <div style={visibilityInfoTextStyle}>
-                Wählen Sie Sichtbarkeit und KI-Modell zentral für den gesamten Referenz-Arbeitsbereich.
-              </div>
-            </div>
             {visibilityConfig ? (
               <div style={visibilityModeWrapStyle}>
                 <span style={visibilitySelectWrapStyle}>
@@ -1935,24 +1928,6 @@ const visibilityControlsRowStyle: CSSProperties = {
   width: '100%',
 };
 
-const visibilityLabelStyle: CSSProperties = {
-  display: 'block',
-  flex: '1 1 420px',
-};
-
-const visibilityInfoTitleStyle: CSSProperties = {
-  color: '#f8fafc',
-  fontSize: '13px',
-  fontWeight: 700,
-  marginBottom: '4px',
-};
-
-const visibilityInfoTextStyle: CSSProperties = {
-  color: 'rgba(248, 250, 252, 0.88)',
-  fontSize: '12px',
-  lineHeight: 1.45,
-};
-
 const visibilityModelWrapStyle: CSSProperties = {
   flex: '0 1 320px',
   marginLeft: 'auto',
@@ -1964,7 +1939,7 @@ const visibilityModelWrapStyle: CSSProperties = {
 const visibilityModeWrapStyle: CSSProperties = {
   flex: '0 1 300px',
   display: 'flex',
-  justifyContent: 'flex-end',
+  justifyContent: 'flex-start',
   alignItems: 'center',
 };
 
