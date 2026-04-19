@@ -67,32 +67,22 @@ export function RequestFitTabs({
   const [activeTab, setActiveTab] = useState<TabKey>("contact");
   const copy = normalizedLocale === "en"
     ? {
-        eyebrow: "Owner options",
         title: "Does your property fit?",
-        intro: "Choose whether you want to contact the interested party, first assess your property's value range, or review local transaction experience.",
         contact: "Meet the interested party",
         valuation: "Assess value",
         references: "Track record",
-        referencesIntro: "Review comparable transactions from the region before you make contact.",
-        referencesCta: "View track record",
       }
     : {
-        eyebrow: "Eigentümerbereich",
         title: "Passt Ihre Immobilie?",
-        intro: "Wählen Sie, ob Sie den Interessenten kennenlernen, den Wert Ihrer Immobilie einordnen oder die Vermittlungserfahrung prüfen möchten.",
         contact: "Interessent kennenlernen",
         valuation: "Wert einschätzen",
         references: "Erfahrungswerte",
-        referencesIntro: "Prüfen Sie vergleichbare Vermittlungen aus der Region, bevor Sie Kontakt aufnehmen.",
-        referencesCta: "Vermittlungserfahrung ansehen",
       };
 
   return (
     <section style={sectionStyle}>
       <div>
-        <div style={eyebrowStyle}>{copy.eyebrow}</div>
         <h2 style={titleStyle}>{copy.title}</h2>
-        <p style={introStyle}>{copy.intro}</p>
       </div>
 
       <div style={tabsStyle} role="tablist" aria-label={copy.title}>
@@ -151,12 +141,6 @@ export function RequestFitTabs({
         )}
       </div>
 
-      {hasReferences ? (
-        <div style={referencesHintStyle}>
-          <span>{copy.referencesIntro}</span>
-          <a href="#request-reference-map" style={referencesLinkStyle}>{copy.referencesCta}</a>
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -170,25 +154,11 @@ const sectionStyle: CSSProperties = {
   gap: 18,
 };
 
-const eyebrowStyle: CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "#486b7a",
-};
-
 const titleStyle: CSSProperties = {
-  margin: "4px 0 8px",
+  margin: 0,
   fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)",
   lineHeight: 1.15,
   color: "#0f172a",
-};
-
-const introStyle: CSSProperties = {
-  margin: 0,
-  color: "#475569",
-  lineHeight: 1.7,
 };
 
 const tabsStyle: CSSProperties = {
@@ -223,23 +193,4 @@ const tabLinkStyle: CSSProperties = {
 
 const panelStyle: CSSProperties = {
   minHeight: 220,
-};
-
-const referencesHintStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 12,
-  alignItems: "center",
-  padding: "14px 16px",
-  borderRadius: 16,
-  background: "#f8fafc",
-  color: "#475569",
-  fontSize: 14,
-};
-
-const referencesLinkStyle: CSSProperties = {
-  color: "#486b7a",
-  fontWeight: 800,
-  whiteSpace: "nowrap",
-  textDecoration: "none",
 };

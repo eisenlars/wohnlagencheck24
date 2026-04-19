@@ -226,7 +226,6 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
   return (
     <section className="reference-experience">
       <div className="reference-experience__intro">
-        <div className="reference-experience__eyebrow">Maklererfahrung</div>
         <div>
           <h2 className="reference-experience__title">{heading}</h2>
           <p className="reference-experience__copy">{intro}</p>

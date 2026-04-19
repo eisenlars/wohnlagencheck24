@@ -320,8 +320,8 @@ export function RequestDetailPage(props: Props) {
         <div id="request-reference-map">
           <ReferenceExperienceMap
             items={references}
-            heading="Vermittlungserfahrung für diese Objektart"
-            intro="Diese Kartenansicht zeigt vergleichbare Referenzen aus dem Gebiet. So wird für Eigentümer direkt sichtbar, dass der Makler bei dieser Objektart bereits konkrete Vermittlungserfahrung mitbringt."
+            heading="Vermittlungserfahrung"
+            intro="Vermittlungserfolge unseres Partners in Ihrer Region."
           />
         </div>
       ) : null}
