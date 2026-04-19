@@ -81,8 +81,8 @@ export function RequestFitTabs({
         title: "Passt Ihre Immobilie?",
         intro: "Wählen Sie, ob Sie den Interessenten kennenlernen, Ihre Immobilie zuerst preislich einordnen oder die Vermittlungserfahrung prüfen möchten.",
         contact: "Interessent kennenlernen",
-        valuation: "Preiseinschätzung Ihrer Immobilie",
-        references: "Vermittlungserfahrung",
+        valuation: "Immobilienschätzung",
+        references: "Erfahrungswerte",
         referencesIntro: "Prüfen Sie vergleichbare Vermittlungen aus der Region, bevor Sie Kontakt aufnehmen.",
         referencesCta: "Vermittlungserfahrung ansehen",
       };
@@ -195,16 +195,13 @@ const tabsStyle: CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
   gap: 8,
-  padding: 6,
-  borderRadius: 999,
-  background: "#f1f5f9",
 };
 
 const tabStyle: CSSProperties = {
-  border: 0,
+  border: "1px solid #dbe4ea",
   borderRadius: 999,
   padding: "10px 14px",
-  background: "transparent",
+  background: "#fff",
   color: "#475569",
   fontWeight: 800,
   cursor: "pointer",
@@ -212,7 +209,8 @@ const tabStyle: CSSProperties = {
 
 const activeTabStyle: CSSProperties = {
   ...tabStyle,
-  background: "#0f172a",
+  borderColor: "#486b7a",
+  background: "#486b7a",
   color: "#fff",
 };
 

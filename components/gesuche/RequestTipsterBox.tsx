@@ -23,9 +23,10 @@ export function RequestTipsterBox({ locale = "de", mode, pagePath, regionLabel, 
   return (
     <div
       style={{
-        marginTop: 24,
-        paddingTop: 24,
-        borderTop: "1px solid #e2e8f0",
+        border: "1px solid #dbe4ea",
+        borderRadius: 20,
+        background: "#fff",
+        overflow: "hidden",
       }}
     >
       <div

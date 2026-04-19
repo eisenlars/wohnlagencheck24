@@ -237,78 +237,80 @@ export function RequestDetailPage(props: Props) {
           />
         </div>
 
-        <aside
-          style={{
-            display: "grid",
-            gap: 0,
-            border: "1px solid #dbe4ea",
-            borderRadius: 20,
-            background: "#fff",
-            overflow: "hidden",
-          }}
-        >
+        <aside style={{ display: "grid", gap: 18 }}>
           <div
             style={{
-              position: "relative",
-              aspectRatio: "4 / 3",
+              display: "grid",
+              gap: 0,
+              border: "1px solid #dbe4ea",
+              borderRadius: 20,
+              background: "#fff",
               overflow: "hidden",
-              background: "#dbe4ea",
             }}
           >
-            <Image
-              src={request.imageUrl ?? "/images/requests/default_request.jpg"}
-              alt={request.imageAlt ?? request.imageTitle ?? request.title}
-              fill
-              sizes="(max-width: 991px) 100vw, 28vw"
-              style={{ objectFit: "cover" }}
-              priority
-            />
-          </div>
-          <div
-            style={{
-              padding: 24,
-            }}
-          >
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>{labels.criteria}</h2>
-            <div style={{ display: "grid", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{texts.object_generic}</div>
-                <div style={{ fontWeight: 600 }}>{objectLabel}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{labels.subtype}</div>
-                <div style={{ fontWeight: 600 }}>{objectSubtypeLabel}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{mode === "miete" ? texts.warm_rent : texts.purchase_price}</div>
-                <div style={{ fontWeight: 600 }}>{budgetLabel}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{texts.living_area}</div>
-                <div style={{ fontWeight: 600 }}>{areaLabel}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{texts.rooms}</div>
-                <div style={{ fontWeight: 600 }}>{roomsLabel}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{labels.radius}</div>
-                <div style={{ fontWeight: 600 }}>{request.radiusKm !== null ? `${request.radiusKm} km` : "—"}</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
-                <div style={{ color: "#64748b" }}>{labels.regions}</div>
-                <div style={{ fontWeight: 600 }}>{locationLabel}</div>
+            <div
+              style={{
+                position: "relative",
+                aspectRatio: "4 / 3",
+                overflow: "hidden",
+                background: "#dbe4ea",
+              }}
+            >
+              <Image
+                src={request.imageUrl ?? "/images/requests/default_request.jpg"}
+                alt={request.imageAlt ?? request.imageTitle ?? request.title}
+                fill
+                sizes="(max-width: 991px) 100vw, 28vw"
+                style={{ objectFit: "cover" }}
+                priority
+              />
+            </div>
+            <div
+              style={{
+                padding: 24,
+              }}
+            >
+              <h2 style={{ marginTop: 0, marginBottom: 16 }}>{labels.criteria}</h2>
+              <div style={{ display: "grid", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{texts.object_generic}</div>
+                  <div style={{ fontWeight: 600 }}>{objectLabel}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{labels.subtype}</div>
+                  <div style={{ fontWeight: 600 }}>{objectSubtypeLabel}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{mode === "miete" ? texts.warm_rent : texts.purchase_price}</div>
+                  <div style={{ fontWeight: 600 }}>{budgetLabel}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{texts.living_area}</div>
+                  <div style={{ fontWeight: 600 }}>{areaLabel}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{texts.rooms}</div>
+                  <div style={{ fontWeight: 600 }}>{roomsLabel}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{labels.radius}</div>
+                  <div style={{ fontWeight: 600 }}>{request.radiusKm !== null ? `${request.radiusKm} km` : "—"}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
+                  <div style={{ color: "#64748b" }}>{labels.regions}</div>
+                  <div style={{ fontWeight: 600 }}>{locationLabel}</div>
+                </div>
               </div>
             </div>
-            <RequestTipsterBox
-              locale={locale}
-              mode={mode}
-              pagePath={listPath}
-              regionLabel={breadcrumb.names?.regionName ?? locationLabel}
-              request={{ id: request.id, title: request.title, objectType: request.objectType }}
-              context={breadcrumb.ctx ?? {}}
-            />
           </div>
+          <RequestTipsterBox
+            locale={locale}
+            mode={mode}
+            pagePath={listPath}
+            regionLabel={breadcrumb.names?.regionName ?? locationLabel}
+            request={{ id: request.id, title: request.title, objectType: request.objectType }}
+            context={breadcrumb.ctx ?? {}}
+          />
         </aside>
       </section>
 
