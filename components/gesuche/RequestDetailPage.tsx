@@ -58,14 +58,14 @@ export function RequestDetailPage(props: Props) {
   const isGerman = locale === "de";
   const labels = isGerman
     ? {
-        criteria: "Suchkriterien",
+        criteria: "Suchwünsche",
         regions: "Zielregionen",
         radius: "Suchradius",
         subtype: "Objekt-Untertyp",
         description: "Beschreibung",
       }
     : {
-        criteria: "Search criteria",
+        criteria: "Search wishes",
         regions: "Target regions",
         radius: "Search radius",
         subtype: "Object subtype",
@@ -166,58 +166,60 @@ export function RequestDetailPage(props: Props) {
           marginBottom: 28,
         }}
       >
-        <div
-          style={{
-            border: "1px solid #dbe4ea",
-            borderRadius: 20,
-            background: "#fff",
-            padding: 24,
-            display: "grid",
-            gap: 18,
-            alignContent: "start",
-          }}
-        >
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "6px 12px",
-                borderRadius: 999,
-                background: "#eef4f8",
-                color: "#486b7a",
-                fontSize: 12,
-                fontWeight: 700,
-              }}
-            >
-              {objectMetaLabel}
-            </span>
-            <span style={{ marginLeft: "auto", color: "#475569", fontSize: 13 }}>
-              <strong>{texts.updated_label}:</strong> {formatDateLabel(request.updatedAt, locale)}
-            </span>
-          </div>
-
-          <div>
-            <h1 style={{ margin: "0 0 10px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
-              {request.title}
-            </h1>
-            <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
-              {request.description ?? "—"}
-            </div>
-            <div className="request-detail-benefit-box">
-              <div
+        <div style={{ display: "grid", gap: 18 }}>
+          <div
+            style={{
+              border: "1px solid #dbe4ea",
+              borderRadius: 20,
+              background: "#fff",
+              padding: 24,
+              display: "grid",
+              gap: 18,
+              alignContent: "start",
+            }}
+          >
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <span
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  background: "#eef4f8",
+                  color: "#486b7a",
                   fontSize: 12,
                   fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  color: "#486b7a",
                 }}
               >
-                Warum dieses qualifizierte Gesuch für Eigentümer relevant ist
+                {objectMetaLabel}
+              </span>
+              <span style={{ marginLeft: "auto", color: "#475569", fontSize: 13 }}>
+                <strong>{texts.updated_label}:</strong> {formatDateLabel(request.updatedAt, locale)}
+              </span>
+            </div>
+
+            <div>
+              <h1 style={{ margin: "0 0 10px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
+                {request.title}
+              </h1>
+              <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
+                {request.description ?? "—"}
               </div>
-              <div style={{ color: "#475569", fontSize: 14, lineHeight: 1.7 }}>
-                {qualificationCopy}
+              <div className="request-detail-benefit-box">
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    color: "#486b7a",
+                  }}
+                >
+                  Warum dieses qualifizierte Gesuch für Eigentümer relevant ist
+                </div>
+                <div style={{ color: "#475569", fontSize: 14, lineHeight: 1.7 }}>
+                  {qualificationCopy}
+                </div>
               </div>
             </div>
           </div>
