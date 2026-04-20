@@ -108,6 +108,10 @@ export function ImmobilienmaklerSection({
           </section>
         ) : null}
 
+        {references.length > 0 ? (
+          <ReferenceSlideshow items={references.slice(0, 6)} />
+        ) : null}
+
         {(beschreibung || benefits.length > 0) ? (
           <section className={styles.grid}>
             {beschreibung ? (
@@ -151,10 +155,6 @@ export function ImmobilienmaklerSection({
             <h2>Maklerprovision & Kosten</h2>
             <p className={styles.text}>{provision}</p>
           </section>
-        ) : null}
-
-        {references.length > 0 ? (
-          <ReferenceSlideshow items={references.slice(0, 6)} />
         ) : null}
       </div>
     </div>
