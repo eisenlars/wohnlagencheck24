@@ -78,7 +78,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
   const copy = locale === "en"
     ? isTip
       ? {
-          title: "Send a property tip",
+          title: "Claim tip commission",
           intro: "Share a confidential hint. The request goes directly to the responsible advisor.",
           name: "Your name",
           email: "Email",
@@ -88,7 +88,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           locationPlaceholder: "City, district or rough location",
           notePlaceholder: "Briefly describe the owner or property hint",
           cancel: "Cancel",
-          send: "Send tip",
+          send: "Claim tip commission",
           sending: "Sending...",
           success: "Your tip has been sent.",
           error: "The tip could not be sent right now.",
@@ -111,7 +111,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
         }
     : isTip
       ? {
-          title: "Tipp geben",
+          title: "Tippprovision abholen",
           intro: "Geben Sie einen vertraulichen Hinweis. Die Nachricht geht direkt an den zuständigen Berater.",
           name: "Ihr Name",
           email: "E-Mail",
@@ -121,7 +121,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           locationPlaceholder: "Ort, Stadtteil oder grobe Lage",
           notePlaceholder: "Beschreiben Sie den Tipp kurz",
           cancel: "Abbrechen",
-          send: "Tipp senden",
+          send: "Tippprovision abholen",
           sending: "Wird gesendet...",
           success: "Ihr Hinweis wurde versendet.",
           error: "Der Hinweis konnte gerade nicht versendet werden.",
@@ -278,7 +278,12 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                 <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setOpen(false)}>
                   {copy.cancel}
                 </button>
-                <button type="submit" className="btn btn-dark request-offer-submit" disabled={state === "submitting" || state === "success"}>
+                <button
+                  type="submit"
+                  className="btn request-offer-submit"
+                  disabled={state === "submitting" || state === "success"}
+                  style={isTip ? tipSubmitStyle : defaultSubmitStyle}
+                >
                   {state === "submitting" ? copy.sending : copy.send}
                 </button>
               </div>
@@ -289,3 +294,16 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
     </>
   );
 }
+
+const defaultSubmitStyle: CSSProperties = {
+  background: "#0f172a",
+  borderColor: "#0f172a",
+  color: "#fff",
+};
+
+const tipSubmitStyle: CSSProperties = {
+  background: "#facc15",
+  borderColor: "#facc15",
+  color: "#0f172a",
+  fontWeight: 850,
+};

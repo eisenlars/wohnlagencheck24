@@ -69,13 +69,13 @@ export function RequestFitTabs({
     ? {
         title: "Does your property fit?",
         contact: "Meet the interested party",
-        valuation: "Assess value",
+        valuation: "Check property value",
         references: "Track record",
       }
     : {
         title: "Passt Ihre Immobilie?",
         contact: "Interessent kennenlernen",
-        valuation: "Wert einschätzen",
+        valuation: "Immobilienwert prüfen",
         references: "Erfahrungswerte",
       };
 

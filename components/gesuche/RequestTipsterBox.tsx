@@ -59,7 +59,7 @@ export function RequestTipsterBox({ locale = "de", mode, pagePath, regionLabel, 
             : "Wenn Sie jemanden kennen, dessen Immobilie zu diesem Gesuch passen könnte, geben Sie uns einen kurzen vertraulichen Hinweis."}
         </p>
         <RequestOfferLeadButton
-          label={isEnglish ? "Send a tip" : "Tipp geben"}
+          label={isEnglish ? "Claim tip commission" : "Tippprovision abholen"}
           locale={locale}
           mode={mode}
           intent="tip"
@@ -70,8 +70,8 @@ export function RequestTipsterBox({ locale = "de", mode, pagePath, regionLabel, 
           style={{
             justifySelf: "start",
             marginTop: 4,
-            border: "1px solid rgba(255,255,255,0.28)",
-            background: "#fff",
+            border: "1px solid #facc15",
+            background: "#facc15",
             color: "#0f172a",
             borderRadius: 999,
             padding: "11px 16px",
