@@ -2,6 +2,7 @@ import Image from "next/image";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import { asRecord, asString } from "@/utils/records";
+import { buildWebAssetUrl } from "@/utils/assets";
 import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
 import styles from "./ImmobilienberatungSection.module.css";
@@ -61,6 +62,12 @@ export function ImmobilienberatungSection({
     adresse ? { label: "Adresse", value: adresse } : null,
   ].filter(Boolean) as ContactItem[];
 
+  const meta = asRecord(report.meta) ?? {};
+  const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
+  const regionImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
+  );
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
@@ -103,6 +110,18 @@ export function ImmobilienberatungSection({
                   {block}
                 </p>
               ))}
+          </div>
+          <div className={styles.regionVisual}>
+            <Image
+              src={regionImageSrc}
+              alt={`Immobilienberatung in ${kreisName}`}
+              width={1280}
+              height={720}
+              className={styles.regionVisualImage}
+            />
+            <div className={styles.regionVisualCaption}>
+              Immobilienberatung fuer die Region {kreisName}
+            </div>
           </div>
         </section>
 
