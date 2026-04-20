@@ -174,7 +174,7 @@ export function RequestDetailPage(props: Props) {
               background: "#fff",
               padding: 24,
               display: "grid",
-              gap: 18,
+              gap: 30,
               alignContent: "start",
             }}
           >
