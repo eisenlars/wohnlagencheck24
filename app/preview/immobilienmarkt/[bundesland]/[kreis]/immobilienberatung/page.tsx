@@ -5,7 +5,7 @@ import { ImmobilienberatungSection } from "@/features/immobilienmarkt/sections/I
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback } from "@/utils/regionName";
-import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
@@ -96,6 +96,10 @@ export default async function PreviewImmobilienberatungPage({ params }: PageProp
     asString(berater["berater_telefon"]) ??
     "";
   const tabs = IMMOBILIENMARKT_THEME.tabsByLevel.kreis ?? [];
+  const breadcrumbTabs = [
+    ...tabs,
+    { id: "immobilienberatung", label: "Immobilienberatung" },
+  ];
   const texts = await getPortalSystemTexts("de");
 
   return (
@@ -112,19 +116,25 @@ export default async function PreviewImmobilienberatungPage({ params }: PageProp
           subjectDefault: `Kontaktanfrage – ${kreisName}`,
         }}
       />
-      <TabNav
-        tabs={tabs}
-        activeTabId="uebersicht"
-        basePath={pageModel.basePath}
-        texts={texts}
-        ctx={{ bundeslandSlug, kreisSlug }}
-        names={{ regionName: kreisName, bundeslandName, kreisName }}
-      />
-      <ImmobilienberatungSection
-        report={pageModel.report}
-        bundeslandSlug={bundeslandSlug}
-        kreisSlug={kreisSlug}
-      />
+      <div className="container text-dark">
+        <div className="breadcrumb-sticky mb-3">
+          <ImmobilienmarktBreadcrumb
+            tabs={breadcrumbTabs}
+            activeTabId="immobilienberatung"
+            basePath={pageModel.basePath}
+            texts={texts}
+            ctx={{ bundeslandSlug, kreisSlug }}
+            names={{ regionName: kreisName, bundeslandName, kreisName }}
+            compact
+            rootIconSrc="/logo/wohnlagencheck24.svg"
+          />
+        </div>
+        <ImmobilienberatungSection
+          report={pageModel.report}
+          bundeslandSlug={bundeslandSlug}
+          kreisSlug={kreisSlug}
+        />
+      </div>
     </>
   );
 }

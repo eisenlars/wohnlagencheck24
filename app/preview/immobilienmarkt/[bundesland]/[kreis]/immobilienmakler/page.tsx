@@ -5,7 +5,7 @@ import { ImmobilienmaklerSection } from "@/features/immobilienmarkt/sections/Imm
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback } from "@/utils/regionName";
-import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getRandomReferencesForKreis } from "@/lib/referenzen";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -96,6 +96,10 @@ export default async function PreviewImmobilienmaklerPage({ params }: PageProps)
     asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const tabs = IMMOBILIENMARKT_THEME.tabsByLevel.kreis ?? [];
+  const breadcrumbTabs = [
+    ...tabs,
+    { id: "immobilienmakler", label: "Immobilienmakler" },
+  ];
   const references = await getRandomReferencesForKreis({
     bundeslandSlug,
     kreisSlug,
@@ -116,19 +120,25 @@ export default async function PreviewImmobilienmaklerPage({ params }: PageProps)
           subjectDefault: `Makleranfrage – ${kreisSlug}`,
         }}
       />
-      <TabNav
-        tabs={tabs}
-        activeTabId="uebersicht"
-        basePath={pageModel.basePath}
-        texts={texts}
-        ctx={{ bundeslandSlug, kreisSlug }}
-        names={{ regionName: kreisName, bundeslandName, kreisName }}
-      />
-      <ImmobilienmaklerSection
-        report={pageModel.report}
-        kreisSlug={kreisSlug}
-        references={references}
-      />
+      <div className="container text-dark">
+        <div className="breadcrumb-sticky mb-3">
+          <ImmobilienmarktBreadcrumb
+            tabs={breadcrumbTabs}
+            activeTabId="immobilienmakler"
+            basePath={pageModel.basePath}
+            texts={texts}
+            ctx={{ bundeslandSlug, kreisSlug }}
+            names={{ regionName: kreisName, bundeslandName, kreisName }}
+            compact
+            rootIconSrc="/logo/wohnlagencheck24.svg"
+          />
+        </div>
+        <ImmobilienmaklerSection
+          report={pageModel.report}
+          kreisSlug={kreisSlug}
+          references={references}
+        />
+      </div>
     </>
   );
 }

@@ -115,23 +115,25 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
           subjectDefault: `Makleranfrage – ${kreisSlug}`,
         }}
       />
-      <section className="breadcrumb-sticky mb-3">
-        <ImmobilienmarktBreadcrumb
-          tabs={breadcrumbTabs}
-          activeTabId="immobilienmakler"
-          basePath={basePath}
-          texts={texts}
-          ctx={{ bundeslandSlug, kreisSlug }}
-          names={{ regionName: kreisName, bundeslandName, kreisName }}
-          compact
-          rootIconSrc="/logo/wohnlagencheck24.svg"
+      <div className="container text-dark">
+        <div className="breadcrumb-sticky mb-3">
+          <ImmobilienmarktBreadcrumb
+            tabs={breadcrumbTabs}
+            activeTabId="immobilienmakler"
+            basePath={basePath}
+            texts={texts}
+            ctx={{ bundeslandSlug, kreisSlug }}
+            names={{ regionName: kreisName, bundeslandName, kreisName }}
+            compact
+            rootIconSrc="/logo/wohnlagencheck24.svg"
+          />
+        </div>
+        <ImmobilienmaklerSection
+          report={reportWithMedia}
+          kreisSlug={kreisSlug}
+          references={references}
         />
-      </section>
-      <ImmobilienmaklerSection
-        report={reportWithMedia}
-        kreisSlug={kreisSlug}
-        references={references}
-      />
+      </div>
     </>
   );
 }
