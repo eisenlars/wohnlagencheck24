@@ -53,7 +53,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
         for (const entry of overrides) {
           const key = String(entry.section_key ?? "");
           const value = String(entry.optimized_content ?? "");
-          if (key === "media_berater_avatar" && value) {
+          if ((key.startsWith("berater_") || key === "media_berater_avatar") && value) {
             berater[key] = value;
           }
         }
