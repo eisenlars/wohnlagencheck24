@@ -1029,7 +1029,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     {activeTab === 'texts' || activeTab === 'seo' ? (
                       <div style={workspaceSectionStyle}>
                         <div style={onlineCreateGridStyle}>
-                          <div style={offerSummaryTopCardStyle}>
+                          <div style={requestTextEditBlockStyle}>
                             <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
                             <div style={requestNoteHeadingRowStyle}>
                               <div style={requestNoteHeadingStyle}>CRM-Notiz</div>
@@ -1155,7 +1155,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             </div>
                           </div>
                         </div>
-                        <div style={offerSummaryTopCardStyle}>
+                        <div style={requestSummaryBlockStyle}>
                           <div style={offerSummaryHeaderStyle}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div style={requestSummaryGridStyle}>
                             <div style={{ display: 'grid', gap: '14px' }}>
@@ -1671,6 +1671,16 @@ const onlineCreateGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
   gap: '16px',
+};
+
+const requestTextEditBlockStyle: CSSProperties = {
+  display: 'grid',
+  gap: '14px',
+};
+
+const requestSummaryBlockStyle: CSSProperties = {
+  display: 'grid',
+  gap: '12px',
 };
 
 const offerSummaryTopCardStyle: CSSProperties = {

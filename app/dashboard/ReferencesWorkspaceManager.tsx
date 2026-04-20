@@ -687,10 +687,6 @@ const referenceTextWorkspaceStyle: CSSProperties = {
 };
 
 const referenceContextCardStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 14,
-  background: '#f8fafc',
-  padding: 14,
   display: 'grid',
   gap: 12,
 };
