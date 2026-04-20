@@ -281,6 +281,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [imageInfoOpen, setImageInfoOpen] = useState(false);
+  const [requestNoteInfoOpen, setRequestNoteInfoOpen] = useState(false);
   const [imageSelectionStatus, setImageSelectionStatus] = useState<string | null>(null);
   const [pendingRequestImageSelectionId, setPendingRequestImageSelectionId] = useState<string | null>(null);
   const [requestLoadSummary, setRequestLoadSummary] = useState<string | null>(null);
@@ -1030,9 +1031,16 @@ export default function RequestsWorkspaceManager(props: Props) {
                         <div style={onlineCreateGridStyle}>
                           <div style={offerSummaryTopCardStyle}>
                             <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
-                            <div style={requestNoteHeadingStyle}>CRM-Notiz</div>
-                            <div style={workspaceSectionSublineStyle}>
-                              Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
+                            <div style={requestNoteHeadingRowStyle}>
+                              <div style={requestNoteHeadingStyle}>CRM-Notiz</div>
+                              <button
+                                type="button"
+                                onClick={() => setRequestNoteInfoOpen(true)}
+                                style={requestNoteInfoButtonStyle}
+                                aria-label="Information zur CRM-Notiz anzeigen"
+                              >
+                                i
+                              </button>
                             </div>
                             <div style={textSourceNoteCardStyle}>
                               <div style={requestNoteBodyStyle}>
@@ -1265,6 +1273,21 @@ export default function RequestsWorkspaceManager(props: Props) {
                     : 'Kein Motiv gefunden'}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {requestNoteInfoOpen ? (
+        <div style={modalOverlayStyle} role="dialog" aria-modal="true">
+          <div style={modalCardStyle}>
+            <div style={cardHeaderRowStyle}>
+              <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
+              <button type="button" onClick={() => setRequestNoteInfoOpen(false)} style={modalCloseButtonStyle}>
+                Schließen
+              </button>
+            </div>
+            <div style={requestNoteInfoTextStyle}>
+              Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
             </div>
           </div>
         </div>
@@ -1663,12 +1686,6 @@ const workspaceSectionStyle: CSSProperties = {
   marginBottom: '18px',
 };
 
-const workspaceSectionSublineStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  lineHeight: 1.5,
-};
-
 const cardHeaderRowStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -1720,8 +1737,37 @@ const requestNoteHeadingStyle: CSSProperties = {
   letterSpacing: '0.08em',
   color: '#64748b',
   fontWeight: 700,
+};
+
+const requestNoteHeadingRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
   marginTop: '8px',
-  marginBottom: '4px',
+  marginBottom: '8px',
+};
+
+const requestNoteInfoButtonStyle: CSSProperties = {
+  width: '20px',
+  height: '20px',
+  borderRadius: '999px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#486b7a',
+  fontSize: '12px',
+  fontWeight: 800,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  lineHeight: 1,
+};
+
+const requestNoteInfoTextStyle: CSSProperties = {
+  color: '#334155',
+  fontSize: '13px',
+  lineHeight: 1.55,
 };
 
 const statusBadgeStyle = (active: boolean): CSSProperties => ({
