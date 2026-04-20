@@ -11,6 +11,7 @@ import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
 import { OfferInquiryInlineForm } from "./OfferInquiryInlineForm";
+import { FormattedOfferText } from "./FormattedOfferText";
 import { OfferLocationMap } from "./OfferLocationMap";
 
 type MediaAssetKind = "image" | "floorplan" | "location_map" | "document";
@@ -1003,7 +1004,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             {narrativeSections.map((section) => (
               <div key={section.title} className="offer-detail-panel-section">
                 <h2 className="h5 mb-3">{section.title}</h2>
-                {section.copy ? <p className="offer-detail-panel-copy mb-0">{section.copy}</p> : null}
+                {section.copy ? <FormattedOfferText text={section.copy} /> : null}
                 {section.items ? (
                   <ul className="offer-detail-list offer-detail-highlight-list mb-0">
                     {section.items.map((item, index) => (
