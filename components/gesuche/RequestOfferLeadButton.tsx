@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties, type FormEvent } from "react";
 import type { RequestMode } from "@/lib/gesuche";
+import { LeadConsentFields, type LeadConsentValue } from "@/components/LeadConsentFields";
 
 type RequestOfferLeadButtonProps = {
   label: string;
@@ -66,25 +67,6 @@ const labelStyle: CSSProperties = {
   fontWeight: 650,
 };
 
-const consentListStyle: CSSProperties = {
-  display: "grid",
-  gap: 10,
-  padding: "12px 13px",
-  border: "1px solid #e2e8f0",
-  borderRadius: 12,
-  background: "#f8fafc",
-};
-
-const consentLabelStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "18px minmax(0, 1fr)",
-  gap: 10,
-  alignItems: "start",
-  color: "#334155",
-  fontSize: 13,
-  lineHeight: 1.5,
-};
-
 export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
@@ -95,8 +77,11 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
     phone: "",
     propertyLocation: "",
     note: "",
-    privacyConsent: false,
-    tipConsent: false,
+  });
+  const [consent, setConsent] = useState<LeadConsentValue>({
+    privacy: false,
+    forwarding: false,
+    tipTerms: false,
   });
 
   const locale = props.locale === "en" ? "en" : "de";
@@ -113,8 +98,6 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           note: "Who or what should we know about?",
           locationPlaceholder: "City, district or rough location",
           notePlaceholder: "Briefly describe the owner or property hint",
-          privacyConsent: "I agree that my details will be processed to handle this tip and forwarded to the responsible advisor.",
-          tipConsent: "I submit this tip voluntarily and confirm that I am allowed to share the information. Any possible tip commission will be reviewed and agreed separately.",
           cancel: "Cancel",
           send: "Send confidential tip",
           sending: "Sending...",
@@ -132,14 +115,12 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           note: "Short message",
           locationPlaceholder: "City, district or address",
           notePlaceholder: "Briefly describe the property",
-          privacyConsent: "",
-          tipConsent: "",
           cancel: "Cancel",
           send: "Send offer",
           sending: "Sending...",
           success: "Your property offer has been sent.",
           error: "The offer could not be sent right now.",
-          consentError: "",
+          consentError: "Please confirm the required consent fields.",
         }
     : isTip
       ? {
@@ -152,8 +133,6 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           note: "Wen oder welches Objekt sollten wir kennen?",
           locationPlaceholder: "Ort, Stadtteil oder grobe Lage",
           notePlaceholder: "Beschreiben Sie den Tipp kurz",
-          privacyConsent: "Ich bin einverstanden, dass meine Angaben zur Bearbeitung dieses Hinweises verarbeitet und an den zuständigen Ansprechpartner weitergeleitet werden.",
-          tipConsent: "Ich gebe diesen Hinweis freiwillig ab und bestätige, zur Weitergabe der Informationen berechtigt zu sein. Eine mögliche Tippgebervergütung wird gesondert geprüft und vereinbart.",
           cancel: "Abbrechen",
           send: "Hinweis vertraulich senden",
           sending: "Wird gesendet...",
@@ -171,20 +150,18 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
           note: "Kurze Nachricht",
           locationPlaceholder: "Ort, Stadtteil oder Adresse",
           notePlaceholder: "Beschreibe das Objekt kurz",
-          privacyConsent: "",
-          tipConsent: "",
           cancel: "Abbrechen",
           send: "Objekt anbieten",
           sending: "Wird gesendet...",
           success: "Dein Objektangebot wurde versendet.",
           error: "Das Objektangebot konnte gerade nicht versendet werden.",
-          consentError: "",
+          consentError: "Bitte bestätige die erforderlichen Zustimmungen.",
         };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === "submitting") return;
-    if (isTip && (!form.privacyConsent || !form.tipConsent)) {
+    if (!consent.privacy || !consent.forwarding || (isTip && !consent.tipTerms)) {
       setState("error");
       setMessage(copy.consentError);
       return;
@@ -199,6 +176,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
       },
       body: JSON.stringify({
         locale,
+        sourceForm: isTip ? "request_tip_modal" : "request_offer_modal",
         pagePath: props.pagePath,
         regionLabel: props.regionLabel,
         request: props.request,
@@ -214,10 +192,14 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
         },
         consent: isTip
           ? {
-              privacy: form.privacyConsent,
-              tipTerms: form.tipConsent,
+              privacy: consent.privacy,
+              forwarding: consent.forwarding,
+              tipTerms: consent.tipTerms,
             }
-          : undefined,
+          : {
+              privacy: consent.privacy,
+              forwarding: consent.forwarding,
+            },
       }),
     });
 
@@ -319,35 +301,12 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                     required
                   />
                 </div>
-                {isTip ? (
-                  <div style={consentListStyle}>
-                    <label style={consentLabelStyle}>
-                      <input
-                        type="checkbox"
-                        checked={form.privacyConsent}
-                        onChange={(event) => setForm((current) => ({ ...current, privacyConsent: event.target.checked }))}
-                        required
-                        style={{ marginTop: 3 }}
-                      />
-                      <span>
-                        {copy.privacyConsent}{" "}
-                        <a href={locale === "en" ? "/en/datenschutz" : "/datenschutz"} target="_blank" rel="noreferrer" style={{ color: "#486b7a", fontWeight: 800 }}>
-                          {locale === "en" ? "Privacy policy" : "Datenschutzerklärung"}
-                        </a>
-                      </span>
-                    </label>
-                    <label style={consentLabelStyle}>
-                      <input
-                        type="checkbox"
-                        checked={form.tipConsent}
-                        onChange={(event) => setForm((current) => ({ ...current, tipConsent: event.target.checked }))}
-                        required
-                        style={{ marginTop: 3 }}
-                      />
-                      <span>{copy.tipConsent}</span>
-                    </label>
-                  </div>
-                ) : null}
+                <LeadConsentFields
+                  locale={locale}
+                  value={consent}
+                  onChange={setConsent}
+                  includeTipTerms={isTip}
+                />
                 {message ? (
                   <div className={`alert ${state === "success" ? "alert-success" : "alert-danger"}`} role="status" style={{ marginBottom: 0 }}>
                     {message}

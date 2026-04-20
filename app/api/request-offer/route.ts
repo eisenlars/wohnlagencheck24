@@ -9,6 +9,7 @@ import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 type RequestOfferPayload = {
   locale?: string | null;
+  sourceForm?: string | null;
   pagePath?: string | null;
   regionLabel?: string | null;
   request?: {
@@ -32,6 +33,7 @@ type RequestOfferPayload = {
   } | null;
   consent?: {
     privacy?: boolean | null;
+    forwarding?: boolean | null;
     tipTerms?: boolean | null;
   } | null;
 };
@@ -178,7 +180,7 @@ export async function POST(req: Request) {
     if (!senderName || !senderEmail || !propertyLocation || !message || !bundeslandSlug || !kreisSlug) {
       return NextResponse.json({ ok: false, error: "INVALID_REQUEST" }, { status: 400 });
     }
-    if (isTip && (!body.consent?.privacy || !body.consent?.tipTerms)) {
+    if (!body.consent?.privacy || !body.consent?.forwarding || (isTip && !body.consent?.tipTerms)) {
       return NextResponse.json({ ok: false, error: "CONSENT_REQUIRED" }, { status: 400 });
     }
 
@@ -209,14 +211,14 @@ export async function POST(req: Request) {
     const requestTitle = asText(body.request?.title);
     const requestObjectType = asText(body.request?.objectType);
     const pagePath = asText(body.pagePath);
+    const sourceForm = asText(body.sourceForm) || (isTip ? "request_tip_modal" : "request_offer");
     const consentSubmittedAt = new Date().toISOString();
-    const consentSummary = isTip
-      ? [
-          "privacy=true",
-          "tip_terms=true",
-          `submitted_at=${consentSubmittedAt}`,
-        ]
-      : [];
+    const consentSummary = [
+      "privacy=true",
+      "forwarding=true",
+      ...(isTip ? ["tip_terms=true"] : []),
+      `submitted_at=${consentSubmittedAt}`,
+    ];
 
     const recipientMail = await sendSmtpTextMail({
       to: [advisor.advisorEmail],
@@ -268,16 +270,22 @@ export async function POST(req: Request) {
         request_id: requestId || null,
         request_title: requestTitle || null,
         request_intent: isTip ? "tip" : "offer",
+        source_form: sourceForm,
         page_path: pagePath || null,
         region_label: asText(body.regionLabel) || advisor.areaName,
         locale,
         consent: isTip
           ? {
               privacy: true,
+              forwarding: true,
               tip_terms: true,
               submitted_at: consentSubmittedAt,
             }
-          : null,
+          : {
+              privacy: true,
+              forwarding: true,
+              submitted_at: consentSubmittedAt,
+            },
       },
       ip,
       userAgent: req.headers.get("user-agent"),

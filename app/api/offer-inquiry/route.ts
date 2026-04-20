@@ -9,6 +9,7 @@ import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/secu
 
 type OfferInquiryPayload = {
   locale?: string | null;
+  sourceForm?: string | null;
   pagePath?: string | null;
   regionLabel?: string | null;
   offer?: {
@@ -32,6 +33,10 @@ type OfferInquiryPayload = {
   inquiry?: {
     location?: string | null;
     message?: string | null;
+  } | null;
+  consent?: {
+    privacy?: boolean | null;
+    forwarding?: boolean | null;
   } | null;
 };
 
@@ -58,6 +63,7 @@ function buildRecipientText(args: {
   senderEmail: string;
   senderPhone: string;
   message: string;
+  consentSummary: string[];
 }) {
   if (args.locale === "en") {
     return [
@@ -80,6 +86,9 @@ function buildRecipientText(args: {
       "",
       "Inquiry",
       `Message: ${args.message || "-"}`,
+      "",
+      "Consent",
+      ...(args.consentSummary.length > 0 ? args.consentSummary : ["-"]),
     ].join("\n");
   }
 
@@ -103,6 +112,9 @@ function buildRecipientText(args: {
     "",
     "Anfrage",
     `Nachricht: ${args.message || "-"}`,
+    "",
+    "Zustimmungen",
+    ...(args.consentSummary.length > 0 ? args.consentSummary : ["-"]),
   ].join("\n");
 }
 
@@ -150,6 +162,9 @@ export async function POST(req: Request) {
     if (!senderName || !senderEmail || !message || !bundeslandSlug || !kreisSlug) {
       return NextResponse.json({ ok: false, error: "INVALID_REQUEST" }, { status: 400 });
     }
+    if (!body.consent?.privacy || !body.consent?.forwarding) {
+      return NextResponse.json({ ok: false, error: "CONSENT_REQUIRED" }, { status: 400 });
+    }
 
     const ip = extractClientIpFromHeaders(req.headers);
     const limit = await checkRateLimitPersistent(`offer_inquiry_submit:${ip}:${senderEmail}`, {
@@ -179,6 +194,13 @@ export async function POST(req: Request) {
     const offerObjectType = asText(body.offer?.objectType);
     const offerAddress = asText(body.offer?.address);
     const pagePath = asText(body.pagePath);
+    const sourceForm = asText(body.sourceForm) || "offer_inquiry";
+    const consentSubmittedAt = new Date().toISOString();
+    const consentSummary = [
+      "privacy=true",
+      "forwarding=true",
+      `submitted_at=${consentSubmittedAt}`,
+    ];
 
     const recipientMail = await sendSmtpTextMail({
       to: [advisor.advisorEmail],
@@ -196,6 +218,7 @@ export async function POST(req: Request) {
         senderEmail,
         senderPhone,
         message,
+        consentSummary,
       }),
       replyTo: senderEmail,
     });
@@ -226,9 +249,15 @@ export async function POST(req: Request) {
         partner_id: advisor.partnerId,
         offer_id: offerId || null,
         offer_title: offerTitle || null,
+        source_form: sourceForm,
         page_path: pagePath || null,
         region_label: asText(body.regionLabel) || advisor.areaName,
         locale,
+        consent: {
+          privacy: true,
+          forwarding: true,
+          submitted_at: consentSubmittedAt,
+        },
       },
       ip,
       userAgent: req.headers.get("user-agent"),

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { RequestMode } from "@/lib/gesuche";
+import { LeadConsentFields, type LeadConsentValue } from "@/components/LeadConsentFields";
 
 type Props = {
   locale?: string;
@@ -35,6 +36,10 @@ export function RequestOfferLeadInlineForm(props: Props) {
     propertyLocation: "",
     note: "",
   });
+  const [consent, setConsent] = useState<LeadConsentValue>({
+    privacy: false,
+    forwarding: false,
+  });
 
   const copy = locale === "en"
     ? {
@@ -49,6 +54,7 @@ export function RequestOfferLeadInlineForm(props: Props) {
         sending: "Sending...",
         success: "Your property offer has been sent.",
         error: "The offer could not be sent right now.",
+        consentError: "Please confirm the required consent fields.",
       }
     : {
         title: "Passt Ihre Immobilie?",
@@ -64,11 +70,17 @@ export function RequestOfferLeadInlineForm(props: Props) {
         sending: "Wird gesendet...",
         success: "Dein Objektangebot wurde versendet.",
         error: "Das Objektangebot konnte gerade nicht versendet werden.",
+        consentError: "Bitte bestätige die erforderlichen Zustimmungen.",
       };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === "submitting") return;
+    if (!consent.privacy || !consent.forwarding) {
+      setState("error");
+      setMessage(copy.consentError);
+      return;
+    }
     setState("submitting");
     setMessage(null);
 
@@ -79,6 +91,7 @@ export function RequestOfferLeadInlineForm(props: Props) {
       },
       body: JSON.stringify({
         locale,
+        sourceForm: "request_offer_inline",
         pagePath: props.pagePath,
         regionLabel: props.regionLabel,
         request: props.request,
@@ -92,6 +105,10 @@ export function RequestOfferLeadInlineForm(props: Props) {
           location: form.propertyLocation.trim(),
           message: form.note.trim(),
         },
+        consent: {
+          privacy: consent.privacy,
+          forwarding: consent.forwarding,
+        },
       }),
     });
 
@@ -101,6 +118,8 @@ export function RequestOfferLeadInlineForm(props: Props) {
       setMessage(
         body.error === "RATE_LIMIT"
           ? (locale === "en" ? "Please wait a moment before trying again." : "Bitte warte kurz, bevor du es erneut versuchst.")
+          : body.error === "CONSENT_REQUIRED"
+            ? copy.consentError
           : body.error === "ADVISOR_EMAIL_MISSING"
             ? (locale === "en" ? "No public advisor email is available for this area right now." : "Für dieses Gebiet ist aktuell keine öffentliche Beratermail hinterlegt.")
             : copy.error,
@@ -183,6 +202,7 @@ export function RequestOfferLeadInlineForm(props: Props) {
             required
           />
         </div>
+        <LeadConsentFields locale={locale} value={consent} onChange={setConsent} />
         {message ? (
           <div className={`alert ${state === "success" ? "alert-success" : "alert-danger"}`} role="status" style={{ marginBottom: 0 }}>
             {message}
