@@ -2579,6 +2579,7 @@ h6 {
 }
 
 .reference-experience__map-shell {
+  position: relative;
   overflow: hidden;
   border-radius: 22px;
   border: 1px solid #dbe4ea;
@@ -2595,6 +2596,41 @@ h6 {
 
 .reference-experience-map__canvas .maplibregl-marker {
   z-index: 3;
+}
+
+.reference-experience-map__toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #102027;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  cursor: pointer;
+}
+
+.reference-experience-map__toggle:hover {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.reference-experience-map__toggle.is-active {
+  background: rgba(72, 107, 122, 0.94);
+  border-color: rgba(72, 107, 122, 0.94);
+  color: #ffffff;
+}
+
+.reference-experience-map__toggle:focus-visible {
+  outline: 2px solid rgba(72, 107, 122, 0.35);
+  outline-offset: 2px;
 }
 
 .reference-experience__legend {

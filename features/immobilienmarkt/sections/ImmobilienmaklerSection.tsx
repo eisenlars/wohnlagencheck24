@@ -6,7 +6,7 @@ import type { Report } from "@/lib/data";
 import styles from "./ImmobilienmaklerSection.module.css";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
 import type { RegionalReference } from "@/lib/referenzen";
-import { ReferenceSlideshow } from "@/components/referenzen/ReferenceSlideshow";
+import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 
 type ImmobilienmaklerSectionProps = {
   report: Report;
@@ -76,6 +76,7 @@ export function ImmobilienmaklerSection({
         </section>
 
         <section className={styles.keywordIntro}>
+          <p className={styles.eyebrow}>WOHNLAGENCHECK24 Maklerempfehlung</p>
           <h1 className={styles.title}>Immobilienmakler in {kreisName}</h1>
           <p className={styles.text}>
             Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
@@ -96,7 +97,6 @@ export function ImmobilienmaklerSection({
                 />
               </div>
               <div>
-                <p className={styles.eyebrow}>WOHNLAGENCHECK24 Maklerempfehlung</p>
                 <h2>{name}</h2>
                 <p><b>Warum wir diesen Makler empfehlen</b></p>
                 <p className={styles.text}>{empfehlung}</p>
@@ -106,39 +106,41 @@ export function ImmobilienmaklerSection({
         ) : null}
 
         {references.length > 0 ? (
-          <ReferenceSlideshow items={references.slice(0, 6)} />
+          <ReferenceExperienceMap
+            items={references}
+            heading="Referenzen aus der Vermittlungspraxis"
+            intro={`Vermittlungserfolge unseres Partners in der Region ${kreisName}.`}
+            enable3dToggle
+            initialViewMode="3d"
+          />
         ) : null}
 
-        {(beschreibung || benefits.length > 0) ? (
-          <section className={styles.grid}>
-            {beschreibung ? (
-              <div className={styles.card}>
-                <h2>Profil</h2>
-                <p className={styles.text}>{beschreibung}</p>
-              </div>
-            ) : null}
-
-            {benefits.length ? (
-              <div className={styles.card}>
-                <h2>Leistungen & Vorteile</h2>
-                <ul className={styles.list}>
-                  {benefits.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+        {beschreibung ? (
+          <section className={styles.card}>
+            <h2>Profil</h2>
+            <p className={styles.text}>{beschreibung}</p>
           </section>
         ) : null}
 
-        <section className={styles.contact}>
-          <div>
-            <h2>Makler anfragen</h2>
-            <p className={styles.text}>
-              Teilen Sie uns Ihre Eckdaten mit. Wir melden uns mit einer konkreten Empfehlung.
-            </p>
-          </div>
-          <div className={styles.formWrap}>
+        <section className={styles.profileContactGrid}>
+          {benefits.length ? (
+            <div className={styles.card}>
+              <h2>Leistungen & Vorteile</h2>
+              <ul className={styles.list}>
+                {benefits.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className={styles.contactCard}>
+            <div>
+              <h2>Makler anfragen</h2>
+              <p className={styles.text}>
+                Teilen Sie uns Ihre Eckdaten mit. Wir melden uns mit einer konkreten Empfehlung.
+              </p>
+            </div>
             <KontaktForm
               targetEmail={emailTarget}
               scope="makler"

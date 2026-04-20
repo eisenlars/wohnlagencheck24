@@ -110,9 +110,11 @@ async function loadReferenceRowsForArea(args: {
   kreisSlug: string;
   ortSlug?: string;
   locale?: string;
+  baseLimit?: number;
 }): Promise<Array<Record<string, unknown>>> {
   const supabase = createClient();
   const normalizedLocale = normalizePublicLocale(args.locale);
+  const baseLimit = Math.max(1, Math.min(args.baseLimit ?? 80, 500));
 
   const areaQuery = supabase
     .from("areas")
@@ -139,7 +141,7 @@ async function loadReferenceRowsForArea(args: {
     .in("visible_area_id", areaIds)
     .eq("locale", normalizedLocale)
     .order("source_updated_at", { ascending: false })
-    .limit(80);
+    .limit(baseLimit);
   if (refError) return [];
   return (refRows ?? []) as Array<Record<string, unknown>>;
 }
@@ -154,7 +156,7 @@ async function hydrateRegionalReferences(
     requireCoordinates?: boolean;
   },
 ): Promise<RegionalReference[]> {
-  const limit = Math.max(1, Math.min(options?.limit ?? 6, 24));
+  const limit = Math.max(1, Math.min(options?.limit ?? 6, 500));
   const requireCoordinates = options?.requireCoordinates === true;
 
   const supabase = createClient();
@@ -253,6 +255,25 @@ export async function getRandomReferencesForKreis(args: {
   return hydrateRegionalReferences(baseRows, {
     limit: args.limit,
     randomize: true,
+  });
+}
+
+export async function getVisibleReferencesForKreis(args: {
+  bundeslandSlug: string;
+  kreisSlug: string;
+  limit?: number;
+  locale?: string;
+}): Promise<RegionalReference[]> {
+  const baseRows = await loadReferenceRowsForArea({
+    bundeslandSlug: args.bundeslandSlug,
+    kreisSlug: args.kreisSlug,
+    locale: args.locale,
+    baseLimit: args.limit ?? 500,
+  });
+  return hydrateRegionalReferences(baseRows, {
+    limit: args.limit ?? 500,
+    requireCoordinates: true,
+    randomize: false,
   });
 }
 

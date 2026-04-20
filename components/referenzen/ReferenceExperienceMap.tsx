@@ -7,11 +7,16 @@ import type { Map as MapLibreMap, Marker as MapLibreMarker, LngLatBoundsLike } f
 import type { RegionalReference } from "@/lib/referenzen";
 
 const OPEN_FREE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+const BUILDINGS_LAYER_ID = "wc24-reference-3d-buildings";
+const DEFAULT_BEARING = -18;
+type ReferenceMapViewMode = "2d" | "3d";
 
 type ReferenceExperienceMapProps = {
   items: RegionalReference[];
   heading?: string;
   intro?: string;
+  enable3dToggle?: boolean;
+  initialViewMode?: ReferenceMapViewMode;
 };
 
 type ReferenceMapCanvasProps = {
@@ -20,6 +25,8 @@ type ReferenceMapCanvasProps = {
   interactive?: boolean;
   onSelect?: (item: RegionalReference) => void;
   className?: string;
+  enable3dToggle?: boolean;
+  initialViewMode?: ReferenceMapViewMode;
 };
 
 function buildFacts(item: RegionalReference): string[] {
@@ -32,16 +39,87 @@ function buildFacts(item: RegionalReference): string[] {
   ].filter(Boolean) as string[];
 }
 
-function focusMap(map: MapLibreMap, items: RegionalReference[], activeId: string | null, interactive: boolean) {
+function setBuildingExtrusions(map: MapLibreMap, enabled: boolean) {
+  const layer = map.getLayer(BUILDINGS_LAYER_ID);
+  if (!layer) return;
+  map.setLayoutProperty(BUILDINGS_LAYER_ID, "visibility", enabled ? "visible" : "none");
+}
+
+function ensureBuildingExtrusions(map: MapLibreMap, enabled: boolean) {
+  if (map.getLayer(BUILDINGS_LAYER_ID)) return;
+
+  const style = map.getStyle();
+  const layers = style.layers ?? [];
+  const firstSymbolLayer = layers.find((layer) => layer.type === "symbol");
+  const firstFillExtrusionLayer = layers.find((layer) => layer.type === "fill-extrusion");
+  const candidateLayer = firstFillExtrusionLayer
+    ?? [...layers].reverse().find((layer) => {
+      const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+      return typeof sourceLayer === "string" && sourceLayer.toLowerCase().includes("building");
+    });
+
+  if (!candidateLayer || !("source" in candidateLayer)) return;
+
+  const source = candidateLayer.source;
+  const sourceLayer = "source-layer" in candidateLayer ? candidateLayer["source-layer"] : undefined;
+  if (typeof source !== "string" || typeof sourceLayer !== "string") return;
+
+  map.addLayer(
+    {
+      id: BUILDINGS_LAYER_ID,
+      type: "fill-extrusion",
+      source,
+      "source-layer": sourceLayer,
+      minzoom: 12,
+      layout: {
+        visibility: enabled ? "visible" : "none",
+      },
+      paint: {
+        "fill-extrusion-color": "#9fb5a8",
+        "fill-extrusion-height": [
+          "coalesce",
+          ["to-number", ["get", "render_height"]],
+          ["to-number", ["get", "height"]],
+          16,
+        ],
+        "fill-extrusion-base": [
+          "coalesce",
+          ["to-number", ["get", "render_min_height"]],
+          ["to-number", ["get", "min_height"]],
+          0,
+        ],
+        "fill-extrusion-opacity": 0.72,
+      },
+    },
+    firstSymbolLayer?.id,
+  );
+}
+
+function getViewOptions(is3dEnabled: boolean) {
+  return {
+    pitch: is3dEnabled ? 58 : 0,
+    bearing: is3dEnabled ? DEFAULT_BEARING : 0,
+  };
+}
+
+function focusMap(
+  map: MapLibreMap,
+  items: RegionalReference[],
+  activeId: string | null,
+  interactive: boolean,
+  is3dEnabled: boolean,
+) {
   if (items.length === 0) return;
 
   const activeItem = items.find((item) => item.id === activeId) ?? items[0];
   if (!activeItem) return;
+  const viewOptions = getViewOptions(is3dEnabled);
 
   if (!interactive) {
     map.easeTo({
       center: [activeItem.lng ?? 0, activeItem.lat ?? 0],
-      zoom: 13.8,
+      zoom: is3dEnabled ? 15.4 : 13.8,
+      ...viewOptions,
       duration: 500,
       essential: true,
     });
@@ -51,7 +129,8 @@ function focusMap(map: MapLibreMap, items: RegionalReference[], activeId: string
   if (items.length === 1) {
     map.easeTo({
       center: [activeItem.lng ?? 0, activeItem.lat ?? 0],
-      zoom: 13.2,
+      zoom: is3dEnabled ? 15.2 : 13.2,
+      ...viewOptions,
       duration: 500,
       essential: true,
     });
@@ -74,22 +153,39 @@ function focusMap(map: MapLibreMap, items: RegionalReference[], activeId: string
   if (!bounds) return;
   map.fitBounds(bounds, {
     padding: { top: 56, right: 56, bottom: 56, left: 56 },
-    maxZoom: 12.8,
+    maxZoom: is3dEnabled ? 15.2 : 12.8,
+    duration: 550,
+    essential: true,
+  });
+  map.easeTo({
+    ...viewOptions,
     duration: 550,
     essential: true,
   });
 }
 
 function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
-  const { items, activeId, interactive = true, onSelect, className } = props;
+  const {
+    items,
+    activeId,
+    interactive = true,
+    onSelect,
+    className,
+    enable3dToggle = false,
+    initialViewMode = "2d",
+  } = props;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<MapLibreMarker[]>([]);
   const [mapReady, setMapReady] = useState(false);
+  const [viewMode, setViewMode] = useState<ReferenceMapViewMode>(initialViewMode);
+  const is3dEnabled = enable3dToggle && viewMode === "3d";
 
   useEffect(() => {
     let cancelled = false;
     setMapReady(false);
+    const initial3dEnabled = enable3dToggle && initialViewMode === "3d";
+    const initialViewOptions = getViewOptions(initial3dEnabled);
 
     async function initMap() {
       if (!containerRef.current || mapRef.current) return;
@@ -101,12 +197,17 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
         container: containerRef.current,
         style: OPEN_FREE_MAP_STYLE_URL,
         center: [seed?.lng ?? 13.74, seed?.lat ?? 51.05],
-        zoom: 11.8,
+        zoom: initial3dEnabled ? 14.2 : 11.8,
         attributionControl: false,
         dragRotate: false,
         pitchWithRotate: false,
+        touchZoomRotate: true,
+        ...initialViewOptions,
       });
 
+      map.keyboard.disableRotation();
+      map.touchPitch.disable();
+      map.touchZoomRotate.disableRotation();
       map.addControl(
         new maplibregl.AttributionControl({
           compact: true,
@@ -130,8 +231,9 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
       mapRef.current = map;
       map.on("load", () => {
         if (cancelled) return;
+        ensureBuildingExtrusions(map, initial3dEnabled);
         setMapReady(true);
-        focusMap(map, items, null, interactive);
+        focusMap(map, items, null, interactive, initial3dEnabled);
       });
     }
 
@@ -143,7 +245,7 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [interactive, items]);
+  }, [enable3dToggle, initialViewMode, interactive, items]);
 
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
@@ -174,15 +276,40 @@ function ReferenceMapCanvas(props: ReferenceMapCanvasProps) {
           .addTo(mapRef.current);
         markersRef.current.push(marker);
       }
-      focusMap(mapRef.current, items, activeId, interactive);
+      focusMap(mapRef.current, items, activeId, interactive, is3dEnabled);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [activeId, interactive, items, mapReady, onSelect]);
+  }, [activeId, interactive, is3dEnabled, items, mapReady, onSelect]);
 
-  return <div ref={containerRef} className={className ?? "reference-experience-map__canvas"} />;
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    ensureBuildingExtrusions(mapRef.current, is3dEnabled);
+    setBuildingExtrusions(mapRef.current, is3dEnabled);
+    mapRef.current.easeTo({
+      ...getViewOptions(is3dEnabled),
+      duration: 650,
+      essential: true,
+    });
+  }, [is3dEnabled, mapReady]);
+
+  return (
+    <>
+      {enable3dToggle ? (
+        <button
+          type="button"
+          className={`reference-experience-map__toggle${is3dEnabled ? " is-active" : ""}`}
+          onClick={() => setViewMode((current) => (current === "3d" ? "2d" : "3d"))}
+          aria-pressed={is3dEnabled}
+        >
+          {is3dEnabled ? "2D" : "3D"}
+        </button>
+      ) : null}
+      <div ref={containerRef} className={className ?? "reference-experience-map__canvas"} />
+    </>
+  );
 }
 
 export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
@@ -190,6 +317,8 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
     items,
     heading = "Vermittlungserfahrung in der Region",
     intro = "Diese Referenzen zeigen, dass der Makler bei vergleichbaren Immobilien in dieser Objektart bereits aktiv vermittelt hat.",
+    enable3dToggle = false,
+    initialViewMode = "2d",
   } = props;
   const safeItems = useMemo(() => items.filter((item) => item.lat != null && item.lng != null), [items]);
   const [activeId, setActiveId] = useState<string | null>(safeItems[0]?.id ?? null);
@@ -238,6 +367,8 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
           activeId={activeReference?.id ?? null}
           onSelect={openReference}
           className="reference-experience-map__canvas"
+          enable3dToggle={enable3dToggle}
+          initialViewMode={initialViewMode}
         />
       </div>
 
@@ -281,6 +412,8 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
                 activeId={modalReference.id}
                 interactive={false}
                 className="reference-experience-map__canvas reference-experience-map__canvas--modal"
+                enable3dToggle={false}
+                initialViewMode={initialViewMode}
               />
             </div>
 

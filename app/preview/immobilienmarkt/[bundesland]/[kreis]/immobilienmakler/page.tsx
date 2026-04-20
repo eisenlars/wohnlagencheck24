@@ -7,7 +7,7 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback } from "@/utils/regionName";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
-import { getRandomReferencesForKreis } from "@/lib/referenzen";
+import { getVisibleReferencesForKreis } from "@/lib/referenzen";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
@@ -100,10 +100,9 @@ export default async function PreviewImmobilienmaklerPage({ params }: PageProps)
     ...tabs,
     { id: "immobilienmakler", label: "Immobilienmakler" },
   ];
-  const references = await getRandomReferencesForKreis({
+  const references = await getVisibleReferencesForKreis({
     bundeslandSlug,
     kreisSlug,
-    limit: 6,
   });
   const texts = await getPortalSystemTexts("de");
 
