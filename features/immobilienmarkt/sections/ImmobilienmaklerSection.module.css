@@ -36,7 +36,6 @@
   background: #ffffff;
   border-radius: 22px;
   padding: 28px 32px;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
 }
 
 .recommendationGrid {
@@ -85,7 +84,6 @@
   background: #ffffff;
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
 }
 
 .text {

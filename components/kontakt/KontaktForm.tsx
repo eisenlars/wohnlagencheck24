@@ -70,7 +70,7 @@ export function KontaktForm({ targetEmail, scope, regionLabel }: KontaktFormProp
       <LeadConsentFields value={consent} onChange={setConsent} />
 
       {consentError ? (
-        <div className="alert alert-danger" role="status" style={{ marginBottom: 0 }}>
+        <div className="alert alert-danger request-offer-alert" role="status">
           Bitte bestätigen Sie die erforderlichen Zustimmungen.
         </div>
       ) : null}

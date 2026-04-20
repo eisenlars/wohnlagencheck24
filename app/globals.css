@@ -2847,6 +2847,38 @@ h6 {
   min-height: 52px;
 }
 
+.request-offer-alert {
+  margin-bottom: 0;
+}
+
+.lead-consent-fields {
+  display: grid;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.lead-consent-fields__label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lead-consent-fields__checkbox {
+  margin-top: 3px;
+}
+
+.lead-consent-fields__link {
+  color: #486b7a;
+  font-weight: 800;
+}
+
 @media (max-width: 768px) {
   .request-offer-contact-grid {
     grid-template-columns: minmax(0, 1fr);
