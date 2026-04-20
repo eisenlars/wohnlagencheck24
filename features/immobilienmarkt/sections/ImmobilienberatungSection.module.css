@@ -190,6 +190,145 @@
   text-transform: capitalize;
 }
 
+.guidanceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 24px;
+}
+
+.guidanceCard,
+.processCard,
+.faqSection {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eyebrow {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(72, 107, 122, 0.12);
+  color: var(--brand-primary);
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guidanceCard h2,
+.processCard h2,
+.faqSection h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.sectionIntro {
+  margin: 0;
+  color: #475569;
+  line-height: 1.65;
+}
+
+.reasonList {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reasonList li {
+  position: relative;
+  padding-left: 24px;
+  color: #334155;
+  line-height: 1.55;
+}
+
+.reasonList li::before {
+  content: "";
+  position: absolute;
+  top: 0.72em;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--brand-primary);
+}
+
+.processList {
+  display: grid;
+  gap: 16px;
+}
+
+.processStep {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.processNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: var(--brand-primary);
+  font-weight: 800;
+}
+
+.processStep h3 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.processStep p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.faqSection {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px 32px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+}
+
+.sectionHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.faqItem {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 18px;
+  background: #f8fafc;
+}
+
+.faqItem summary {
+  cursor: pointer;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.faqItem p {
+  margin: 12px 0 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
 .ctaFooter {
   display: flex;
   justify-content: space-between;
@@ -215,6 +354,14 @@
   .regionVisual,
   .regionVisualImage {
     min-height: 220px;
+  }
+
+  .guidanceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .faqSection {
+    padding: 24px;
   }
 
   .ctaFooter {

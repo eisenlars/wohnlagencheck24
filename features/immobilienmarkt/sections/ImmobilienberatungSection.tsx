@@ -9,6 +9,56 @@ import styles from "./ImmobilienberatungSection.module.css";
 
 type ContactItem = { label: string; value: string; href?: string };
 
+const consultationReasons = [
+  "Sie planen einen Verkauf und moechten den realistischen Marktwert kennen.",
+  "Sie haben ein Objekt geerbt und brauchen eine neutrale Einordnung.",
+  "Sie pruefen, ob eine Vermietung, ein Verkauf oder eine Sanierung sinnvoller ist.",
+  "Sie benoetigen eine belastbare Grundlage fuer Preisverhandlungen.",
+  "Sie moechten Lage, Nachfrage und Zielgruppe regional einschaetzen lassen.",
+];
+
+const processSteps = [
+  {
+    title: "Anfrage",
+    text: "Sie schildern kurz Objekt, Standort und Anlass der Beratung.",
+  },
+  {
+    title: "Erstgespraech",
+    text: "Wir klaeren Ziel, Zeitplan und welche Unterlagen fuer die Einschaetzung relevant sind.",
+  },
+  {
+    title: "Regionale Einordnung",
+    text: "Markt-, Lage- und Nachfrageindikatoren werden mit der konkreten Objektsituation abgeglichen.",
+  },
+  {
+    title: "Empfehlung",
+    text: "Sie erhalten eine klare Orientierung zu Wert, Strategie und naechsten Schritten.",
+  },
+];
+
+const faqs = [
+  {
+    question: "Muss ich bereits verkaufen wollen?",
+    answer:
+      "Nein. Die Beratung ist auch sinnvoll, wenn Sie Optionen pruefen oder eine Entscheidung vorbereiten moechten.",
+  },
+  {
+    question: "Welche Unterlagen sind hilfreich?",
+    answer:
+      "Hilfreich sind Adresse, Objektart, Wohn- oder Nutzflaeche, Baujahr, Zustand und vorhandene Grundrisse oder Fotos.",
+  },
+  {
+    question: "Wird die Region konkret beruecksichtigt?",
+    answer:
+      "Ja. Die Einschaetzung verbindet Objektdaten mit regionalen Markt-, Lage- und Nachfrageindikatoren.",
+  },
+  {
+    question: "Ist eine Beratung auch vor einer Sanierung sinnvoll?",
+    answer:
+      "Ja. Gerade vor groesseren Investitionen hilft eine Markteinordnung, damit Aufwand und erwartbarer Mehrwert zusammenpassen.",
+  },
+];
+
 function normalizePhone(value: string): string {
   return value.replace(/\s+/g, "");
 }
@@ -167,6 +217,53 @@ export function ImmobilienberatungSection({
             <p className={styles.muted}>
               Fokus auf Marktanalysen, Standortprofile und individuelle Bewertungen in der Region.
             </p>
+          </div>
+        </section>
+
+        <section className={styles.guidanceGrid}>
+          <div className={`${styles.card} ${styles.guidanceCard}`}>
+            <span className={styles.eyebrow}>Orientierung</span>
+            <h2>Wann lohnt sich eine Immobilienberatung?</h2>
+            <p className={styles.sectionIntro}>
+              Eine Beratung ist vor allem dann sinnvoll, wenn Entscheidungen rund um Verkauf,
+              Vermietung oder Investitionen nicht allein auf Bauchgefuehl basieren sollen.
+            </p>
+            <ul className={styles.reasonList}>
+              {consultationReasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={`${styles.card} ${styles.processCard}`}>
+            <span className={styles.eyebrow}>Ablauf</span>
+            <h2>So laeuft die Beratung ab</h2>
+            <div className={styles.processList}>
+              {processSteps.map((step, index) => (
+                <div key={step.title} className={styles.processStep}>
+                  <span className={styles.processNumber}>{index + 1}</span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.faqSection}>
+          <div className={styles.sectionHeading}>
+            <span className={styles.eyebrow}>Fragen</span>
+            <h2>Haeufige Fragen zur Immobilienberatung</h2>
+          </div>
+          <div className={styles.faqGrid}>
+            {faqs.map((faq) => (
+              <details key={faq.question} className={styles.faqItem}>
+                <summary>{faq.question}</summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))}
           </div>
         </section>
 
