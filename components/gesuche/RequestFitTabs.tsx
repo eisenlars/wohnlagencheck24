@@ -151,7 +151,7 @@ const sectionStyle: CSSProperties = {
   background: "#fff",
   padding: 24,
   display: "grid",
-  gap: 18,
+  gap: 30,
 };
 
 const titleStyle: CSSProperties = {
