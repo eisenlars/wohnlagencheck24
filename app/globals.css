@@ -2544,7 +2544,6 @@ h6 {
   display: grid;
   gap: 18px;
   margin: 8px 0 40px;
-  border: 1px solid #dbe4ea;
   border-radius: 24px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
   padding: 24px;
@@ -2582,7 +2581,6 @@ h6 {
   position: relative;
   overflow: hidden;
   border-radius: 22px;
-  border: 1px solid #dbe4ea;
   background: #dce7e1;
 }
 
