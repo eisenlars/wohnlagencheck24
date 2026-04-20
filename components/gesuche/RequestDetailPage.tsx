@@ -324,6 +324,8 @@ export function RequestDetailPage(props: Props) {
             items={references}
             heading="Vermittlungserfahrung"
             intro="Vermittlungserfolge unseres Partners in Ihrer Region."
+            enable3dToggle
+            initialViewMode="3d"
           />
         </div>
       ) : null}
