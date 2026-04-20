@@ -1048,7 +1048,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             </div>
                             {activeTab === 'texts' ? (
-                              <div style={{ display: 'grid', gap: '18px' }}>
+                              <div style={requestEditorFieldsGridStyle}>
                                 {renderTextField('Gesuch-Titel', 'seo_h1', {
                                   multiline: false,
                                   placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1060,7 +1060,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             ) : null}
                             {activeTab === 'seo' ? (
-                              <div style={{ display: 'grid', gap: '18px' }}>
+                              <div style={requestEditorFieldsGridStyle}>
                                 {renderTextField('SEO‑Titel', 'seo_title', {
                                   multiline: false,
                                   placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1461,8 +1461,8 @@ const textareaStyle: CSSProperties = {
 };
 
 const fieldCardStyle: CSSProperties = {
-  marginBottom: '8px',
-  paddingBottom: '14px',
+  marginBottom: '2px',
+  paddingBottom: '8px',
   borderBottom: '1px solid #f1f5f9',
 };
 
@@ -1670,17 +1670,22 @@ const contentPreviewBodyStyle: CSSProperties = {
 const onlineCreateGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
-  gap: '16px',
+  gap: '14px',
 };
 
 const requestTextEditBlockStyle: CSSProperties = {
   display: 'grid',
-  gap: '14px',
+  gap: '10px',
+};
+
+const requestEditorFieldsGridStyle: CSSProperties = {
+  display: 'grid',
+  gap: '10px',
 };
 
 const requestSummaryBlockStyle: CSSProperties = {
   display: 'grid',
-  gap: '12px',
+  gap: '10px',
 };
 
 const offerSummaryTopCardStyle: CSSProperties = {
@@ -2002,8 +2007,8 @@ const textSourceNoteCardStyle: CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '12px',
   backgroundColor: '#f8fafc',
-  padding: '12px',
-  marginBottom: '14px',
+  padding: '10px 12px',
+  marginBottom: '6px',
   display: 'grid',
-  gap: '8px',
+  gap: '6px',
 };

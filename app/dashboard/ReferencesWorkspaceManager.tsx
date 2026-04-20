@@ -361,6 +361,7 @@ const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8,
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
 const fieldCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, background: '#fff', padding: 14, display: 'grid', gap: 12 };
+const fieldPlainStyle: CSSProperties = { display: 'grid', gap: 8 };
 const fieldHeaderStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' };
 const editorGridStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'minmax(0, 1.25fr) minmax(260px, 0.75fr)' };
 const textareaWrapperStyle: CSSProperties = { display: 'grid', gap: 10 };
@@ -1191,7 +1192,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     const showPreview = options?.showPreview ?? true;
     return (
-      <div style={fieldCardStyle}>
+      <div style={showPreview ? fieldCardStyle : fieldPlainStyle}>
         <div style={fieldHeaderStyle}>
           <h4 style={{ margin: 0, fontSize: 15, color: '#0f172a' }}>{label}</h4>
         </div>
