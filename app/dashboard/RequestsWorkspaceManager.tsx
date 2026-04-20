@@ -79,7 +79,7 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-type WorkspaceTab = 'texts' | 'seo';
+type WorkspaceTab = 'texts' | 'seo' | 'criteria';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
 type RequestWorkspaceLoadDebug = {
   requests: number;
@@ -937,41 +937,54 @@ export default function RequestsWorkspaceManager(props: Props) {
                 return (
                   <>
                     <div style={workspaceSectionStyle}>
-                      <div style={workspaceSectionHeaderStyle}>Importierte Daten</div>
-                      <div style={workspaceSectionSublineStyle}>Diese Informationen stammen direkt aus dem CRM und bilden die fachliche Grundlage.</div>
-                      <div style={offerSummaryTopStackStyle}>
-                        <div style={offerSummaryTopCardStyle}>
-                          <div style={cardHeaderRowStyle}>
-                            <div style={offerSummaryHeaderStyle}>Überblick</div>
-                            <div style={statusBadgeStyle(isReady)}>
-                              <span
-                                aria-hidden="true"
-                                style={{
-                                  width: '10px',
-                                  height: '10px',
-                                  borderRadius: '999px',
-                                  background: isReady ? '#16a34a' : '#dc2626',
-                                  flex: '0 0 auto',
-                                }}
-                              />
-                              <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
-                            </div>
-                          </div>
-                          <div style={offerSummaryGridStyle}>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
-                              <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
-                            </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Quelle</div>
-                              <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
-                            </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Aktualisiert</div>
-                              <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
-                            </div>
+                      <div style={offerSummaryTopCardStyle}>
+                        <div style={cardHeaderRowStyle}>
+                          <div style={offerSummaryHeaderStyle}>Überblick</div>
+                          <div style={statusBadgeStyle(isReady)}>
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '999px',
+                                background: isReady ? '#16a34a' : '#dc2626',
+                                flex: '0 0 auto',
+                              }}
+                            />
+                            <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
                           </div>
                         </div>
+                        <div style={offerSummaryGridStyle}>
+                          <div>
+                            <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
+                            <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
+                          </div>
+                          <div>
+                            <div style={offerSummaryLabelStyle}>Quelle</div>
+                            <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                          </div>
+                          <div>
+                            <div style={offerSummaryLabelStyle}>Aktualisiert</div>
+                            <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={workspaceTabsRowStyle}>
+                      <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
+                        Texte
+                      </button>
+                      <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
+                        SEO / GEO
+                      </button>
+                      <button type="button" onClick={() => setActiveTab('criteria')} style={workspaceTabStyle(activeTab === 'criteria')}>
+                        Suchkriterien
+                      </button>
+                    </div>
+
+                    {activeTab === 'criteria' ? (
+                      <div style={workspaceSectionStyle}>
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
                           <div style={offerSummaryGridStyle}>
@@ -1010,153 +1023,68 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ) : null}
 
-                    <div style={workspaceSectionStyle}>
-                      <div style={workspaceSectionHeaderStyle}>Online-Gesuch erstellen</div>
-                      <div style={workspaceSectionSublineStyle}>Hier werden Motiv, Titel und Beschreibung für das öffentliche Gesuch kuratiert.</div>
-                      <div style={onlineCreateGridStyle}>
-                        <div style={offerSummaryTopCardStyle}>
-                          <div style={offerSummaryHeaderStyle}>Textbearbeitung</div>
-                          <div style={textSourceNoteCardStyle}>
-                            <div style={offerSummaryLabelStyle}>CRM-Notiz</div>
-                            <div style={requestNoteBodyStyle}>
-                              {selectedNote || 'Keine CRM-Notiz vorhanden.'}
-                            </div>
-                          </div>
-                          <div style={workspaceTabsRowStyle}>
-                            <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
-                              Texte
-                            </button>
-                            <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
-                              SEO / GEO
-                            </button>
-                          </div>
-                          {activeTab === 'texts' ? (
-                            <div style={{ display: 'grid', gap: '18px' }}>
-                              {renderTextField('Gesuch-Titel', 'seo_h1', {
-                                multiline: false,
-                                placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                              })}
-                              {renderTextField('Beschreibung', 'long_description', {
-                                multiline: true,
-                                placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                              })}
-                            </div>
-                          ) : null}
-                          {activeTab === 'seo' ? (
-                            <div style={{ display: 'grid', gap: '18px' }}>
-                              {renderTextField('SEO‑Titel', 'seo_title', {
-                                multiline: false,
-                                placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                              })}
-                              {renderTextField('SEO‑Description', 'seo_description', {
-                                multiline: true,
-                                placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                              })}
-                              <div style={previewCardStyle}>
-                                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                                  SEO‑Vorschau
-                                </div>
-                                <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
-                                  {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
-                                </div>
-                                <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
-                                  {form.seo_description || form.long_description || 'SEO‑Description'}
-                                </div>
-                                <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
-                                  /immobiliengesuche/{form.external_id}_&lt;titel&gt;
-                                </div>
+                    {activeTab === 'texts' || activeTab === 'seo' ? (
+                      <div style={workspaceSectionStyle}>
+                        <div style={onlineCreateGridStyle}>
+                          <div style={offerSummaryTopCardStyle}>
+                            <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
+                            <div style={workspaceSectionSublineStyle}>Hier werden Motiv, Titel und Beschreibung für das öffentliche Gesuch kuratiert.</div>
+                            <div style={textSourceNoteCardStyle}>
+                              <div style={offerSummaryLabelStyle}>CRM-Notiz</div>
+                              <div style={requestNoteBodyStyle}>
+                                {selectedNote || 'Keine CRM-Notiz vorhanden.'}
                               </div>
                             </div>
-                          ) : null}
-                        </div>
-                        <div style={offerSummaryTopCardStyle}>
-                          <div style={cardHeaderRowStyle}>
-                            <div style={offerSummaryHeaderStyle}>Motivwahl</div>
-                            <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
-                              Info
-                            </button>
-                          </div>
-                          <div style={{ display: 'grid', gap: '10px' }}>
-                            {effectiveRequestImagePreview?.imageUrl ? (
-                              <div style={requestMatchPreviewWrapStyle}>
-                                <img
-                                  src={effectiveRequestImagePreview.imageUrl}
-                                  alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                  style={requestMatchPreviewImageStyle}
-                                />
-                              </div>
-                            ) : null}
-                            <div style={{ display: 'grid', gap: '10px' }}>
-                              <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
-                              <div style={imageChoiceGridStyle}>
-                                {readyRequestImageChoices.map((item) => {
-                                  const active = pendingRequestImageSelectionId === item.id;
-                                  return (
-                                    <button
-                                      key={item.id}
-                                      type="button"
-                                      style={imageChoiceCardStyle(active)}
-                                      onClick={() => setPendingRequestImageSelectionId(item.id)}
-                                    >
-                                      <img
-                                        src={item.thumbnail_url || item.image_url}
-                                        alt={item.alt_template || item.title}
-                                        style={imageChoiceImageStyle}
-                                      />
-                                      <span style={imageChoiceTitleStyle}>{item.title}</span>
-                                    </button>
-                                  );
+                            {activeTab === 'texts' ? (
+                              <div style={{ display: 'grid', gap: '18px' }}>
+                                {renderTextField('Gesuch-Titel', 'seo_h1', {
+                                  multiline: false,
+                                  placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                                })}
+                                {renderTextField('Beschreibung', 'long_description', {
+                                  multiline: true,
+                                  placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                                 })}
                               </div>
-                              <div style={imageChoiceActionsRowStyle}>
-                                <button
-                                  type="button"
-                                  style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || saving)}
-                                  disabled={!hasPendingManualImageSelection || saving}
-                                  onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
-                                >
-                                  Bild wählen
-                                </button>
-                                <button
-                                  type="button"
-                                  style={imageChoiceResetButtonStyle(!selectedRequestImageOverride && !pendingRequestImageSelectionId)}
-                                  disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
-                                  onClick={() => {
-                                    setPendingRequestImageSelectionId(null);
-                                    void applyRequestImageSelection(null);
-                                  }}
-                                >
-                                  Automatisches Matching
-                                </button>
-                              </div>
-                              {imageSelectionStatus ? (
-                                <div style={imageSelectionStatusStyle}>
-                                  {imageSelectionStatus}
+                            ) : null}
+                            {activeTab === 'seo' ? (
+                              <div style={{ display: 'grid', gap: '18px' }}>
+                                {renderTextField('SEO‑Titel', 'seo_title', {
+                                  multiline: false,
+                                  placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                                })}
+                                {renderTextField('SEO‑Description', 'seo_description', {
+                                  multiline: true,
+                                  placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                                })}
+                                <div style={previewCardStyle}>
+                                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                                    SEO‑Vorschau
+                                  </div>
+                                  <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                                    {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
+                                  </div>
+                                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                                    {form.seo_description || form.long_description || 'SEO‑Description'}
+                                  </div>
+                                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                                    /immobiliengesuche/{form.external_id}_&lt;titel&gt;
+                                  </div>
                                 </div>
-                              ) : null}
-                            </div>
+                              </div>
+                            ) : null}
                           </div>
-                        </div>
-                      </div>
-                      <div style={offerSummaryTopCardStyle}>
-                        <div style={offerSummaryHeaderStyle}>Gesuch-Zusammenfassung vor Speichern</div>
-                        <div style={requestSummaryGridStyle}>
-                          <div style={{ display: 'grid', gap: '14px' }}>
-                            <div style={contentPreviewCardStyle}>
-                              <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
-                              <div style={contentPreviewBodyStyle}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
+                          <div style={offerSummaryTopCardStyle}>
+                            <div style={cardHeaderRowStyle}>
+                              <div style={offerSummaryHeaderStyle}>Motivwahl</div>
+                              <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
+                                Info
+                              </button>
                             </div>
-                            <div style={contentPreviewCardStyle}>
-                              <div style={contentPreviewLabelStyle}>Beschreibung</div>
-                              <div style={contentPreviewBodyStyle}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
-                            </div>
-                          </div>
-                          <div style={contentPreviewCardStyle}>
-                            <div style={contentPreviewLabelStyle}>Motiv</div>
-                            {effectiveRequestImagePreview?.imageUrl ? (
-                              <div style={{ display: 'grid', gap: '10px' }}>
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                              {effectiveRequestImagePreview?.imageUrl ? (
                                 <div style={requestMatchPreviewWrapStyle}>
                                   <img
                                     src={effectiveRequestImagePreview.imageUrl}
@@ -1164,28 +1092,106 @@ export default function RequestsWorkspaceManager(props: Props) {
                                     style={requestMatchPreviewImageStyle}
                                   />
                                 </div>
-                                <div style={contentPreviewBodyStyle}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
+                              ) : null}
+                              <div style={{ display: 'grid', gap: '10px' }}>
+                                <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
+                                <div style={imageChoiceGridStyle}>
+                                  {readyRequestImageChoices.map((item) => {
+                                    const active = pendingRequestImageSelectionId === item.id;
+                                    return (
+                                      <button
+                                        key={item.id}
+                                        type="button"
+                                        style={imageChoiceCardStyle(active)}
+                                        onClick={() => setPendingRequestImageSelectionId(item.id)}
+                                      >
+                                        <img
+                                          src={item.thumbnail_url || item.image_url}
+                                          alt={item.alt_template || item.title}
+                                          style={imageChoiceImageStyle}
+                                        />
+                                        <span style={imageChoiceTitleStyle}>{item.title}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <div style={imageChoiceActionsRowStyle}>
+                                  <button
+                                    type="button"
+                                    style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || saving)}
+                                    disabled={!hasPendingManualImageSelection || saving}
+                                    onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
+                                  >
+                                    Bild wählen
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={imageChoiceResetButtonStyle(!selectedRequestImageOverride && !pendingRequestImageSelectionId)}
+                                    disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
+                                    onClick={() => {
+                                      setPendingRequestImageSelectionId(null);
+                                      void applyRequestImageSelection(null);
+                                    }}
+                                  >
+                                    Automatisches Matching
+                                  </button>
+                                </div>
+                                {imageSelectionStatus ? (
+                                  <div style={imageSelectionStatusStyle}>
+                                    {imageSelectionStatus}
+                                  </div>
+                                ) : null}
                               </div>
-                            ) : (
-                              <div style={contentPreviewBodyStyle}>Kein Motiv gewählt.</div>
-                            )}
+                            </div>
                           </div>
                         </div>
-                        <div style={requestActionButtonRowStyle}>
-                          <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
-                            {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void resetRequestTextOverrides()}
-                            disabled={saving || (!currentRequestTitle && !currentRequestDescription)}
-                            style={secondaryActionButtonStyle(saving || (!currentRequestTitle && !currentRequestDescription))}
-                          >
-                            Gesuchetexte zurücksetzen
-                          </button>
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={offerSummaryHeaderStyle}>Gesuch-Zusammenfassung vor Speichern</div>
+                          <div style={requestSummaryGridStyle}>
+                            <div style={{ display: 'grid', gap: '14px' }}>
+                              <div style={contentPreviewCardStyle}>
+                                <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
+                                <div style={contentPreviewBodyStyle}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
+                              </div>
+                              <div style={contentPreviewCardStyle}>
+                                <div style={contentPreviewLabelStyle}>Beschreibung</div>
+                                <div style={contentPreviewBodyStyle}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
+                              </div>
+                            </div>
+                            <div style={contentPreviewCardStyle}>
+                              <div style={contentPreviewLabelStyle}>Motiv</div>
+                              {effectiveRequestImagePreview?.imageUrl ? (
+                                <div style={{ display: 'grid', gap: '10px' }}>
+                                  <div style={requestMatchPreviewWrapStyle}>
+                                    <img
+                                      src={effectiveRequestImagePreview.imageUrl}
+                                      alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                      style={requestMatchPreviewImageStyle}
+                                    />
+                                  </div>
+                                  <div style={contentPreviewBodyStyle}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
+                                </div>
+                              ) : (
+                                <div style={contentPreviewBodyStyle}>Kein Motiv gewählt.</div>
+                              )}
+                            </div>
+                          </div>
+                          <div style={requestActionButtonRowStyle}>
+                            <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
+                              {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void resetRequestTextOverrides()}
+                              disabled={saving || (!currentRequestTitle && !currentRequestDescription)}
+                              style={secondaryActionButtonStyle(saving || (!currentRequestTitle && !currentRequestDescription))}
+                            >
+                              Gesuchetexte zurücksetzen
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : null}
                   </>
                 );
               })()}
@@ -1636,12 +1642,6 @@ const contentPreviewBodyStyle: CSSProperties = {
   whiteSpace: 'pre-wrap',
 };
 
-const offerSummaryTopStackStyle: CSSProperties = {
-  display: 'grid',
-  gap: '16px',
-  marginBottom: '16px',
-};
-
 const onlineCreateGridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
@@ -1659,14 +1659,6 @@ const workspaceSectionStyle: CSSProperties = {
   display: 'grid',
   gap: '12px',
   marginBottom: '18px',
-};
-
-const workspaceSectionHeaderStyle: CSSProperties = {
-  fontSize: '12px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#486b7a',
-  fontWeight: 700,
 };
 
 const workspaceSectionSublineStyle: CSSProperties = {
