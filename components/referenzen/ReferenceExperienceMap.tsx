@@ -17,6 +17,7 @@ type ReferenceExperienceMapProps = {
   intro?: string;
   enable3dToggle?: boolean;
   initialViewMode?: ReferenceMapViewMode;
+  showCountInHeading?: boolean;
 };
 
 type ReferenceMapCanvasProps = {
@@ -319,6 +320,7 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
     intro = "Diese Referenzen zeigen, dass der Makler bei vergleichbaren Immobilien in dieser Objektart bereits aktiv vermittelt hat.",
     enable3dToggle = false,
     initialViewMode = "2d",
+    showCountInHeading = false,
   } = props;
   const safeItems = useMemo(() => items.filter((item) => item.lat != null && item.lng != null), [items]);
   const [activeId, setActiveId] = useState<string | null>(safeItems[0]?.id ?? null);
@@ -347,6 +349,7 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
   if (safeItems.length === 0) return null;
 
   const activeReference = safeItems.find((item) => item.id === effectiveActiveId) ?? safeItems[0];
+  const displayHeading = showCountInHeading ? `${safeItems.length} ${heading}` : heading;
   const openReference = (item: RegionalReference) => {
     setActiveId(item.id);
     setModalId(item.id);
@@ -356,7 +359,7 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
     <section className="reference-experience">
       <div className="reference-experience__intro">
         <div>
-          <h2 className="reference-experience__title">{heading}</h2>
+          <h2 className="reference-experience__title">{displayHeading}</h2>
           <p className="reference-experience__copy">{intro}</p>
         </div>
       </div>
@@ -373,7 +376,9 @@ export function ReferenceExperienceMap(props: ReferenceExperienceMapProps) {
       </div>
 
       <div className="reference-experience__legend">
-        <span>{safeItems.length} passende Referenzen im aktuellen Gebietsausschnitt</span>
+        {showCountInHeading ? null : (
+          <span>{safeItems.length} passende Referenzen im aktuellen Gebietsausschnitt</span>
+        )}
         <span>Pin anklicken, um ein Referenzbeispiel zu öffnen</span>
       </div>
 

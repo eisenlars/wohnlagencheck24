@@ -112,6 +112,7 @@ export function ImmobilienmaklerSection({
             intro={`Vermittlungserfolge unseres Partners in der Region ${kreisName}.`}
             enable3dToggle
             initialViewMode="3d"
+            showCountInHeading
           />
         ) : null}
 
