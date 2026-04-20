@@ -61,15 +61,6 @@ export function ImmobilienmaklerSection({
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <section className={styles.keywordIntro}>
-          
-          <h1 className={styles.title}>Immobilienmakler in {kreisName}</h1>
-          <p className={styles.text}>
-            Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
-            Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
-          </p>
-        </section>
-        
         <section className={styles.gallery}>
           {gallery.map((src) => (
             <div key={src} className={styles.galleryItem}>
@@ -84,7 +75,13 @@ export function ImmobilienmaklerSection({
           ))}
         </section>
 
-        
+        <section className={styles.keywordIntro}>
+          <h1 className={styles.title}>Immobilienmakler in {kreisName}</h1>
+          <p className={styles.text}>
+            Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
+            Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
+          </p>
+        </section>
 
         {empfehlung ? (
           <section className={styles.recommendation}>
