@@ -3,7 +3,6 @@ import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
-import styles from "./ImmobilienmaklerSection.module.css";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
 import type { RegionalReference } from "@/lib/referenzen";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
@@ -59,104 +58,116 @@ export function ImmobilienmaklerSection({
   const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.gallery}>
-          {gallery.map((src) => (
-            <div key={src} className={styles.galleryItem}>
+    <div className="d-flex flex-column gap-4">
+      <section className="row g-3">
+        {gallery.map((src) => (
+          <div key={src} className="col-12 col-md-6">
+            <div className="ratio ratio-4x3 overflow-hidden rounded-4 bg-light">
               <Image
                 src={src}
                 alt={`Immobilienmakler ${kreisName}`}
-                width={520}
-                height={360}
-                className={styles.galleryImage}
+                fill
+                sizes="(min-width: 768px) 50vw, 100vw"
+                className="object-fit-cover"
               />
             </div>
-          ))}
-        </section>
+          </div>
+        ))}
+      </section>
 
-        <section className={styles.keywordIntro}>
-          <p className={styles.eyebrow}>WOHNLAGENCHECK24 Maklerempfehlung</p>
-          <h1 className={styles.title}>Immobilienmakler in {kreisName}</h1>
-          <p className={styles.text}>
-            Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
-            Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
-          </p>
-        </section>
+      <section>
+        <p className="small text-uppercase text-body-secondary fw-semibold mb-2">WOHNLAGENCHECK24 Maklerempfehlung</p>
+        <h1 className="mb-3">Immobilienmakler in {kreisName}</h1>
+        <p className="text-body-secondary mb-0">
+          Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
+          Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
+        </p>
+      </section>
 
-        {empfehlung ? (
-          <section className={styles.recommendation}>
-            <div className={styles.recommendationGrid}>
-              <div className={styles.recommendationLogo}>
+      {empfehlung ? (
+        <section className="card border-0 shadow-none rounded-4">
+          <div className="card-body p-4 p-lg-5">
+            <div className="row g-4 align-items-center">
+              <div className="col-12 col-md-auto">
                 <Image
                   src={imageSrc}
                   alt={`Maklerempfehlung ${kreisName}`}
                   width={180}
                   height={180}
-                  className={styles.recommendationLogoImage}
+                  className="rounded-circle object-fit-cover bg-light"
                 />
               </div>
-              <div>
+              <div className="col">
                 <h2>{name}</h2>
-                <p><b>Warum wir diesen Makler empfehlen</b></p>
-                <p className={styles.text}>{empfehlung}</p>
+                <p className="fw-semibold mb-2">Warum wir diesen Makler empfehlen</p>
+                <p className="text-body-secondary mb-0">{empfehlung}</p>
               </div>
             </div>
-          </section>
-        ) : null}
-
-        {references.length > 0 ? (
-          <ReferenceExperienceMap
-            items={references}
-            heading="Referenzen aus der Vermittlungspraxis"
-            intro={`Vermittlungserfolge unseres Partners in der Region ${kreisName}.`}
-            enable3dToggle
-            initialViewMode="3d"
-            showCountInHeading
-          />
-        ) : null}
-
-        {beschreibung ? (
-          <section className={styles.card}>
-            <h2>Profil</h2>
-            <p className={styles.text}>{beschreibung}</p>
-          </section>
-        ) : null}
-
-        <section className={styles.profileContactGrid}>
-          {benefits.length ? (
-            <div className={styles.card}>
-              <h2>Leistungen & Vorteile</h2>
-              <ul className={styles.list}>
-                {benefits.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          <div className={styles.contactCard}>
-            <div>
-              <h2>Makler anfragen</h2>
-              <p className={styles.text}>
-                Teilen Sie uns Ihre Eckdaten mit. Wir melden uns mit einer konkreten Empfehlung.
-              </p>
-            </div>
-            <KontaktForm
-              targetEmail={emailTarget}
-              scope="makler"
-              regionLabel={`Maklerempfehlung – ${kreisName}`}
-            />
           </div>
         </section>
+      ) : null}
 
-        {provision ? (
-          <section className={styles.provision}>
-            <h2>Maklerprovision & Kosten</h2>
-            <p className={styles.text}>{provision}</p>
-          </section>
+      {references.length > 0 ? (
+        <ReferenceExperienceMap
+          items={references}
+          heading="Referenzen aus der Vermittlungspraxis"
+          intro={`Vermittlungserfolge unseres Partners in der Region ${kreisName}.`}
+          enable3dToggle
+          initialViewMode="3d"
+          showCountInHeading
+        />
+      ) : null}
+
+      {beschreibung ? (
+        <section className="card border-0 shadow-none rounded-4">
+          <div className="card-body p-4">
+            <h2>Profil</h2>
+            <p className="text-body-secondary mb-0">{beschreibung}</p>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="row g-4 align-items-start">
+        {benefits.length ? (
+          <div className="col-12 col-lg-5">
+            <div className="card border-0 shadow-none rounded-4 h-100">
+              <div className="card-body p-4">
+                <h2>Leistungen & Vorteile</h2>
+                <ul className="text-body-secondary mb-0 ps-3">
+                  {benefits.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         ) : null}
-      </div>
+
+        <div className={benefits.length ? "col-12 col-lg-7" : "col-12"}>
+          <div className="card border-0 shadow-none rounded-4">
+            <div className="card-body p-4 p-lg-5">
+              <h2>Makler anfragen</h2>
+              <p className="text-body-secondary">
+                Teilen Sie uns Ihre Eckdaten mit. Wir melden uns mit einer konkreten Empfehlung.
+              </p>
+              <KontaktForm
+                targetEmail={emailTarget}
+                scope="makler"
+                regionLabel={`Maklerempfehlung – ${kreisName}`}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {provision ? (
+        <section className="card border-0 shadow-none rounded-4">
+          <div className="card-body p-4">
+            <h2>Maklerprovision & Kosten</h2>
+            <p className="text-body-secondary mb-0">{provision}</p>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
