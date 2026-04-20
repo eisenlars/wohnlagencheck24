@@ -73,7 +73,7 @@ export function RequestTipsterBox({ locale = "de", mode, pagePath, regionLabel, 
             border: "1px solid #facc15",
             background: "#facc15",
             color: "#0f172a",
-            borderRadius: 999,
+            borderRadius: 10,
             padding: "11px 16px",
             fontWeight: 850,
           }}
