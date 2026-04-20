@@ -161,7 +161,7 @@ export function RequestDetailPage(props: Props) {
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 1.3fr) minmax(260px, 0.7fr)",
-          gap: 24,
+          gap: 30,
           alignItems: "start",
           marginBottom: 28,
         }}
@@ -199,7 +199,7 @@ export function RequestDetailPage(props: Props) {
             </div>
 
             <div>
-              <h1 style={{ margin: "0 0 10px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
+              <h1 style={{ margin: "0 0 20px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
                 {request.title}
               </h1>
               <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
