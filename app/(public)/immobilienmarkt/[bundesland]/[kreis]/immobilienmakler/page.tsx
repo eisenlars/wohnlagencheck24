@@ -16,6 +16,14 @@ import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
 
+function firstNonEmpty(...values: Array<string | undefined | null>): string | null {
+  for (const value of values) {
+    const normalized = String(value ?? "").trim();
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 export default async function ImmobilienmaklerPage({ params }: PageProps) {
   const resolvedParams = await params;
   const bundeslandSlug = resolvedParams.bundesland ?? "";
@@ -51,7 +59,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         for (const entry of overrides) {
           const key = String(entry.section_key ?? "");
           const value = String(entry.optimized_content ?? "");
-          if ((key === "media_makler_logo" || key === "media_makler_bild_01" || key === "media_makler_bild_02") && value) {
+          if ((key.startsWith("makler_") || key.startsWith("media_makler_")) && value) {
             makler[key] = value;
           }
         }
@@ -72,11 +80,13 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
   const kreisName = asString(meta["kreis_name"]) ?? formatRegionFallback(kreisSlug);
   const bundeslandNameRaw = asString(meta["bundesland_name"]) ?? "";
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : formatRegionFallback(bundeslandSlug);
-  const name = asString(makler["makler_name"]) ?? "Maklerempfehlung";
+  const name = firstNonEmpty(asString(makler["makler_name"])) ?? "Maklerempfehlung";
   const logoOverride = asString(makler["media_makler_logo"]) ?? "";
   const email =
-    asString(makler["makler_email"]) ??
-    asString(berater["berater_email"]) ??
+    firstNonEmpty(
+      asString(makler["makler_email"]),
+      asString(berater["berater_email"]),
+    ) ??
     "kontakt@wohnlagencheck24.de";
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;

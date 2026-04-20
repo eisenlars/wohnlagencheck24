@@ -14,6 +14,14 @@ type ImmobilienmaklerSectionProps = {
   references?: RegionalReference[];
 };
 
+function firstNonEmpty(...values: Array<string | undefined | null>): string | null {
+  for (const value of values) {
+    const normalized = String(value ?? "").trim();
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 export function ImmobilienmaklerSection({
   report,
   kreisSlug,
@@ -22,7 +30,7 @@ export function ImmobilienmaklerSection({
   const text = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const makler = asRecord(text["makler"]) ?? {};
 
-  const name = asString(makler["makler_name"]) ?? "Maklerempfehlung";
+  const name = firstNonEmpty(asString(makler["makler_name"])) ?? "Maklerempfehlung";
   const empfehlung = asString(makler["makler_empfehlung"]) ?? "";
   const beschreibung = asString(makler["makler_beschreibung"]) ?? "";
   const benefitsRaw = asString(makler["makler_benefits"]) ?? "";
@@ -37,8 +45,10 @@ export function ImmobilienmaklerSection({
   const imageSrc = resolveMandatoryMediaSrc("media_makler_logo", logoOverride);
   const berater = asRecord(text["berater"]) ?? {};
   const emailTarget =
-    asString(makler["makler_email"]) ??
-    asString(berater["berater_email"]) ??
+    firstNonEmpty(
+      asString(makler["makler_email"]),
+      asString(berater["berater_email"]),
+    ) ??
     "kontakt@wohnlagencheck24.de";
   const gallery = [
     resolveMandatoryMediaSrc("media_makler_bild_01", asString(makler["media_makler_bild_01"])),
