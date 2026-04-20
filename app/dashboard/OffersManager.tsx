@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
-import workspaceTabsStyles from './WorkspaceTabs.module.css';
+import workspaceStyles from './styles/workspace.module.css';
 
 type OfferRow = {
   id: string;
@@ -151,8 +151,8 @@ type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy'
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
-    : workspaceTabsStyles.workspaceTab;
+    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
+    : workspaceStyles.workspaceTab;
 type OfferListFilter = 'all' | 'kauf' | 'miete';
 const OFFER_LIST_VISIBLE_ROWS = 8;
 const OFFER_LIST_ROW_HEIGHT = 104;
@@ -1298,7 +1298,7 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
-            <div className={workspaceTabsStyles.workspaceTabs}>
+            <div className={workspaceStyles.workspaceTabs}>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('texts')}

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
 import { createClient } from '@/utils/supabase/client';
-import workspaceTabsStyles from './WorkspaceTabs.module.css';
+import workspaceStyles from './styles/workspace.module.css';
 
 type RawReferenceRow = {
   id: string;
@@ -64,8 +64,8 @@ type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
-    : workspaceTabsStyles.workspaceTab;
+    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
+    : workspaceStyles.workspaceTab;
 type ReferenceListFilter = 'all' | 'kauf' | 'miete';
 type VisibilityMode = 'partner_wide' | 'strict_local';
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -1553,7 +1553,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                 </div>
               </div>
 
-              <div className={workspaceTabsStyles.workspaceTabs}>
+              <div className={workspaceStyles.workspaceTabs}>
                 <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>Texte</button>
                 <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>SEO / GEO</button>
                 <button type="button" onClick={() => setActiveTab('facts')} className={workspaceTabClassName(activeTab === 'facts')}>Referenzdaten</button>

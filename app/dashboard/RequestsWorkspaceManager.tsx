@@ -6,7 +6,7 @@ import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
 import { getRequestImageCatalog, matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
-import workspaceTabsStyles from './WorkspaceTabs.module.css';
+import workspaceStyles from './styles/workspace.module.css';
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -85,8 +85,8 @@ type RequestListFilter = 'all' | 'haus' | 'wohnung';
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
-    : workspaceTabsStyles.workspaceTab;
+    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
+    : workspaceStyles.workspaceTab;
 type RequestWorkspaceLoadDebug = {
   requests: number;
   overrides: number;
@@ -978,7 +978,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                       </div>
                     </div>
 
-                    <div className={workspaceTabsStyles.workspaceTabs}>
+                    <div className={workspaceStyles.workspaceTabs}>
                       <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>
                         Texte
                       </button>
