@@ -1030,9 +1030,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                         <div style={onlineCreateGridStyle}>
                           <div style={offerSummaryTopCardStyle}>
                             <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
-                            <div style={workspaceSectionSublineStyle}>Hier werden Motiv, Titel und Beschreibung für das öffentliche Gesuch kuratiert.</div>
+                            <div style={requestNoteHeadingStyle}>CRM-Notiz</div>
+                            <div style={workspaceSectionSublineStyle}>
+                              Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
+                            </div>
                             <div style={textSourceNoteCardStyle}>
-                              <div style={offerSummaryLabelStyle}>CRM-Notiz</div>
                               <div style={requestNoteBodyStyle}>
                                 {selectedNote || 'Keine CRM-Notiz vorhanden.'}
                               </div>
@@ -1707,9 +1709,19 @@ const offerSummaryValueStyle: CSSProperties = {
 
 const requestNoteBodyStyle: CSSProperties = {
   color: '#334155',
-  fontSize: '11px',
+  fontSize: '13px',
   lineHeight: 1.5,
   whiteSpace: 'pre-wrap',
+};
+
+const requestNoteHeadingStyle: CSSProperties = {
+  fontSize: '12px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#64748b',
+  fontWeight: 700,
+  marginTop: '8px',
+  marginBottom: '4px',
 };
 
 const statusBadgeStyle = (active: boolean): CSSProperties => ({
@@ -1933,7 +1945,7 @@ const requestListViewportStyle: CSSProperties = {
 const textSourceNoteCardStyle: CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '12px',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#f8fafc',
   padding: '12px',
   marginBottom: '14px',
   display: 'grid',
