@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
 import { createClient } from '@/utils/supabase/client';
+import workspaceTabsStyles from './WorkspaceTabs.module.css';
 
 type RawReferenceRow = {
   id: string;
@@ -60,6 +61,11 @@ type LlmOptionApiRow = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
+
+const workspaceTabClassName = (active: boolean) =>
+  active
+    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
+    : workspaceTabsStyles.workspaceTab;
 type ReferenceListFilter = 'all' | 'kauf' | 'miete';
 type VisibilityMode = 'partner_wide' | 'strict_local';
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -357,7 +363,6 @@ const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
   backgroundColor: ready ? '#dcfce7' : '#fee2e2',
   border: `1px solid ${ready ? '#86efac' : '#fca5a5'}`,
 });
-const tabsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 26, marginBottom: 16 };
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
 const fieldCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, background: '#fff', padding: 14, display: 'grid', gap: 12 };
@@ -467,19 +472,6 @@ const saveButtonStyle = (disabled: boolean): CSSProperties => ({
   opacity: disabled ? 0.85 : 1,
 });
 const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' };
-
-function tabButtonStyle(active: boolean): CSSProperties {
-  return {
-    border: `1px solid ${active ? '#486b7a' : '#dbe5ea'}`,
-    backgroundColor: active ? '#486b7a' : '#f8fafc',
-    color: active ? '#ffffff' : '#334155',
-    borderRadius: 999,
-    padding: '7px 12px',
-    fontSize: 12,
-    fontWeight: active ? 700 : 600,
-    cursor: 'pointer',
-  };
-}
 
 function listRowStyle(active: boolean): CSSProperties {
   return {
@@ -1561,11 +1553,11 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                 </div>
               </div>
 
-              <div style={tabsRowStyle}>
-                <button type="button" onClick={() => setActiveTab('texts')} style={tabButtonStyle(activeTab === 'texts')}>Texte</button>
-                <button type="button" onClick={() => setActiveTab('seo')} style={tabButtonStyle(activeTab === 'seo')}>SEO / GEO</button>
-                <button type="button" onClick={() => setActiveTab('facts')} style={tabButtonStyle(activeTab === 'facts')}>Referenzdaten</button>
-                <button type="button" onClick={() => setActiveTab('media')} style={tabButtonStyle(activeTab === 'media')}>Medien</button>
+              <div className={workspaceTabsStyles.workspaceTabs}>
+                <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>Texte</button>
+                <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>SEO / GEO</button>
+                <button type="button" onClick={() => setActiveTab('facts')} className={workspaceTabClassName(activeTab === 'facts')}>Referenzdaten</button>
+                <button type="button" onClick={() => setActiveTab('media')} className={workspaceTabClassName(activeTab === 'media')}>Medien</button>
               </div>
 
               {activeTab === 'texts' ? (

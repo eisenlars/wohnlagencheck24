@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import workspaceTabsStyles from './WorkspaceTabs.module.css';
 
 type OfferRow = {
   id: string;
@@ -147,6 +148,11 @@ type Props = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy';
+
+const workspaceTabClassName = (active: boolean) =>
+  active
+    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
+    : workspaceTabsStyles.workspaceTab;
 type OfferListFilter = 'all' | 'kauf' | 'miete';
 const OFFER_LIST_VISIBLE_ROWS = 8;
 const OFFER_LIST_ROW_HEIGHT = 104;
@@ -1292,46 +1298,46 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
-            <div style={workspaceTabsRowStyle}>
+            <div className={workspaceTabsStyles.workspaceTabs}>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('texts')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'texts')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'texts')}
               >
                 Texte
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('seo')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'seo')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'seo')}
               >
                 SEO / GEO
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('facts')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'facts')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'facts')}
               >
                 Objektmerkmale
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('equipment')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'equipment')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'equipment')}
               >
                 Ausstattung
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('media')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'media')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'media')}
               >
                 Medien
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('energy')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'energy')}
+                className={workspaceTabClassName(activeWorkspaceTab === 'energy')}
               >
                 Energieausweis
               </button>
@@ -2191,25 +2197,6 @@ const offerOverviewGridStyle: React.CSSProperties = {
   rowGap: 12,
   columnGap: 12,
 };
-
-const workspaceTabsRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap',
-  marginTop: '26px',
-  marginBottom: '16px',
-};
-
-const workspaceTabStyle = (active: boolean): React.CSSProperties => ({
-  border: `1px solid ${active ? '#486b7a' : '#dbe5ea'}`,
-  backgroundColor: active ? '#486b7a' : '#f8fafc',
-  color: active ? '#ffffff' : '#334155',
-  borderRadius: '999px',
-  padding: '7px 12px',
-  fontSize: '12px',
-  fontWeight: active ? 700 : 600,
-  cursor: 'pointer',
-});
 
 const inputStyle: React.CSSProperties = {
   width: '100%',

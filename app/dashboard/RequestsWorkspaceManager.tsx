@@ -6,6 +6,7 @@ import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
 import { getRequestImageCatalog, matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
+import workspaceTabsStyles from './WorkspaceTabs.module.css';
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -81,6 +82,11 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo' | 'criteria';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
+
+const workspaceTabClassName = (active: boolean) =>
+  active
+    ? `${workspaceTabsStyles.workspaceTab} ${workspaceTabsStyles.workspaceTabActive}`
+    : workspaceTabsStyles.workspaceTab;
 type RequestWorkspaceLoadDebug = {
   requests: number;
   overrides: number;
@@ -972,14 +978,14 @@ export default function RequestsWorkspaceManager(props: Props) {
                       </div>
                     </div>
 
-                    <div style={workspaceTabsRowStyle}>
-                      <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
+                    <div className={workspaceTabsStyles.workspaceTabs}>
+                      <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>
                         Texte
                       </button>
-                      <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
+                      <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>
                         SEO / GEO
                       </button>
-                      <button type="button" onClick={() => setActiveTab('criteria')} style={workspaceTabStyle(activeTab === 'criteria')}>
+                      <button type="button" onClick={() => setActiveTab('criteria')} className={workspaceTabClassName(activeTab === 'criteria')}>
                         Suchkriterien
                       </button>
                     </div>
@@ -1422,25 +1428,6 @@ const aiMissingHintStyle: CSSProperties = {
   fontSize: '12px',
   color: '#e2e8f0',
 };
-
-const workspaceTabsRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap',
-  marginTop: '18px',
-  marginBottom: '16px',
-};
-
-const workspaceTabStyle = (active: boolean): CSSProperties => ({
-  border: `1px solid ${active ? '#486b7a' : '#dbe5ea'}`,
-  backgroundColor: active ? '#486b7a' : '#f8fafc',
-  color: active ? '#ffffff' : '#334155',
-  borderRadius: '999px',
-  padding: '7px 12px',
-  fontSize: '12px',
-  fontWeight: active ? 700 : 600,
-  cursor: 'pointer',
-});
 
 const inputStyle: CSSProperties = {
   width: '100%',
