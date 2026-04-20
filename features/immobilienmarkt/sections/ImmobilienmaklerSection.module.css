@@ -1,13 +1,13 @@
 .page {
-  background: #f8fafc;
-  padding: 40px 0 80px;
+  background: transparent;
+  padding: 0;
 }
 
 .container {
   width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding: 0 clamp(16px, 3vw, 40px);
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 32px;
