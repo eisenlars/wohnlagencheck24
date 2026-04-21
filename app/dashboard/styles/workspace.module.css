@@ -6,11 +6,6 @@
   margin-bottom: 24px;
 }
 
-.workspaceShell {
-  display: grid;
-  gap: 8px;
-}
-
 .workspaceMainGrid {
   display: grid;
   grid-template-columns: 420px minmax(0, 1fr);
@@ -25,28 +20,6 @@
 
 .workspaceEditorColumn {
   min-width: 0;
-}
-
-.workspaceSectionStack {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.workspaceRequestNoteStack {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-
-.workspaceFieldGroup {
-  display: grid;
-  gap: 8px;
-}
-
-.workspacePreviewStack {
-  display: grid;
-  gap: 16px;
 }
 
 .workspacePreviewSplit {
@@ -337,16 +310,6 @@
 
 .workspaceDebugModalCard {
   width: min(340px, 100%);
-}
-
-.workspaceModalStack {
-  display: grid;
-  gap: 16px;
-}
-
-.workspaceModalBodyStack {
-  display: grid;
-  gap: 8px;
 }
 
 .workspaceModalCloseButton {
@@ -893,6 +856,10 @@
   letter-spacing: 0.08em;
   color: #64748b;
   font-weight: 800;
+}
+
+.workspaceHeadingMb1em {
+  margin-bottom: 1em;
 }
 
 .workspaceInlineHeadingRow {

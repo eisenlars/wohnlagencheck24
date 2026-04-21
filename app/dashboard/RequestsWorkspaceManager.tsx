@@ -820,7 +820,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
   return (
-    <div className={workspaceStyles.workspaceShell}>
+    <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
         <section className={workspaceStyles.workspaceControlShell}>
           <div className={workspaceStyles.workspaceControlCard}>
@@ -1027,7 +1027,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
 
                     {activeTab === 'criteria' ? (
-                      <div className={workspaceStyles.workspaceSectionStack}>
+                      <div className="d-flex flex-column gap-2 mb-3">
                         <div className={workspaceStyles.workspaceSoftCard}>
                           <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
                           <div className={workspaceStyles.workspaceMetaGrid}>
@@ -1069,11 +1069,13 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ) : null}
 
                     {activeTab === 'texts' || activeTab === 'seo' ? (
-                      <div className={workspaceStyles.workspaceSectionStack}>
+                      <div className="d-flex flex-column gap-2 mb-3">
                         <div className={workspaceStyles.workspaceEditorSplit}>
                           <div className={workspaceStyles.workspaceEditorColumn}>
-                            <div className={workspaceStyles.workspaceSectionHeading}>Online-Gesuch erstellen</div>
-                            <div className={workspaceStyles.workspaceRequestNoteStack}>
+                            <div className={`${workspaceStyles.workspaceSectionHeading} ${workspaceStyles.workspaceHeadingMb1em}`}>
+                              Online-Gesuch erstellen
+                            </div>
+                            <div className="d-flex flex-column gap-1 mb-3">
                               <div className={workspaceStyles.workspaceInlineHeadingRow}>
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
                                 <button
@@ -1090,7 +1092,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             </div>
                             {activeTab === 'texts' ? (
-                              <div className={workspaceStyles.workspaceFieldGroup}>
+                              <div className="d-flex flex-column gap-2">
                                 {renderTextField('Gesuch-Titel', 'seo_h1', {
                                   multiline: false,
                                   placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1102,7 +1104,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             ) : null}
                             {activeTab === 'seo' ? (
-                              <div className={workspaceStyles.workspaceFieldGroup}>
+                              <div className="d-flex flex-column gap-2">
                                 {renderTextField('SEO‑Titel', 'seo_title', {
                                   multiline: false,
                                   placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1135,7 +1137,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 Info
                               </button>
                             </div>
-                            <div className={workspaceStyles.workspaceFieldGroup}>
+                            <div className="d-flex flex-column gap-2">
                               {effectiveRequestImagePreview?.imageUrl ? (
                                 <div className={workspaceStyles.workspaceRequestImageFrame}>
                                   <img
@@ -1145,7 +1147,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   />
                                 </div>
                               ) : null}
-                              <div className={workspaceStyles.workspaceFieldGroup}>
+                              <div className="d-flex flex-column gap-2">
                                 <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
                                 <div className={workspaceStyles.workspaceImageChoiceGrid}>
                                   {readyRequestImageChoices.map((item) => {
@@ -1199,10 +1201,10 @@ export default function RequestsWorkspaceManager(props: Props) {
                             </div>
                           </div>
                         </div>
-                        <div className={workspaceStyles.workspaceFieldGroup}>
+                        <div className="d-flex flex-column gap-2">
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div className={workspaceStyles.workspacePreviewSplit}>
-                            <div className={workspaceStyles.workspacePreviewStack}>
+                            <div className="d-flex flex-column gap-3">
                               <div className={workspaceStyles.workspaceContentPreviewCard}>
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
@@ -1215,7 +1217,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             <div className={workspaceStyles.workspaceContentPreviewCard}>
                               <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
                               {effectiveRequestImagePreview?.imageUrl ? (
-                                <div className={workspaceStyles.workspaceFieldGroup}>
+                                <div className="d-flex flex-column gap-2">
                                   <div className={workspaceStyles.workspaceRequestImageFrame}>
                                     <img
                                       src={effectiveRequestImagePreview.imageUrl}
@@ -1267,7 +1269,7 @@ export default function RequestsWorkspaceManager(props: Props) {
           }}
         >
           <div
-            className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceDebugModalCard}`}
+            className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceDebugModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="request-workspace-debug-title"
@@ -1284,7 +1286,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                 Schließen
               </button>
             </div>
-            <div className={`${workspaceStyles.workspaceModalBodyStack} ${workspaceStyles.workspaceModalText}`}>
+            <div className={`d-flex flex-column gap-2 ${workspaceStyles.workspaceModalText}`}>
               <div>requests={requestLoadDebug.requests}</div>
               <div>overrides={requestLoadDebug.overrides}</div>
             </div>
@@ -1293,14 +1295,14 @@ export default function RequestsWorkspaceManager(props: Props) {
       ) : null}
       {imageInfoOpen ? (
         <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceModalCard}`}>
+          <div className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div className={workspaceStyles.workspaceSmallHeading}>Matching-Info</div>
               <button type="button" onClick={() => setImageInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
                 Schließen
               </button>
             </div>
-            <div className={workspaceStyles.workspaceModalStack}>
+            <div className="d-flex flex-column gap-3">
               <div>
                 <div className={workspaceStyles.workspaceMetaLabel}>Erkannte Persona</div>
                 <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
@@ -1327,7 +1329,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       ) : null}
       {requestNoteInfoOpen ? (
         <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceModalCard}`}>
+          <div className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div className={workspaceStyles.workspaceSmallHeading}>CRM-Notiz</div>
               <button type="button" onClick={() => setRequestNoteInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
