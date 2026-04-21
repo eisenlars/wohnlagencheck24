@@ -5,7 +5,6 @@ import { asRecord, asString } from "@/utils/records";
 import { buildWebAssetUrl } from "@/utils/assets";
 import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
-import styles from "./ImmobilienberatungSection.module.css";
 
 type ContactItem = { label: string; value: string; href?: string };
 
@@ -15,25 +14,6 @@ const consultationReasons = [
   "Sie pruefen, ob eine Vermietung, ein Verkauf oder eine Sanierung sinnvoller ist.",
   "Sie benoetigen eine belastbare Grundlage fuer Preisverhandlungen.",
   "Sie moechten Lage, Nachfrage und Zielgruppe regional einschaetzen lassen.",
-];
-
-const processSteps = [
-  {
-    title: "Anfrage",
-    text: "Sie schildern kurz Objekt, Standort und Anlass der Beratung.",
-  },
-  {
-    title: "Erstgespraech",
-    text: "Wir klaeren Ziel, Zeitplan und welche Unterlagen fuer die Einschaetzung relevant sind.",
-  },
-  {
-    title: "Regionale Einordnung",
-    text: "Markt-, Lage- und Nachfrageindikatoren werden mit der konkreten Objektsituation abgeglichen.",
-  },
-  {
-    title: "Empfehlung",
-    text: "Sie erhalten eine klare Orientierung zu Wert, Strategie und naechsten Schritten.",
-  },
 ];
 
 const faqs = [
@@ -119,170 +99,175 @@ export function ImmobilienberatungSection({
   );
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <div className={styles.portrait}>
-            <div className={styles.avatar}>
-              <Image
-                src={avatarSrc}
-                alt={`Berater: ${name}`}
-                width={220}
-                height={220}
-                className={styles.avatarImg}
-              />
+    <div className="d-flex flex-column gap-4">
+      <section className="card border-0 shadow-sm rounded-4">
+        <div className="card-body p-4 p-lg-5">
+          <div className="row g-4 align-items-center">
+            <div className="col-12 col-lg-6">
+              <div className="d-flex flex-wrap align-items-center gap-4">
+                <Image
+                  src={avatarSrc}
+                  alt={`Berater: ${name}`}
+                  width={160}
+                  height={160}
+                  className="rounded-circle object-fit-cover bg-light border border-4 border-white shadow-sm"
+                />
+                <div>
+                  <h1 className="mb-2">{name}</h1>
+                  <p className="fw-semibold text-body-secondary mb-3">Standort- / Immobilienberatung</p>
+                  <div className="d-flex flex-wrap gap-2">
+                    <a className="btn btn-dark rounded-pill px-4" href="#berater-kontaktformular">
+                      Kontakt aufnehmen
+                    </a>
+                    {telPrimary ? (
+                      <a className="btn btn-outline-dark rounded-pill px-4" href={`tel:${normalizePhone(telPrimary)}`}>
+                        Rueckruf anfordern
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.basics}>
-              <h1 className={styles.title}>{name}</h1>
-              <p className={styles.role}>Standort- / Immobilienberatung</p>
-              <div className={styles.cta}>
-                {email ? (
-                  <a className={`${styles.btn} ${styles.btnPrimary}`} href={`mailto:${email}`}>
-                    Kontakt aufnehmen
-                  </a>
-                ) : null}
-                {telPrimary ? (
-                  <a className={`${styles.btn} ${styles.btnSecondary}`} href={`tel:${normalizePhone(telPrimary)}`}>
-                    Rueckruf anfordern
-                  </a>
-                ) : null}
+
+            <div className="col-12 col-lg-6">
+              <h2 className="mb-3">Regionale Expertise</h2>
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {[kreisSlug, bundeslandSlug].map((chip) => (
+                  <span key={chip} className="badge rounded-pill text-bg-light border text-capitalize">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+              <div className="d-grid gap-2">
+                {beschreibung
+                  .split(/\n\n+/)
+                  .map((block) => block.trim())
+                  .filter(Boolean)
+                  .map((block) => (
+                    <p key={block} className="text-body-secondary mb-0">
+                      {block}
+                    </p>
+                  ))}
               </div>
             </div>
           </div>
-          <div className={styles.heroText}>
-            <h2>Profil</h2>
-            {beschreibung
-              .split(/\n\n+/)
-              .map((block) => block.trim())
-              .filter(Boolean)
-              .map((block) => (
-                <p key={block} className={styles.text}>
-                  {block}
-                </p>
-              ))}
-          </div>
-          <div className={styles.regionVisual}>
-            <Image
-              src={regionImageSrc}
-              alt={`Immobilienberatung in ${kreisName}`}
-              width={1280}
-              height={720}
-              className={styles.regionVisualImage}
-            />
-            <div className={styles.regionVisualCaption}>
+
+          <div className="position-relative overflow-hidden rounded-4 bg-light mt-4">
+            <div className="ratio ratio-21x9">
+              <Image
+                src={regionImageSrc}
+                alt={`Immobilienberatung in ${kreisName}`}
+                fill
+                sizes="(min-width: 1200px) 1140px, 100vw"
+                className="object-fit-cover"
+              />
+            </div>
+            <div className="position-absolute bottom-0 start-0 m-3 px-3 py-2 rounded-pill bg-dark bg-opacity-75 text-white small fw-semibold">
               Immobilienberatung fuer die Region {kreisName}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className={styles.grid}>
-          <div className={styles.card}>
-            <h3>Ausbildung & Qualifikation</h3>
-            {ausbildung.length ? (
-              <ul>
-                {ausbildung.map((item, index) => (
-                  <li key={`${item}-${index}`}>{item}</li>
+      <section className="row g-4">
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <h3>Ausbildung & Qualifikation</h3>
+              {ausbildung.length ? (
+                <ul className="text-body-secondary mb-0 ps-3">
+                  {ausbildung.map((item, index) => (
+                    <li key={`${item}-${index}`}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-body-secondary mb-0">Keine Angaben vorhanden.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <h3>Kontakt</h3>
+              <div className="d-grid gap-3">
+                {contactItems.map((item) => (
+                  <div key={item.label}>
+                    <span className="d-block small text-uppercase text-body-secondary fw-semibold mb-1">
+                      {item.label}
+                    </span>
+                    {item.href ? (
+                      <a href={item.href} className="link-dark fw-semibold text-decoration-none">
+                        {item.value}
+                      </a>
+                    ) : (
+                      <span className="fw-semibold">{item.value}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="row g-4 align-items-start">
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4 d-grid gap-3">
+              <span className="badge rounded-pill text-bg-light border text-uppercase align-self-start">
+                Orientierung
+              </span>
+              <h2 className="mb-0">Wann lohnt sich eine Immobilienberatung?</h2>
+              <p className="text-body-secondary mb-0">
+                Eine Beratung ist vor allem dann sinnvoll, wenn Entscheidungen rund um Verkauf,
+                Vermietung oder Investitionen nicht allein auf Bauchgefuehl basieren sollen.
+              </p>
+              <ul className="text-body-secondary mb-0 ps-3">
+                {consultationReasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
                 ))}
               </ul>
-            ) : (
-              <p className={styles.muted}>Keine Angaben vorhanden.</p>
-            )}
-          </div>
-          <div className={styles.card}>
-            <h3>Kontakt</h3>
-            <div className={styles.contactList}>
-              {contactItems.map((item) => (
-                <div key={item.label} className={styles.contactItem}>
-                  <span className={styles.contactLabel}>{item.label}</span>
-                  {item.href ? (
-                    <a href={item.href} className={styles.contactValue}>
-                      {item.value}
-                    </a>
-                  ) : (
-                    <span className={styles.contactValue}>{item.value}</span>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
-          <div className={styles.card}>
-            <h3>Regionale Expertise</h3>
-            <div className={styles.chipRow}>
-              {[kreisSlug, bundeslandSlug].map((chip) => (
-                <span key={chip} className={styles.chip}>
-                  {chip}
-                </span>
-              ))}
-            </div>
-            <p className={styles.muted}>
-              Fokus auf Marktanalysen, Standortprofile und individuelle Bewertungen in der Region.
-            </p>
-          </div>
-        </section>
+        </div>
 
-        <section className={styles.guidanceGrid}>
-          <div className={`${styles.card} ${styles.guidanceCard}`}>
-            <span className={styles.eyebrow}>Orientierung</span>
-            <h2>Wann lohnt sich eine Immobilienberatung?</h2>
-            <p className={styles.sectionIntro}>
-              Eine Beratung ist vor allem dann sinnvoll, wenn Entscheidungen rund um Verkauf,
-              Vermietung oder Investitionen nicht allein auf Bauchgefuehl basieren sollen.
-            </p>
-            <ul className={styles.reasonList}>
-              {consultationReasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={`${styles.card} ${styles.processCard}`}>
-            <span className={styles.eyebrow}>Ablauf</span>
-            <h2>So laeuft die Beratung ab</h2>
-            <div className={styles.processList}>
-              {processSteps.map((step, index) => (
-                <div key={step.title} className={styles.processStep}>
-                  <span className={styles.processNumber}>{index + 1}</span>
-                  <div>
-                    <h3>{step.title}</h3>
-                    <p>{step.text}</p>
-                  </div>
-                </div>
-              ))}
+        <div id="berater-kontaktformular" className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-body p-4 p-lg-5">
+              <h2>Jetzt unverbindlich anfragen</h2>
+              <p className="text-body-secondary">
+                Sie erhalten eine persoenliche Einschaetzung und klare Handlungsempfehlungen.
+              </p>
+              <KontaktForm
+                targetEmail={emailTarget}
+                scope="berater"
+                regionLabel={`Standort- / Immobilienberatung – ${kreisSlug}`}
+              />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className={styles.faqSection}>
-          <div className={styles.sectionHeading}>
-            <span className={styles.eyebrow}>Fragen</span>
+      <section className="card border-0 shadow-sm rounded-4">
+        <div className="card-body p-4 p-lg-5">
+          <div className="mb-4">
+            <span className="badge rounded-pill text-bg-light border text-uppercase mb-3">Fragen</span>
             <h2>Haeufige Fragen zur Immobilienberatung</h2>
           </div>
-          <div className={styles.faqGrid}>
+          <div className="row g-3">
             {faqs.map((faq) => (
-              <details key={faq.question} className={styles.faqItem}>
-                <summary>{faq.question}</summary>
-                <p>{faq.answer}</p>
-              </details>
+              <div key={faq.question} className="col-12 col-lg-6">
+                <details className="border rounded-4 p-3 bg-light h-100">
+                  <summary className="fw-semibold">{faq.question}</summary>
+                  <p className="text-body-secondary mb-0 mt-3">{faq.answer}</p>
+                </details>
+              </div>
             ))}
           </div>
-        </section>
-
-        <section className={styles.ctaFooter}>
-          <div>
-            <h2>Jetzt unverbindlich anfragen</h2>
-            <p className={styles.muted}>
-              Sie erhalten eine persoenliche Einschaetzung und klare Handlungsempfehlungen.
-            </p>
-          </div>
-          <div className={styles.formWrap}>
-            <KontaktForm
-              targetEmail={emailTarget}
-              scope="berater"
-              regionLabel={`Standort- / Immobilienberatung – ${kreisSlug}`}
-            />
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
