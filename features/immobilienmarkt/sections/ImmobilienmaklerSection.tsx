@@ -89,17 +89,21 @@ export function ImmobilienmaklerSection({
           <div className="card-body p-4 p-lg-5">
             <div className="row g-4 align-items-center">
               <div className="col-12 col-md-auto">
-                <Image
-                  src={imageSrc}
-                  alt={`Maklerempfehlung ${kreisName}`}
-                  width={180}
-                  height={180}
-                  className="rounded-circle object-fit-cover bg-light"
-                />
+                <div className="card border-0 shadow-sm rounded-4">
+                  <div className="card-body p-3">
+                    <Image
+                      src={imageSrc}
+                      alt={`Maklerempfehlung ${kreisName}`}
+                      width={180}
+                      height={180}
+                      className="rounded-circle object-fit-cover bg-light"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="col">
-                <h2>{name}</h2>
-                <p className="fw-semibold mb-2">Warum wir diesen Makler empfehlen</p>
+                <h2 className="mb-2">{name}</h2>
+                <p className="fw-semibold mb-1">Warum wir diesen Makler empfehlen</p>
                 <p className="text-body-secondary mb-0">{empfehlung}</p>
               </div>
             </div>
@@ -121,7 +125,7 @@ export function ImmobilienmaklerSection({
       {beschreibung ? (
         <section className="card border-0 shadow-none rounded-4">
           <div className="card-body p-4">
-            <h2>Profil</h2>
+            <h2 className="mb-2">Profil</h2>
             <p className="text-body-secondary mb-0">{beschreibung}</p>
           </div>
         </section>
@@ -144,7 +148,7 @@ export function ImmobilienmaklerSection({
         ) : null}
 
         <div className={benefits.length ? "col-12 col-lg-7" : "col-12"}>
-          <div className="card border-0 shadow-none rounded-4">
+          <div className="card border-0 shadow-sm rounded-4">
             <div className="card-body p-4 p-lg-5">
               <h2>Makler anfragen</h2>
               <p className="text-body-secondary">
