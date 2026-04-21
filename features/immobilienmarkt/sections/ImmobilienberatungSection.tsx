@@ -109,8 +109,8 @@ export function ImmobilienberatungSection({
       <section className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-4 p-lg-5">
           <div className="row g-4 align-items-center">
-            <div className="col-12 col-lg-6">
-              <div className="d-flex flex-wrap align-items-center gap-4">
+            <div className="col-12 col-lg-6 text-lg-center">
+              <div className="d-flex flex-wrap align-items-center justify-content-center gap-4">
                 <Image
                   src={avatarSrc}
                   alt={`Berater: ${name}`}
@@ -121,7 +121,7 @@ export function ImmobilienberatungSection({
                 <div>
                   <h1 className="mb-2">{name}</h1>
                   <p className="fw-semibold text-body-secondary mb-3">Standort- / Immobilienberatung</p>
-                  <div className="d-flex flex-wrap gap-2">
+                  <div className="d-flex flex-wrap justify-content-center gap-2">
                     <a className="btn btn-dark rounded-pill px-4" href="#berater-kontaktformular">
                       Kontakt aufnehmen
                     </a>
