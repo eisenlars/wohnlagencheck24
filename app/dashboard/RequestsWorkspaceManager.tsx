@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
@@ -91,10 +91,6 @@ type RequestWorkspaceLoadDebug = {
   requests: number;
   overrides: number;
 };
-const REQUEST_LIST_VISIBLE_ROWS = 10;
-const REQUEST_LIST_ROW_HEIGHT = 76;
-const REQUEST_LIST_ROW_GAP = 8;
-
 type RegionTarget = {
   city?: string;
   label?: string;
@@ -668,14 +664,14 @@ export default function RequestsWorkspaceManager(props: Props) {
             </div>
             {showPrompt ? (
               <div className={workspaceStyles.workspacePromptPanel}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label className="d-flex flex-column gap-1" style={promptInputLabelStyle}>
+                <div className={workspaceStyles.workspacePromptLabel}>Standard-Prompt</div>
+                <div className={workspaceStyles.workspacePromptContent}>{standardPrompt}</div>
+                <label className={`d-flex flex-column gap-1 ${workspaceStyles.workspacePromptInputLabel}`}>
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
                     onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                    style={promptInputStyle}
+                    className={workspaceStyles.workspacePromptInput}
                     placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                   />
                 </label>
@@ -887,7 +883,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       ) : null}
 
       <div className={workspaceStyles.workspaceMainGrid}>
-        <section style={panelStyle}>
+        <section className={workspaceStyles.workspacePanel}>
           <div className={workspaceStyles.workspaceListHeader}>
             <h3 className={workspaceStyles.workspaceListTitle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
             <button
@@ -936,11 +932,7 @@ export default function RequestsWorkspaceManager(props: Props) {
             </button>
           </div>
           <div
-            className={workspaceStyles.workspaceList}
-            style={{
-              gap: REQUEST_LIST_ROW_GAP,
-              maxHeight: REQUEST_LIST_VISIBLE_ROWS * REQUEST_LIST_ROW_HEIGHT + (REQUEST_LIST_VISIBLE_ROWS - 1) * REQUEST_LIST_ROW_GAP,
-            }}
+            className={`${workspaceStyles.workspaceList} ${workspaceStyles.workspaceRequestList}`}
           >
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
@@ -973,16 +965,14 @@ export default function RequestsWorkspaceManager(props: Props) {
                 </button>
               );
             })}
-            {filteredRows.length === 0 ? (
-              <div style={{ color: '#94a3b8', fontSize: '13px' }}>Keine Gesuche gefunden.</div>
-            ) : null}
+            {filteredRows.length === 0 ? <div className={workspaceStyles.workspaceMutedText}>Keine Gesuche gefunden.</div> : null}
           </div>
         </section>
 
-        <section style={panelStyle}>
-          {status ? <p style={{ marginTop: 0, marginBottom: 10, fontSize: 12, color: '#b91c1c' }}>{status}</p> : null}
+        <section className={workspaceStyles.workspacePanel}>
+          {status ? <p className={workspaceStyles.workspaceErrorText}>{status}</p> : null}
           {!form || !selectedRow ? (
-            <div style={{ color: '#94a3b8' }}>Kein Gesuch ausgewählt.</div>
+            <div className={workspaceStyles.workspaceMutedText}>Kein Gesuch ausgewählt.</div>
           ) : (
             <>
               {(() => {
@@ -1039,41 +1029,41 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
 
                     {activeTab === 'criteria' ? (
-                      <div className="d-grid gap-3 mb-3">
-                        <div style={offerSummaryTopCardStyle}>
-                          <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
+                      <div className="d-grid gap-2 mb-3">
+                        <div className={workspaceStyles.workspaceSoftCard}>
+                          <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
                           <div className={workspaceStyles.workspaceMetaGrid}>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Vermarktung</div>
-                              <div style={offerSummaryValueStyle}>{selectedMarketingDisplay}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Vermarktung</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedMarketingDisplay}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Objektart</div>
-                              <div style={offerSummaryValueStyle}>{selectedTypeDisplay}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Objektart</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedTypeDisplay}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
-                              <div style={offerSummaryValueStyle}>{selectedSubtypeDisplay}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Objekt-Untertyp</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedSubtypeDisplay}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Budget</div>
-                              <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Budget</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedBudgetLabel}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Fläche</div>
-                              <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Fläche</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedAreaLabel}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Zimmer</div>
-                              <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Zimmer</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedRoomsLabel}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Umkreis</div>
-                              <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Umkreis</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedRadiusLabel}</div>
                             </div>
                             <div>
-                              <div style={offerSummaryLabelStyle}>Zielregionen</div>
-                              <div style={offerSummaryValueStyle}>{selectedLocation}</div>
+                              <div className={workspaceStyles.workspaceMetaLabel}>Zielregionen</div>
+                              <div className={workspaceStyles.workspaceMetaValue}>{selectedLocation}</div>
                             </div>
                           </div>
                         </div>
@@ -1081,11 +1071,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ) : null}
 
                     {activeTab === 'texts' || activeTab === 'seo' ? (
-                      <div className="d-grid gap-3 mb-3">
+                      <div className="d-grid gap-2 mb-3">
                         <div className={workspaceStyles.workspaceEditorSplit}>
                           <div className="d-grid">
                             <div className={workspaceStyles.workspaceSectionHeading}>Online-Gesuch erstellen</div>
-                            <div className="d-grid gap-1 mb-4">
+                            <div className="d-grid gap-1 mb-3">
                               <div className={workspaceStyles.workspaceInlineHeadingRow}>
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
                                 <button
@@ -1123,42 +1113,42 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   multiline: true,
                                   placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                                 })}
-                                <div style={previewCardStyle}>
-                                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                                <div className={workspaceStyles.workspaceSeoPreviewCard}>
+                                  <div className={workspaceStyles.workspaceSeoPreviewLabel}>
                                     SEO‑Vorschau
                                   </div>
-                                  <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                                  <div className={workspaceStyles.workspaceSeoPreviewTitle}>
                                     {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
                                   </div>
-                                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                                  <div className={workspaceStyles.workspaceSeoPreviewText}>
                                     {form.seo_description || form.long_description || 'SEO‑Description'}
                                   </div>
-                                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                                  <div className={workspaceStyles.workspaceSeoPreviewUrl}>
                                     /immobiliengesuche/{form.external_id}_&lt;titel&gt;
                                   </div>
                                 </div>
                               </div>
                             ) : null}
                           </div>
-                          <div style={offerSummaryTopCardStyle}>
+                          <div className={workspaceStyles.workspaceSoftCard}>
                             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
                               <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
-                              <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
+                              <button type="button" onClick={() => setImageInfoOpen(true)} className={workspaceStyles.workspaceTextButton}>
                                 Info
                               </button>
                             </div>
                             <div className="d-grid gap-2">
                               {effectiveRequestImagePreview?.imageUrl ? (
-                                <div style={requestMatchPreviewWrapStyle}>
+                                <div className={workspaceStyles.workspaceRequestImageFrame}>
                                   <img
                                     src={effectiveRequestImagePreview.imageUrl}
                                     alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                    style={requestMatchPreviewImageStyle}
+                                    className={workspaceStyles.workspaceRequestImage}
                                   />
                                 </div>
                               ) : null}
                               <div className="d-grid gap-2">
-                                <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
+                                <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
                                 <div className={workspaceStyles.workspaceImageChoiceGrid}>
                                   {readyRequestImageChoices.map((item) => {
                                     const active = pendingRequestImageSelectionId === item.id;
@@ -1166,16 +1156,17 @@ export default function RequestsWorkspaceManager(props: Props) {
                                       <button
                                         key={item.id}
                                         type="button"
-                                        className="d-grid gap-2"
-                                        style={imageChoiceCardStyle(active)}
+                                        className={`d-grid gap-2 ${workspaceStyles.workspaceImageChoiceCard} ${
+                                          active ? workspaceStyles.workspaceImageChoiceCardActive : ''
+                                        }`}
                                         onClick={() => setPendingRequestImageSelectionId(item.id)}
                                       >
                                         <img
                                           src={item.thumbnail_url || item.image_url}
                                           alt={item.alt_template || item.title}
-                                          style={imageChoiceImageStyle}
+                                          className={workspaceStyles.workspaceImageChoiceImage}
                                         />
-                                        <span style={imageChoiceTitleStyle}>{item.title}</span>
+                                        <span className={workspaceStyles.workspaceImageChoiceTitle}>{item.title}</span>
                                       </button>
                                     );
                                   })}
@@ -1183,7 +1174,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 <div className="d-flex flex-wrap justify-content-end gap-2">
                                   <button
                                     type="button"
-                                    style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || saving)}
+                                    className={workspaceStyles.workspaceImageChoicePrimaryButton}
                                     disabled={!hasPendingManualImageSelection || saving}
                                     onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
                                   >
@@ -1191,7 +1182,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   </button>
                                   <button
                                     type="button"
-                                    style={imageChoiceResetButtonStyle(!selectedRequestImageOverride && !pendingRequestImageSelectionId)}
+                                    className={workspaceStyles.workspaceImageChoiceResetButton}
                                     disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
                                     onClick={() => {
                                       setPendingRequestImageSelectionId(null);
@@ -1202,7 +1193,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   </button>
                                 </div>
                                 {imageSelectionStatus ? (
-                                  <div style={imageSelectionStatusStyle}>
+                                  <div className={workspaceStyles.workspaceImageSelectionStatus}>
                                     {imageSelectionStatus}
                                   </div>
                                 ) : null}
@@ -1214,42 +1205,46 @@ export default function RequestsWorkspaceManager(props: Props) {
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div className={workspaceStyles.workspacePreviewSplit}>
                             <div className="d-grid gap-3">
-                              <div style={contentPreviewCardStyle}>
-                                <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
-                                <div style={contentPreviewBodyStyle}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
+                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
+                                <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
                               </div>
-                              <div style={contentPreviewCardStyle}>
-                                <div style={contentPreviewLabelStyle}>Beschreibung</div>
-                                <div style={contentPreviewBodyStyle}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
+                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Beschreibung</div>
+                                <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
                               </div>
                             </div>
-                            <div style={contentPreviewCardStyle}>
-                              <div style={contentPreviewLabelStyle}>Motiv</div>
+                            <div className={workspaceStyles.workspaceContentPreviewCard}>
+                              <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
                               {effectiveRequestImagePreview?.imageUrl ? (
                                 <div className="d-grid gap-2">
-                                  <div style={requestMatchPreviewWrapStyle}>
+                                  <div className={workspaceStyles.workspaceRequestImageFrame}>
                                     <img
                                       src={effectiveRequestImagePreview.imageUrl}
                                       alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                      style={requestMatchPreviewImageStyle}
+                                      className={workspaceStyles.workspaceRequestImage}
                                     />
                                   </div>
-                                  <div style={contentPreviewBodyStyle}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
+                                  <div className={workspaceStyles.workspaceContentPreviewBody}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
                                 </div>
                               ) : (
-                                <div style={contentPreviewBodyStyle}>Kein Motiv gewählt.</div>
+                                <div className={workspaceStyles.workspaceContentPreviewBody}>Kein Motiv gewählt.</div>
                               )}
                             </div>
                           </div>
                           <div className="d-flex flex-wrap gap-2">
-                            <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
+                            <button
+                              onClick={() => void saveOverride()}
+                              disabled={saving || !canSaveRequest}
+                              className={workspaceStyles.workspaceActionPrimaryButton}
+                            >
                               {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
                             </button>
                             <button
                               type="button"
                               onClick={() => void resetRequestTextOverrides()}
                               disabled={saving || (!currentRequestTitle && !currentRequestDescription)}
-                              style={secondaryActionButtonStyle(saving || (!currentRequestTitle && !currentRequestDescription))}
+                              className={workspaceStyles.workspaceActionSecondaryButton}
                             >
                               Gesuchetexte zurücksetzen
                             </button>
@@ -1267,33 +1262,31 @@ export default function RequestsWorkspaceManager(props: Props) {
       </div>
       {requestDebugOpen && requestLoadDebug ? (
         <div
-          className="d-flex align-items-center justify-content-center"
-          style={modalOverlayStyle}
+          className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`}
           onClick={() => setRequestDebugOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setRequestDebugOpen(false);
           }}
         >
           <div
-            className="d-grid gap-3"
-            style={workspaceDebugModalCardStyle}
+            className={`d-grid gap-3 ${workspaceStyles.workspaceDebugModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="request-workspace-debug-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div id="request-workspace-debug-title" style={offerSummaryHeaderStyle}>Gesuche Debug</div>
+              <div id="request-workspace-debug-title" className={workspaceStyles.workspaceSmallHeading}>Gesuche Debug</div>
               <button
                 type="button"
                 onClick={() => setRequestDebugOpen(false)}
-                style={modalCloseButtonStyle}
+                className={workspaceStyles.workspaceModalCloseButton}
                 aria-label="Debug-Modal schließen"
               >
                 Schließen
               </button>
             </div>
-            <div className="d-grid gap-2" style={workspaceDebugModalBodyTextStyle}>
+            <div className={`d-grid gap-2 ${workspaceStyles.workspaceModalText}`}>
               <div>requests={requestLoadDebug.requests}</div>
               <div>overrides={requestLoadDebug.overrides}</div>
             </div>
@@ -1301,30 +1294,30 @@ export default function RequestsWorkspaceManager(props: Props) {
         </div>
       ) : null}
       {imageInfoOpen ? (
-        <div className="d-flex align-items-center justify-content-center" style={modalOverlayStyle} role="dialog" aria-modal="true">
-          <div className="d-grid gap-3" style={modalCardStyle}>
+        <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
+          <div className={`d-grid gap-3 ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div style={offerSummaryHeaderStyle}>Matching-Info</div>
-              <button type="button" onClick={() => setImageInfoOpen(false)} style={modalCloseButtonStyle}>
+              <div className={workspaceStyles.workspaceSmallHeading}>Matching-Info</div>
+              <button type="button" onClick={() => setImageInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
                 Schließen
               </button>
             </div>
             <div className="d-grid gap-3">
               <div>
-                <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
-                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+                <div className={workspaceStyles.workspaceMetaLabel}>Erkannte Persona</div>
+                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
               </div>
               <div>
-                <div style={offerSummaryLabelStyle}>Umfeld</div>
-                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
+                <div className={workspaceStyles.workspaceMetaLabel}>Umfeld</div>
+                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
               </div>
               <div>
-                <div style={offerSummaryLabelStyle}>Signale</div>
-                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
+                <div className={workspaceStyles.workspaceMetaLabel}>Signale</div>
+                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
               </div>
               <div>
-                <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
-                <div style={offerSummaryValueStyle}>
+                <div className={workspaceStyles.workspaceMetaLabel}>Gematchtes Motiv</div>
+                <div className={workspaceStyles.workspaceMetaValue}>
                   {selectedImageMatch.primary
                     ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
                     : 'Kein Motiv gefunden'}
@@ -1335,15 +1328,15 @@ export default function RequestsWorkspaceManager(props: Props) {
         </div>
       ) : null}
       {requestNoteInfoOpen ? (
-        <div className="d-flex align-items-center justify-content-center" style={modalOverlayStyle} role="dialog" aria-modal="true">
-          <div className="d-grid gap-3" style={modalCardStyle}>
+        <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
+          <div className={`d-grid gap-3 ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
-              <button type="button" onClick={() => setRequestNoteInfoOpen(false)} style={modalCloseButtonStyle}>
+              <div className={workspaceStyles.workspaceSmallHeading}>CRM-Notiz</div>
+              <button type="button" onClick={() => setRequestNoteInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
                 Schließen
               </button>
             </div>
-            <div style={requestNoteInfoTextStyle}>
+            <div className={workspaceStyles.workspaceModalText}>
               Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
             </div>
           </div>
@@ -1352,259 +1345,3 @@ export default function RequestsWorkspaceManager(props: Props) {
     </div>
   );
 }
-
-const panelStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '14px',
-  background: '#fff',
-  padding: '16px',
-};
-
-const promptLabelStyle: CSSProperties = {
-  fontSize: '10px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
-
-const promptContentStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#475569',
-  marginBottom: '10px',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle: CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const promptInputStyle: CSSProperties = {
-  width: '100%',
-  minHeight: '80px',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-};
-
-const primaryButtonStyle = (disabled = false): CSSProperties => ({
-  padding: '10px 14px',
-  borderRadius: '10px',
-  border: 'none',
-  backgroundColor: disabled ? '#94a3b8' : '#0f172a',
-  color: '#fff',
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.7 : 1,
-});
-
-const secondaryActionButtonStyle = (disabled = false): CSSProperties => ({
-  padding: '10px 14px',
-  borderRadius: '10px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#334155',
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.65 : 1,
-});
-
-const previewCardStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '12px',
-  marginBottom: '16px',
-};
-
-const contentPreviewCardStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  padding: '14px',
-};
-
-const contentPreviewLabelStyle: CSSProperties = {
-  fontSize: '11px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#64748b',
-  fontWeight: 700,
-  marginBottom: '8px',
-};
-
-const contentPreviewBodyStyle: CSSProperties = {
-  color: '#334155',
-  fontSize: '13px',
-  lineHeight: 1.55,
-  whiteSpace: 'pre-wrap',
-};
-
-const offerSummaryTopCardStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '14px',
-  border: '1px solid #e2e8f0',
-  padding: '14px',
-};
-
-const offerSummaryHeaderStyle: CSSProperties = {
-  fontSize: '12px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#64748b',
-  fontWeight: 700,
-  marginBottom: '10px',
-};
-
-const offerSummaryLabelStyle: CSSProperties = {
-  fontSize: '10px',
-  color: '#94a3b8',
-  textTransform: 'uppercase',
-  fontWeight: 700,
-  marginBottom: '4px',
-};
-
-const offerSummaryValueStyle: CSSProperties = {
-  fontSize: '13px',
-  color: '#0f172a',
-  fontWeight: 600,
-  lineHeight: 1.45,
-};
-
-const requestNoteInfoTextStyle: CSSProperties = {
-  color: '#334155',
-  fontSize: '13px',
-  lineHeight: 1.55,
-};
-
-const requestMatchPreviewWrapStyle: CSSProperties = {
-  borderRadius: '12px',
-  overflow: 'hidden',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#e2e8f0',
-};
-
-const requestMatchPreviewImageStyle: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: '180px',
-  objectFit: 'cover',
-};
-
-const imageChoiceCardStyle = (active: boolean): CSSProperties => ({
-  padding: '8px',
-  borderRadius: '12px',
-  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
-  backgroundColor: active ? '#ecfeff' : '#fff',
-  cursor: 'pointer',
-  textAlign: 'left',
-});
-
-const imageChoiceImageStyle: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: '88px',
-  objectFit: 'cover',
-  borderRadius: '8px',
-  backgroundColor: '#e2e8f0',
-};
-
-const imageChoiceTitleStyle: CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#0f172a',
-  lineHeight: 1.35,
-};
-
-const imageChoiceResetButtonStyle = (active: boolean): CSSProperties => ({
-  padding: '9px 12px',
-  borderRadius: '10px',
-  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
-  backgroundColor: active ? '#ecfeff' : '#fff',
-  color: '#0f172a',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  textAlign: 'left',
-  opacity: active ? 0.7 : 1,
-});
-
-const imageChoicePrimaryButtonStyle = (disabled: boolean): CSSProperties => ({
-  padding: '9px 12px',
-  borderRadius: '10px',
-  border: '1px solid transparent',
-  backgroundColor: disabled ? '#94a3b8' : '#486b7a',
-  color: '#fff',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.7 : 1,
-});
-
-const imageSelectionStatusStyle: CSSProperties = {
-  borderRadius: '10px',
-  backgroundColor: '#fef2f2',
-  border: '1px solid #fecaca',
-  color: '#b91c1c',
-  padding: '10px 12px',
-  fontSize: '12px',
-  lineHeight: 1.45,
-};
-
-const infoLinkButtonStyle: CSSProperties = {
-  border: 'none',
-  background: 'transparent',
-  color: '#486b7a',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const modalOverlayStyle: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  backgroundColor: 'rgba(15, 23, 42, 0.45)',
-  padding: '24px',
-  zIndex: 70,
-};
-
-const modalCardStyle: CSSProperties = {
-  width: 'min(520px, 100%)',
-  borderRadius: '16px',
-  backgroundColor: '#fff',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
-  padding: '18px',
-};
-
-const modalCloseButtonStyle: CSSProperties = {
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#fff',
-  color: '#334155',
-  borderRadius: '10px',
-  padding: '8px 12px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const workspaceDebugModalCardStyle: CSSProperties = {
-  width: 'min(340px, 100%)',
-  borderRadius: '16px',
-  backgroundColor: '#fff',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
-  padding: '18px',
-};
-
-const workspaceDebugModalBodyTextStyle: CSSProperties = {
-  fontSize: '13px',
-  color: '#334155',
-};
