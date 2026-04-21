@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
-import { asRecord, asString } from "@/utils/records";
+import { asArray, asRecord, asString } from "@/utils/records";
 import { buildWebAssetUrl } from "@/utils/assets";
 import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
@@ -73,6 +73,20 @@ function buildRequestHref(basePath: string, request: RegionalRequest): string {
   return `${basePath}/${segment}/${request.id}_${slugifyRequestTitle(request.title)}`;
 }
 
+function selectLocalitySlugs(report: Report, kreisSlug: string): string[] {
+  const data = asRecord(report.data) ?? {};
+  return asArray(data["ortslagen_uebersicht"])
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => Boolean(item))
+    .filter((item) => {
+      const kreis = String(item["kreis"] ?? "").trim().toLowerCase();
+      return !kreis || kreis === kreisSlug;
+    })
+    .map((item) => String(item["ortslage"] ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 export function ImmobilienmaklerSection({
   report,
   bundeslandSlug,
@@ -114,12 +128,21 @@ export function ImmobilienmaklerSection({
 
   const meta = asRecord(report.meta) ?? {};
   const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
-  const regionalGallery = [1, 2, 3].map((idx) => ({
+  const localityGallery = selectLocalitySlugs(report, kreisSlug).map((ortSlug) => ({
     src: buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-standortcheck-0${idx}.webp`,
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}/immobilienmarktbericht-${ortSlug}-standortcheck-01.webp`,
     ),
-    alt: `Wohnlagencheck ${kreisName}`,
+    alt: `${kreisName} ${ortSlug}`,
   }));
+  const regionalGallery = [
+    ...[1, 2, 3].map((idx) => ({
+      src: buildWebAssetUrl(
+        `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-standortcheck-0${idx}.webp`,
+      ),
+      alt: kreisName,
+    })),
+    ...localityGallery,
+  ].slice(0, 6);
   const featuredOfferImage = sanitizeImageUrl(featuredOffer?.imageUrl ?? null);
   const featuredRequestImage = featuredRequest?.imageUrl ?? null;
   const featuredOfferHref = featuredOffer ? buildOfferHref(basePath, featuredOffer) : null;
@@ -204,8 +227,8 @@ export function ImmobilienmaklerSection({
           <div className="card-body p-3 p-lg-4">
             <div className="row g-4 align-items-start">
               <div className="col-12 col-lg-5">
-                <p className="small text-uppercase text-body-secondary fw-semibold mb-2">Regionale Einblicke</p>
-                <h2 className="mb-2">Wohnlagencheck {kreisName}</h2>
+                <p className="small text-uppercase text-body-secondary fw-semibold mb-2">Unsere Region</p>
+                <h2 className="mb-2">{kreisName}</h2>
                 {wohnlagencheckAllgemein ? (
                   <p className="text-body-secondary mb-0">{wohnlagencheckAllgemein}</p>
                 ) : null}
