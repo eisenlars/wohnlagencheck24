@@ -6,6 +6,45 @@
   margin-bottom: 40px;
 }
 
+.workspaceMainGrid {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.workspaceEditorSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 14px;
+}
+
+.workspacePreviewSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.workspaceMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.workspaceImageChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 960px) {
+  .workspaceMainGrid,
+  .workspaceEditorSplit,
+  .workspacePreviewSplit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .workspaceTab {
   border: 1px solid #dbe5ea;
   background-color: #f8fafc;
@@ -520,19 +559,6 @@
   letter-spacing: 0.08em;
   color: #64748b;
   font-weight: 800;
-}
-
-.workspaceStackXs {
-  display: grid;
-  gap: 6px;
-}
-
-.workspaceMtSm {
-  margin-top: 8px;
-}
-
-.workspaceMbXl {
-  margin-bottom: 24px;
 }
 
 .workspaceInlineHeadingRow {

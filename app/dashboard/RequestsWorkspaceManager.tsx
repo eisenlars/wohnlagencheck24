@@ -630,7 +630,7 @@ export default function RequestsWorkspaceManager(props: Props) {
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
-        <div style={editorSingleColumnStyle}>
+        <div className="d-grid">
           <div className={workspaceStyles.workspaceFieldStack}>
             {options?.multiline === false ? (
               <input
@@ -670,7 +670,7 @@ export default function RequestsWorkspaceManager(props: Props) {
               <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
+                <label className="d-flex flex-column gap-1" style={promptInputLabelStyle}>
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
@@ -826,7 +826,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
   return (
-    <div style={{ display: 'grid', gap: '10px' }}>
+    <div className="d-grid gap-2">
       {visibilityConfig ? (
         <section className={workspaceStyles.workspaceControlShell}>
           <div className={workspaceStyles.workspaceControlCard}>
@@ -886,7 +886,7 @@ export default function RequestsWorkspaceManager(props: Props) {
         </section>
       ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
+      <div className={workspaceStyles.workspaceMainGrid}>
         <section style={panelStyle}>
           <div className={workspaceStyles.workspaceListHeader}>
             <h3 className={workspaceStyles.workspaceListTitle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
@@ -1039,10 +1039,10 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
 
                     {activeTab === 'criteria' ? (
-                      <div style={workspaceSectionStyle}>
+                      <div className="d-grid gap-3 mb-3">
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
-                          <div style={offerSummaryGridStyle}>
+                          <div className={workspaceStyles.workspaceMetaGrid}>
                             <div>
                               <div style={offerSummaryLabelStyle}>Vermarktung</div>
                               <div style={offerSummaryValueStyle}>{selectedMarketingDisplay}</div>
@@ -1081,13 +1081,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ) : null}
 
                     {activeTab === 'texts' || activeTab === 'seo' ? (
-                      <div style={workspaceSectionStyle}>
-                        <div style={onlineCreateGridStyle}>
-                          <div style={requestTextEditBlockStyle}>
+                      <div className="d-grid gap-3 mb-3">
+                        <div className={workspaceStyles.workspaceEditorSplit}>
+                          <div className="d-grid">
                             <div className={workspaceStyles.workspaceSectionHeading}>Online-Gesuch erstellen</div>
-                            <div
-                              className={`${workspaceStyles.workspaceStackXs} ${workspaceStyles.workspaceMbXl}`}
-                            >
+                            <div className="d-grid gap-1 mb-4">
                               <div className={workspaceStyles.workspaceInlineHeadingRow}>
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
                                 <button
@@ -1104,7 +1102,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             </div>
                             {activeTab === 'texts' ? (
-                              <div style={requestEditorFieldsGridStyle}>
+                              <div className="d-grid gap-2">
                                 {renderTextField('Gesuch-Titel', 'seo_h1', {
                                   multiline: false,
                                   placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1116,7 +1114,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             ) : null}
                             {activeTab === 'seo' ? (
-                              <div style={requestEditorFieldsGridStyle}>
+                              <div className="d-grid gap-2">
                                 {renderTextField('SEO‑Titel', 'seo_title', {
                                   multiline: false,
                                   placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1143,13 +1141,13 @@ export default function RequestsWorkspaceManager(props: Props) {
                             ) : null}
                           </div>
                           <div style={offerSummaryTopCardStyle}>
-                            <div style={cardHeaderRowStyle}>
+                            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
                               <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
                               <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
                                 Info
                               </button>
                             </div>
-                            <div style={{ display: 'grid', gap: '10px' }}>
+                            <div className="d-grid gap-2">
                               {effectiveRequestImagePreview?.imageUrl ? (
                                 <div style={requestMatchPreviewWrapStyle}>
                                   <img
@@ -1159,15 +1157,16 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   />
                                 </div>
                               ) : null}
-                              <div style={{ display: 'grid', gap: '10px' }}>
+                              <div className="d-grid gap-2">
                                 <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
-                                <div style={imageChoiceGridStyle}>
+                                <div className={workspaceStyles.workspaceImageChoiceGrid}>
                                   {readyRequestImageChoices.map((item) => {
                                     const active = pendingRequestImageSelectionId === item.id;
                                     return (
                                       <button
                                         key={item.id}
                                         type="button"
+                                        className="d-grid gap-2"
                                         style={imageChoiceCardStyle(active)}
                                         onClick={() => setPendingRequestImageSelectionId(item.id)}
                                       >
@@ -1181,7 +1180,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                     );
                                   })}
                                 </div>
-                                <div style={imageChoiceActionsRowStyle}>
+                                <div className="d-flex flex-wrap justify-content-end gap-2">
                                   <button
                                     type="button"
                                     style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || saving)}
@@ -1211,10 +1210,10 @@ export default function RequestsWorkspaceManager(props: Props) {
                             </div>
                           </div>
                         </div>
-                        <div style={requestSummaryBlockStyle}>
+                        <div className="d-grid gap-2">
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
-                          <div style={requestSummaryGridStyle}>
-                            <div style={{ display: 'grid', gap: '14px' }}>
+                          <div className={workspaceStyles.workspacePreviewSplit}>
+                            <div className="d-grid gap-3">
                               <div style={contentPreviewCardStyle}>
                                 <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
                                 <div style={contentPreviewBodyStyle}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
@@ -1227,7 +1226,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             <div style={contentPreviewCardStyle}>
                               <div style={contentPreviewLabelStyle}>Motiv</div>
                               {effectiveRequestImagePreview?.imageUrl ? (
-                                <div style={{ display: 'grid', gap: '10px' }}>
+                                <div className="d-grid gap-2">
                                   <div style={requestMatchPreviewWrapStyle}>
                                     <img
                                       src={effectiveRequestImagePreview.imageUrl}
@@ -1242,7 +1241,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               )}
                             </div>
                           </div>
-                          <div style={requestActionButtonRowStyle}>
+                          <div className="d-flex flex-wrap gap-2">
                             <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
                               {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
                             </button>
@@ -1268,6 +1267,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       </div>
       {requestDebugOpen && requestLoadDebug ? (
         <div
+          className="d-flex align-items-center justify-content-center"
           style={modalOverlayStyle}
           onClick={() => setRequestDebugOpen(false)}
           onKeyDown={(event) => {
@@ -1275,13 +1275,14 @@ export default function RequestsWorkspaceManager(props: Props) {
           }}
         >
           <div
+            className="d-grid gap-3"
             style={workspaceDebugModalCardStyle}
             role="dialog"
             aria-modal="true"
             aria-labelledby="request-workspace-debug-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={cardHeaderRowStyle}>
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div id="request-workspace-debug-title" style={offerSummaryHeaderStyle}>Gesuche Debug</div>
               <button
                 type="button"
@@ -1292,7 +1293,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                 Schließen
               </button>
             </div>
-            <div style={workspaceDebugModalBodyStyle}>
+            <div className="d-grid gap-2" style={workspaceDebugModalBodyTextStyle}>
               <div>requests={requestLoadDebug.requests}</div>
               <div>overrides={requestLoadDebug.overrides}</div>
             </div>
@@ -1300,15 +1301,15 @@ export default function RequestsWorkspaceManager(props: Props) {
         </div>
       ) : null}
       {imageInfoOpen ? (
-        <div style={modalOverlayStyle} role="dialog" aria-modal="true">
-          <div style={modalCardStyle}>
-            <div style={cardHeaderRowStyle}>
+        <div className="d-flex align-items-center justify-content-center" style={modalOverlayStyle} role="dialog" aria-modal="true">
+          <div className="d-grid gap-3" style={modalCardStyle}>
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div style={offerSummaryHeaderStyle}>Matching-Info</div>
               <button type="button" onClick={() => setImageInfoOpen(false)} style={modalCloseButtonStyle}>
                 Schließen
               </button>
             </div>
-            <div style={{ display: 'grid', gap: '12px' }}>
+            <div className="d-grid gap-3">
               <div>
                 <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
                 <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
@@ -1334,9 +1335,9 @@ export default function RequestsWorkspaceManager(props: Props) {
         </div>
       ) : null}
       {requestNoteInfoOpen ? (
-        <div style={modalOverlayStyle} role="dialog" aria-modal="true">
-          <div style={modalCardStyle}>
-            <div style={cardHeaderRowStyle}>
+        <div className="d-flex align-items-center justify-content-center" style={modalOverlayStyle} role="dialog" aria-modal="true">
+          <div className="d-grid gap-3" style={modalCardStyle}>
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
               <button type="button" onClick={() => setRequestNoteInfoOpen(false)} style={modalCloseButtonStyle}>
                 Schließen
@@ -1359,11 +1360,6 @@ const panelStyle: CSSProperties = {
   padding: '16px',
 };
 
-const editorSingleColumnStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr)',
-};
-
 const promptLabelStyle: CSSProperties = {
   fontSize: '10px',
   textTransform: 'uppercase',
@@ -1381,9 +1377,6 @@ const promptContentStyle: CSSProperties = {
 };
 
 const promptInputLabelStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
   fontSize: '11px',
   fontWeight: 600,
   color: '#1e293b',
@@ -1422,24 +1415,11 @@ const secondaryActionButtonStyle = (disabled = false): CSSProperties => ({
   opacity: disabled ? 0.65 : 1,
 });
 
-const requestActionButtonRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
 const previewCardStyle: CSSProperties = {
   backgroundColor: '#f8fafc',
   border: '1px solid #e2e8f0',
   borderRadius: '12px',
   padding: '12px',
-  marginBottom: '16px',
-};
-
-const requestSummaryGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
-  gap: '16px',
   marginBottom: '16px',
 };
 
@@ -1466,46 +1446,11 @@ const contentPreviewBodyStyle: CSSProperties = {
   whiteSpace: 'pre-wrap',
 };
 
-const onlineCreateGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
-  gap: '14px',
-};
-
-const requestTextEditBlockStyle: CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
-const requestEditorFieldsGridStyle: CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
-const requestSummaryBlockStyle: CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
 const offerSummaryTopCardStyle: CSSProperties = {
   backgroundColor: '#f8fafc',
   borderRadius: '14px',
   border: '1px solid #e2e8f0',
   padding: '14px',
-};
-
-const workspaceSectionStyle: CSSProperties = {
-  display: 'grid',
-  gap: '12px',
-  marginBottom: '18px',
-};
-
-const cardHeaderRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '12px',
-  marginBottom: '10px',
 };
 
 const offerSummaryHeaderStyle: CSSProperties = {
@@ -1515,12 +1460,6 @@ const offerSummaryHeaderStyle: CSSProperties = {
   color: '#64748b',
   fontWeight: 700,
   marginBottom: '10px',
-};
-
-const offerSummaryGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: '12px',
 };
 
 const offerSummaryLabelStyle: CSSProperties = {
@@ -1558,15 +1497,7 @@ const requestMatchPreviewImageStyle: CSSProperties = {
   objectFit: 'cover',
 };
 
-const imageChoiceGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-  gap: '10px',
-};
-
 const imageChoiceCardStyle = (active: boolean): CSSProperties => ({
-  display: 'grid',
-  gap: '8px',
   padding: '8px',
   borderRadius: '12px',
   border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
@@ -1616,13 +1547,6 @@ const imageChoicePrimaryButtonStyle = (disabled: boolean): CSSProperties => ({
   opacity: disabled ? 0.7 : 1,
 });
 
-const imageChoiceActionsRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: '10px',
-  justifyContent: 'flex-end',
-  flexWrap: 'wrap',
-};
-
 const imageSelectionStatusStyle: CSSProperties = {
   borderRadius: '10px',
   backgroundColor: '#fef2f2',
@@ -1647,9 +1571,6 @@ const modalOverlayStyle: CSSProperties = {
   position: 'fixed',
   inset: 0,
   backgroundColor: 'rgba(15, 23, 42, 0.45)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
   padding: '24px',
   zIndex: 70,
 };
@@ -1661,8 +1582,6 @@ const modalCardStyle: CSSProperties = {
   border: '1px solid #e2e8f0',
   boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
   padding: '18px',
-  display: 'grid',
-  gap: '14px',
 };
 
 const modalCloseButtonStyle: CSSProperties = {
@@ -1683,13 +1602,9 @@ const workspaceDebugModalCardStyle: CSSProperties = {
   border: '1px solid #e2e8f0',
   boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
   padding: '18px',
-  display: 'grid',
-  gap: '14px',
 };
 
-const workspaceDebugModalBodyStyle: CSSProperties = {
-  display: 'grid',
-  gap: '8px',
+const workspaceDebugModalBodyTextStyle: CSSProperties = {
   fontSize: '13px',
   color: '#334155',
 };
