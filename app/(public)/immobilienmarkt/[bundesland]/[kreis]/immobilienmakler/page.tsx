@@ -12,6 +12,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import { loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { getOffers, type Offer } from "@/lib/angebote";
+import { getRegionalRequestsForKreis, type RegionalRequest } from "@/lib/gesuche";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -22,6 +24,58 @@ function firstNonEmpty(...values: Array<string | undefined | null>): string | nu
     if (normalized) return normalized;
   }
   return null;
+}
+
+function stableHash(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function pickStableItem<T extends { id: string }>(items: T[], seed: string): T | null {
+  if (items.length === 0) return null;
+  return items[stableHash(seed) % items.length] ?? null;
+}
+
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of items) {
+    if (!item.id || seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push(item);
+  }
+  return out;
+}
+
+async function loadFeaturedMarketItems(args: {
+  bundeslandSlug: string;
+  kreisSlug: string;
+}): Promise<{ featuredOffer: Offer | null; featuredRequest: RegionalRequest | null }> {
+  const [buyOffers, rentOffers, buyRequests, rentRequests] = await Promise.all([
+    getOffers({ ...args, mode: "kauf", pageSize: 6, locale: "de" }),
+    getOffers({ ...args, mode: "miete", pageSize: 6, locale: "de" }),
+    getRegionalRequestsForKreis({ ...args, mode: "kauf", pageSize: 6, limit: 48, locale: "de" }),
+    getRegionalRequestsForKreis({ ...args, mode: "miete", pageSize: 6, limit: 48, locale: "de" }),
+  ]);
+  const daySeed = new Date().toISOString().slice(0, 10);
+  const offerCandidates = uniqueById([
+    ...buyOffers.topOffers,
+    ...buyOffers.offers,
+    ...rentOffers.topOffers,
+    ...rentOffers.offers,
+  ]);
+  const requestCandidates = uniqueById([
+    ...buyRequests.requests,
+    ...rentRequests.requests,
+  ]);
+
+  return {
+    featuredOffer: pickStableItem(offerCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:offer:${daySeed}`),
+    featuredRequest: pickStableItem(requestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:request:${daySeed}`),
+  };
 }
 
 export default async function ImmobilienmaklerPage({ params }: PageProps) {
@@ -95,11 +149,14 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
     ...tabs,
     { id: "immobilienmakler", label: "Immobilienmakler" },
   ];
-  const references = await getVisibleReferencesForKreis({
-    bundeslandSlug,
-    kreisSlug,
-  });
-  const texts = await getPortalSystemTexts("de");
+  const [references, texts, featuredMarketItems] = await Promise.all([
+    getVisibleReferencesForKreis({
+      bundeslandSlug,
+      kreisSlug,
+    }),
+    getPortalSystemTexts("de"),
+    loadFeaturedMarketItems({ bundeslandSlug, kreisSlug }),
+  ]);
 
   return (
     <>
@@ -129,8 +186,12 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         </div>
         <ImmobilienmaklerSection
           report={reportWithMedia}
+          bundeslandSlug={bundeslandSlug}
           kreisSlug={kreisSlug}
+          basePath={basePath}
           references={references}
+          featuredOffer={featuredMarketItems.featuredOffer}
+          featuredRequest={featuredMarketItems.featuredRequest}
         />
       </div>
     </>
