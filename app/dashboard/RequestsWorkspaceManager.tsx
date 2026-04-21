@@ -1084,9 +1084,9 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div style={workspaceSectionStyle}>
                         <div style={onlineCreateGridStyle}>
                           <div style={requestTextEditBlockStyle}>
-                            <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
+                            <div className={workspaceStyles.workspaceSectionHeading}>Online-Gesuch erstellen</div>
                             <div
-                              className={`${workspaceStyles.workspaceStackXs} ${workspaceStyles.workspaceMtSm} ${workspaceStyles.workspaceMbXl}`}
+                              className={`${workspaceStyles.workspaceStackXs} ${workspaceStyles.workspaceMbXl}`}
                             >
                               <div className={workspaceStyles.workspaceInlineHeadingRow}>
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
@@ -1144,7 +1144,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                           <div style={offerSummaryTopCardStyle}>
                             <div style={cardHeaderRowStyle}>
-                              <div style={offerSummaryHeaderStyle}>Motivwahl</div>
+                              <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
                               <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
                                 Info
                               </button>
@@ -1212,7 +1212,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                         </div>
                         <div style={requestSummaryBlockStyle}>
-                          <div style={offerSummaryHeaderStyle}>Gesuch-Zusammenfassung vor Speichern</div>
+                          <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div style={requestSummaryGridStyle}>
                             <div style={{ display: 'grid', gap: '14px' }}>
                               <div style={contentPreviewCardStyle}>

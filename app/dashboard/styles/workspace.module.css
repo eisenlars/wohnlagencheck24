@@ -514,6 +514,14 @@
   gap: 10px;
 }
 
+.workspaceSectionHeading {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 800;
+}
+
 .workspaceStackXs {
   display: grid;
   gap: 6px;
