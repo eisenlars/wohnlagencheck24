@@ -22,6 +22,9 @@ export function resolveFieldHint(args: {
     return 'General-Text: Teaser und erklärende Standardtexte für den schnellen Einstieg.';
   }
   if (type === 'individual') {
+    if (sectionKey === 'berater_ausbildung') {
+      return 'Qualifikationen können als Fließtext oder Liste gepflegt werden. Für Listen bitte je Zeile mit "- " beginnen.';
+    }
     if (sectionKey.startsWith('berater_') || sectionKey.startsWith('makler_')) {
       return 'Profiltext: Bei Änderungen an Person, Rolle oder Leistungen bitte aktualisieren.';
     }

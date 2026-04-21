@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import { asRecord, asString } from "@/utils/records";
@@ -7,6 +8,7 @@ import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
 
 type ContactItem = { label: string; value: string; href?: string };
+type RegionBadge = { label: string; href: string };
 
 const consultationReasons = [
   "Sie planen einen Verkauf und moechten den realistischen Marktwert kennen.",
@@ -43,6 +45,18 @@ function normalizePhone(value: string): string {
   return value.replace(/\s+/g, "");
 }
 
+function parseStructuredText(value: string): { isList: boolean; items: string[] } {
+  const lines = value
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const listItems = lines
+    .map((line) => line.replace(/^[-*•]\s+/, "").replace(/^\d+[.)]\s+/, "").trim())
+    .filter(Boolean);
+  const isList = lines.length > 1 && lines.every((line) => /^([-*•]\s+|\d+[.)]\s+)/.test(line));
+  return { isList, items: isList ? listItems : lines };
+}
+
 type ImmobilienberatungSectionProps = {
   report: Report;
   bundeslandSlug: string;
@@ -62,10 +76,7 @@ export function ImmobilienberatungSection({
   const name = asString(berater["berater_name"]) ?? "Berater";
   const beschreibung = asString(berater["berater_beschreibung"]) ?? "";
   const ausbildungRaw = asString(berater["berater_ausbildung"]) ?? "";
-  const ausbildung = ausbildungRaw
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const ausbildung = parseStructuredText(ausbildungRaw);
 
   const email = asString(berater["berater_email"]) ?? "";
   const emailTarget = email || "kontakt@wohnlagencheck24.de";
@@ -74,14 +85,6 @@ export function ImmobilienberatungSection({
   const telLegacy = asString(berater["berater_telefon"]) ?? "";
   const telPrimary = telMobil || telFestnetz || telLegacy;
 
-  const strasse = asString(berater["berater_adresse_strasse"]) ?? "";
-  const hnr = asString(berater["berater_adresse_hnr"]) ?? "";
-  const plz = asString(berater["berater_adresse_plz"]) ?? "";
-  const ort = asString(berater["berater_adresse_ort"]) ?? "";
-  const adresse =
-    [strasse, hnr].filter(Boolean).join(" ") +
-    (plz || ort ? `, ${[plz, ort].filter(Boolean).join(" ")}` : "");
-
   const contactItems: ContactItem[] = [
     email ? { label: "E-Mail", value: email, href: `mailto:${email}` } : null,
     telMobil ? { label: "Telefon (Mobil)", value: telMobil, href: `tel:${normalizePhone(telMobil)}` } : null,
@@ -89,7 +92,6 @@ export function ImmobilienberatungSection({
     (!telMobil && !telFestnetz && telLegacy)
       ? { label: "Telefon", value: telLegacy, href: `tel:${normalizePhone(telLegacy)}` }
       : null,
-    adresse ? { label: "Adresse", value: adresse } : null,
   ].filter(Boolean) as ContactItem[];
 
   const meta = asRecord(report.meta) ?? {};
@@ -97,6 +99,10 @@ export function ImmobilienberatungSection({
   const regionImageSrc = buildWebAssetUrl(
     `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
   );
+  const regionBadges: RegionBadge[] = [
+    { label: kreisSlug, href: `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}` },
+    { label: bundeslandSlug, href: `/immobilienmarkt/${bundeslandSlug}` },
+  ];
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -132,10 +138,14 @@ export function ImmobilienberatungSection({
             <div className="col-12 col-lg-6">
               <h2 className="mb-3">Regionale Expertise</h2>
               <div className="d-flex flex-wrap gap-2 mb-3">
-                {[kreisSlug, bundeslandSlug].map((chip) => (
-                  <span key={chip} className="badge rounded-pill text-bg-light border text-capitalize">
-                    {chip}
-                  </span>
+                {regionBadges.map((badge) => (
+                  <Link
+                    key={badge.href}
+                    href={badge.href}
+                    className="badge rounded-pill text-bg-light border text-capitalize text-decoration-none"
+                  >
+                    {badge.label}
+                  </Link>
                 ))}
               </div>
               <div className="d-grid gap-2">
@@ -152,7 +162,7 @@ export function ImmobilienberatungSection({
             </div>
           </div>
 
-          <div className="position-relative overflow-hidden rounded-4 bg-light mt-4">
+          <div className="position-relative overflow-hidden rounded-4 bg-light mt-5">
             <div className="ratio ratio-21x9">
               <Image
                 src={regionImageSrc}
@@ -174,12 +184,20 @@ export function ImmobilienberatungSection({
           <div className="card border-0 shadow-sm rounded-4 h-100">
             <div className="card-body p-4">
               <h3>Ausbildung & Qualifikation</h3>
-              {ausbildung.length ? (
+              {ausbildung.items.length && ausbildung.isList ? (
                 <ul className="text-body-secondary mb-0 ps-3">
-                  {ausbildung.map((item, index) => (
+                  {ausbildung.items.map((item, index) => (
                     <li key={`${item}-${index}`}>{item}</li>
                   ))}
                 </ul>
+              ) : ausbildung.items.length ? (
+                <div className="d-grid gap-2">
+                  {ausbildung.items.map((block, index) => (
+                    <p key={`${block}-${index}`} className="text-body-secondary mb-0">
+                      {block}
+                    </p>
+                  ))}
+                </div>
               ) : (
                 <p className="text-body-secondary mb-0">Keine Angaben vorhanden.</p>
               )}
