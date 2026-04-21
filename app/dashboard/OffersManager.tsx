@@ -927,9 +927,9 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div style={fieldCardStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b' }}>{label}</h4>
+      <div className={workspaceStyles.workspaceFieldSubtle}>
+        <div className={workspaceStyles.workspaceFieldHeader}>
+          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
           <div style={fieldHeaderActionsStyle}>
             {isCustomized ? (
               <span style={customizedBadgeStyle}>✓ Individuell angepasst</span>
@@ -944,13 +944,13 @@ export default function OffersManager(props: Props) {
           </div>
         </div>
         <div style={editorGridStyle}>
-          <div style={textareaWrapperStyle}>
+          <div className={workspaceStyles.workspaceFieldStack}>
             {options?.multiline ? (
               <textarea
                 value={value}
                 onChange={(e) => updateField(key, e.target.value)}
                 onBlur={() => saveOverride()}
-                style={textareaStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             ) : (
@@ -958,14 +958,16 @@ export default function OffersManager(props: Props) {
                 value={value}
                 onChange={(e) => updateField(key, e.target.value)}
                 onBlur={() => saveOverride()}
-                style={inputStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <div style={aiActionsRowStyle}>
+            <div className={workspaceStyles.workspaceAiActions}>
               <button
                 type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                className={`${workspaceStyles.workspaceAiButton} ${
+                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+                }`}
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -976,13 +978,13 @@ export default function OffersManager(props: Props) {
                 onClick={() =>
                   setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
                 }
-                style={promptToggleStyle}
+                className={workspaceStyles.workspacePromptButton}
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div style={promptPanelStyle}>
+              <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
                 <label style={promptInputLabelStyle}>
@@ -1024,9 +1026,9 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div style={fieldCardStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b' }}>{label}</h4>
+      <div className={workspaceStyles.workspaceFieldSubtle}>
+        <div className={workspaceStyles.workspaceFieldHeader}>
+          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
           <div style={fieldHeaderActionsStyle}>
             {isCustomized ? (
               <span style={customizedBadgeStyle}>✓ Individuell angepasst</span>
@@ -1041,18 +1043,20 @@ export default function OffersManager(props: Props) {
           </div>
         </div>
         <div style={editorGridStyle}>
-          <div style={textareaWrapperStyle}>
+          <div className={workspaceStyles.workspaceFieldStack}>
             <textarea
               value={value}
               onChange={(e) => updateField(key, e.target.value.split('\n').filter(Boolean))}
               onBlur={() => saveOverride()}
-              style={textareaStyle}
+              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
               placeholder={placeholder}
             />
-            <div style={aiActionsRowStyle}>
+            <div className={workspaceStyles.workspaceAiActions}>
               <button
                 type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                className={`${workspaceStyles.workspaceAiButton} ${
+                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+                }`}
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1063,13 +1067,13 @@ export default function OffersManager(props: Props) {
                 onClick={() =>
                   setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
                 }
-                style={promptToggleStyle}
+                className={workspaceStyles.workspacePromptButton}
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div style={promptPanelStyle}>
+              <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
                 <label style={promptInputLabelStyle}>
@@ -1102,30 +1106,30 @@ export default function OffersManager(props: Props) {
   return (
     <div style={{ display: 'grid', gap: '10px' }}>
       {visibilityConfig ? (
-        <section style={visibilityShellStyle}>
-          <div style={visibilityCardStyle}>
-            <div style={visibilityControlsRowStyle}>
-              <label style={visibilityLabelStyle}>
-                <span style={visibilitySelectWrapStyle}>
+        <section className={workspaceStyles.workspaceControlShell}>
+          <div className={workspaceStyles.workspaceControlCard}>
+            <div className={workspaceStyles.workspaceControlRow}>
+              <label className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupWide}`}>
+                <span className={workspaceStyles.workspaceControlSelectWrap}>
                   <select
                     value={visibilityMode}
                     onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
                     disabled={visibilityBusy}
-                    style={visibilitySelectStyle}
+                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectWide}`}
                   >
                     <option value="partner_wide">Regionale Ausspielung für Angebote partnerweit (zeigt alle Angebote des Partners im Gebiet)</option>
                     <option value="strict_local">Regionale Ausspielung für Angebote nur lokal (nutzt nur lokal gematchte Angebote)</option>
                   </select>
-                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                 </span>
               </label>
-              <div style={visibilityModelWrapStyle}>
+              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                  <span style={visibilitySelectWrapStyle}>
+                  <span className={workspaceStyles.workspaceControlSelectWrap}>
                     <select
                       value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                       onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                      style={visibilityModelSelectStyle}
+                      className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
                       aria-label="KI-Modell auswählen"
                       disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     >
@@ -1136,15 +1140,25 @@ export default function OffersManager(props: Props) {
                         </option>
                       ))}
                     </select>
-                    <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                    <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                   </span>
                 ) : (
-                  <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+                  <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>
             {visibilityMessage ? (
-              <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
+              <div
+                className={`${workspaceStyles.workspaceControlMessage} ${
+                  visibilityTone === 'success'
+                    ? workspaceStyles.workspaceControlMessageSuccess
+                    : visibilityTone === 'error'
+                      ? workspaceStyles.workspaceControlMessageError
+                      : workspaceStyles.workspaceControlMessageInfo
+                }`}
+              >
+                {visibilityMessage}
+              </div>
             ) : null}
           </div>
         </section>
@@ -1152,11 +1166,11 @@ export default function OffersManager(props: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
       <section style={panelStyle}>
-        <div style={workspaceListHeaderRowStyle}>
-          <h3 style={panelTitleStyle}>{offerLoadSummary ?? '0 Angebote geladen'}</h3>
+        <div className={workspaceStyles.workspaceListHeader}>
+          <h3 className={workspaceStyles.workspaceListTitle}>{offerLoadSummary ?? '0 Angebote geladen'}</h3>
           <button
             type="button"
-            style={workspaceDebugInfoButtonStyle}
+            className={workspaceStyles.workspaceListInfoButton}
             onClick={() => setOfferDebugOpen(true)}
             disabled={!offerLoadDebug}
             aria-label="Debug-Informationen anzeigen"
@@ -1168,32 +1182,44 @@ export default function OffersManager(props: Props) {
           placeholder="Suchen..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          style={inputStyle}
+          className={workspaceStyles.workspaceSearchInput}
         />
-        <div style={offerListFilterRowStyle}>
+        <div className={workspaceStyles.workspaceFilterBar}>
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            style={filterButtonStyle(filterType === 'all')}
+            className={`${workspaceStyles.workspaceFilterButton} ${
+              filterType === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
+            }`}
           >
             Alle
           </button>
           <button
             type="button"
             onClick={() => setFilterType('kauf')}
-            style={filterButtonStyle(filterType === 'kauf')}
+            className={`${workspaceStyles.workspaceFilterButton} ${
+              filterType === 'kauf' ? workspaceStyles.workspaceFilterButtonActive : ''
+            }`}
           >
             Kauf
           </button>
           <button
             type="button"
             onClick={() => setFilterType('miete')}
-            style={filterButtonStyle(filterType === 'miete')}
+            className={`${workspaceStyles.workspaceFilterButton} ${
+              filterType === 'miete' ? workspaceStyles.workspaceFilterButtonActive : ''
+            }`}
           >
             Miete
           </button>
         </div>
-        <div style={offerListViewportStyle}>
+        <div
+          className={workspaceStyles.workspaceList}
+          style={{
+            gap: OFFER_LIST_ROW_GAP,
+            maxHeight: OFFER_LIST_VISIBLE_ROWS * OFFER_LIST_ROW_HEIGHT + (OFFER_LIST_VISIBLE_ROWS - 1) * OFFER_LIST_ROW_GAP,
+          }}
+        >
           {filteredOffers.map((offer) => {
             const normalizedExternalId = (offer.external_id ?? '').trim();
             const normalizedSource = (offer.source ?? '').trim();
@@ -1214,29 +1240,31 @@ export default function OffersManager(props: Props) {
               <button
                 key={offer.id}
                 onClick={() => setSelectedOfferId(offer.id)}
-                style={offerRowStyle(selectedOfferId === offer.id)}
+                className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemWithMedia} ${
+                  selectedOfferId === offer.id ? workspaceStyles.workspaceListItemActive : ''
+                }`}
               >
-                <span style={offerRowMediaStyle}>
+                <span className={workspaceStyles.workspaceListItemMedia}>
                   {previewImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={previewImageUrl}
                       alt={offer.title || 'Objektbild'}
-                      style={offerRowImageStyle}
+                      className={workspaceStyles.workspaceListItemImage}
                       loading="lazy"
                       decoding="async"
                     />
                   ) : (
-                    <span style={offerRowImagePlaceholderStyle}>Kein Bild</span>
+                    <span className={workspaceStyles.workspaceListItemImagePlaceholder}>Kein Bild</span>
                   )}
                 </span>
-                <span style={offerRowContentStyle}>
-                  <span style={offerRowTitleStyle}>{offer.title || 'Objekt'}</span>
-                  <span style={offerRowMetaStyle}>
+                <span className={workspaceStyles.workspaceListItemContent}>
+                  <span className={workspaceStyles.workspaceListItemTitle}>{offer.title || 'Objekt'}</span>
+                  <span className={workspaceStyles.workspaceListItemMeta}>
                     {`${filterType !== 'all' ? '' : `${offerTypeLabel} · `}${locationLabel}`}
                   </span>
                   {hasOverride ? (
-                    <span style={offerRowOverrideStyle}>
+                    <span className={workspaceStyles.workspaceListItemNote}>
                       Override aktiv
                     </span>
                   ) : null}
@@ -1265,35 +1293,33 @@ export default function OffersManager(props: Props) {
             ) : null}
 
             {selectedOffer ? (
-              <div style={offerSummaryTopWrapStyle}>
-                <div style={offerSummaryTopCardStyle}>
-                  <div style={offerOverviewHeaderRowStyle}>
-                    <div style={offerSummaryHeaderStyle}>Überblick</div>
-                    <div style={offerOverviewHeaderActionsStyle}>
-                      <button
-                        type="button"
-                        onClick={() => setOfferOverviewInfoOpen(true)}
-                        style={offerOverviewInfoButtonStyle}
-                      >
-                        Info
-                      </button>
+              <div className={workspaceStyles.workspaceOverviewCard}>
+                <div className={workspaceStyles.workspaceOverviewHeader}>
+                  <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
+                  <div className={workspaceStyles.workspaceOverviewActions}>
+                    <button
+                      type="button"
+                      onClick={() => setOfferOverviewInfoOpen(true)}
+                      className={workspaceStyles.workspaceInfoButton}
+                    >
+                      Info
+                    </button>
+                  </div>
+                </div>
+                <div className={workspaceStyles.workspaceOverviewGrid}>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Objekt-ID</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>{selectedOffer.id}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>
+                      {`${selectedOffer.source || '—'} · ${selectedOffer.external_id || selectedOffer.id}`}
                     </div>
                   </div>
-                  <div style={offerOverviewGridStyle}>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Objekt-ID</div>
-                      <div style={offerSummaryValueStyle}>{selectedOffer.id}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Quelle</div>
-                      <div style={offerSummaryValueStyle}>
-                        {`${selectedOffer.source || '—'} · ${selectedOffer.external_id || selectedOffer.id}`}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Aktualisiert</div>
-                      <div style={offerSummaryValueStyle}>{formatDateLabel(selectedOffer.updated_at)}</div>
-                    </div>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>{formatDateLabel(selectedOffer.updated_at)}</div>
                   </div>
                 </div>
               </div>
@@ -2056,43 +2082,6 @@ const panelStyle: React.CSSProperties = {
   boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
 };
 
-const visibilityShellStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '0 0 0',
-  marginBottom: 0,
-};
-
-const panelTitleStyle: React.CSSProperties = {
-  margin: '0 0 12px',
-  fontSize: '16px',
-  fontWeight: 700,
-};
-
-const workspaceListHeaderRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '12px',
-  marginBottom: '12px',
-};
-
-const workspaceDebugInfoButtonStyle: React.CSSProperties = {
-  width: '24px',
-  height: '24px',
-  borderRadius: '999px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#486b7a',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
-  flex: '0 0 auto',
-};
-
 const workspaceDebugModalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -2162,73 +2151,6 @@ const workspaceDebugModalBodyStyle: React.CSSProperties = {
   color: '#334155',
 };
 
-const offerOverviewHeaderRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  rowGap: 12,
-  columnGap: 12,
-  marginBottom: 10,
-  flexWrap: 'wrap',
-};
-
-const offerOverviewHeaderActionsStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  rowGap: 8,
-  columnGap: 8,
-  flexWrap: 'wrap',
-};
-
-const offerOverviewInfoButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#334155',
-  borderRadius: 10,
-  padding: '8px 12px',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const offerOverviewGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  rowGap: 12,
-  columnGap: 12,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '13px',
-};
-
-const textareaStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '13px',
-  minHeight: '80px',
-  resize: 'vertical' as const,
-};
-
-const fieldCardStyle: React.CSSProperties = {
-  marginBottom: '8px',
-  paddingBottom: '14px',
-  borderBottom: '1px solid #f1f5f9',
-};
-
-const fieldHeaderStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '10px',
-};
-
 const fieldHeaderActionsStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -2245,118 +2167,6 @@ const editorGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
   gap: '18px',
-};
-
-const textareaWrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-};
-
-const filterButtonStyle = (active: boolean): React.CSSProperties => ({
-  flex: '1 1 0%',
-  padding: '6px 8px',
-  borderRadius: '999px',
-  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
-  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
-  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-});
-
-const offerListFilterRowStyle: React.CSSProperties = {
-  display: 'flex',
-  rowGap: '8px',
-  columnGap: '8px',
-  flexWrap: 'wrap',
-  marginTop: '10px',
-  marginBottom: '12px',
-};
-
-const offerRowStyle = (active: boolean): React.CSSProperties => ({
-  width: '100%',
-  textAlign: 'left',
-  padding: '10px',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: active ? '#f1f5f9' : '#fff',
-  cursor: 'pointer',
-  display: 'grid',
-  gridTemplateColumns: '112px minmax(0, 1fr)',
-  gap: '12px',
-  alignItems: 'center',
-  minHeight: `${OFFER_LIST_ROW_HEIGHT}px`,
-});
-
-const offerListViewportStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: `${OFFER_LIST_ROW_GAP}px`,
-  marginTop: '12px',
-  maxHeight: `${OFFER_LIST_VISIBLE_ROWS * OFFER_LIST_ROW_HEIGHT + (OFFER_LIST_VISIBLE_ROWS - 1) * OFFER_LIST_ROW_GAP}px`,
-  overflowY: 'auto',
-  paddingRight: '4px',
-};
-
-const offerRowMediaStyle: React.CSSProperties = {
-  display: 'flex',
-  width: '112px',
-  height: '84px',
-  borderRadius: '12px',
-  overflow: 'hidden',
-  backgroundColor: '#e2e8f0',
-  border: '1px solid #cbd5e1',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flex: '0 0 auto',
-};
-
-const offerRowImageStyle: React.CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-};
-
-const offerRowImagePlaceholderStyle: React.CSSProperties = {
-  color: '#64748b',
-  fontSize: '11px',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-};
-
-const offerRowContentStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '5px',
-  minWidth: 0,
-  justifyContent: 'center',
-};
-
-const offerRowTitleStyle: React.CSSProperties = {
-  fontWeight: 600,
-  color: '#0f172a',
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  lineHeight: 1.35,
-};
-
-const offerRowMetaStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  lineHeight: 1.4,
-};
-
-const offerRowOverrideStyle: React.CSSProperties = {
-  fontSize: '11px',
-  color: '#486b7a',
-  fontWeight: 700,
 };
 
 const primaryButtonStyle: React.CSSProperties = {
@@ -2455,16 +2265,6 @@ const offerSummaryCardStyle: React.CSSProperties = {
   borderRadius: '12px',
   padding: '14px 16px',
   marginBottom: '16px',
-};
-
-const offerSummaryTopCardStyle: React.CSSProperties = {
-  ...offerSummaryCardStyle,
-  marginBottom: 0,
-};
-
-const offerSummaryTopWrapStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '16px',
 };
 
 const offerSummaryHeaderStyle: React.CSSProperties = {
@@ -2776,55 +2576,6 @@ const energyReadyStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
-const aiButtonStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '9px 16px',
-  backgroundColor: 'rgba(72, 107, 122, 0.12)',
-  color: 'rgb(72, 107, 122)',
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: '8px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const aiButtonLoadingStyle: React.CSSProperties = {
-  ...aiButtonStyle,
-  opacity: 0.7,
-  cursor: 'not-allowed',
-};
-
-const aiActionsRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
-const aiMissingHintStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-};
-
-const promptToggleStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  backgroundColor: '#ffffff',
-  border: '1px solid rgb(72, 107, 122)',
-  color: 'rgb(72, 107, 122)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: '9px 16px',
-  borderRadius: '8px',
-};
-
-const promptPanelStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  padding: '12px',
-  backgroundColor: '#f8fafc',
-};
-
 const promptLabelStyle: React.CSSProperties = {
   fontSize: '10px',
   textTransform: 'uppercase',
@@ -2880,106 +2631,3 @@ const resetButtonStyle = (hasOverride: boolean): React.CSSProperties => ({
   fontSize: '10px',
   cursor: 'pointer',
 });
-
-const visibilityCardStyle: React.CSSProperties = {
-  border: '1px solid #99f6b4',
-  borderRadius: '12px',
-  background: 'rgb(72, 107, 122)',
-  padding: '14px 16px',
-  display: 'grid',
-  gap: '12px',
-  marginBottom: '8px',
-};
-
-const visibilityControlsRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '12px',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  width: '100%',
-};
-
-const visibilityLabelStyle: React.CSSProperties = {
-  display: 'block',
-  flex: '1 1 420px',
-};
-
-const visibilityModelWrapStyle: React.CSSProperties = {
-  flex: '0 1 320px',
-  marginLeft: 'auto',
-  display: 'flex',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-};
-
-const visibilitySelectWrapStyle: React.CSSProperties = {
-  position: 'relative',
-  display: 'inline-block',
-};
-
-const visibilitySelectStyle: React.CSSProperties = {
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  minHeight: '40px',
-  borderRadius: '10px',
-  border: '1px solid rgba(255, 255, 255, 0.35)',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '0 40px 0 12px',
-  fontSize: '13px',
-  fontWeight: 600,
-  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-  minWidth: '420px',
-};
-
-const visibilityModelSelectStyle: React.CSSProperties = {
-  ...visibilitySelectStyle,
-  minWidth: '320px',
-  maxWidth: '100%',
-};
-
-const visibilitySelectChevronStyle: React.CSSProperties = {
-  position: 'absolute',
-  right: '14px',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  fontSize: '14px',
-  lineHeight: 1,
-  color: '#475569',
-  pointerEvents: 'none',
-};
-
-function visibilityMessageStyle(tone: VisibilityTone): React.CSSProperties {
-  if (tone === 'success') {
-    return {
-      borderRadius: '999px',
-      background: '#ecfdf5',
-      color: '#166534',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  if (tone === 'error') {
-    return {
-      borderRadius: '999px',
-      background: '#fef2f2',
-      color: '#b91c1c',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  return {
-    borderRadius: '999px',
-    background: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '8px 12px',
-    fontSize: '12px',
-    fontWeight: 600,
-    width: 'fit-content',
-  };
-}

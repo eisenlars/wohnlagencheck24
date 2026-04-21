@@ -324,55 +324,15 @@ function buildReferenceAiSourceContext(row: RawReferenceRow | null, payload: Rec
 const shellStyle: CSSProperties = { display: 'grid', gap: '10px' };
 const workspaceStyle: CSSProperties = { display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' };
 const panelStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
-const panelTitleStyle: CSSProperties = { margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: '#0f172a' };
-const searchInputStyle: CSSProperties = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13 };
-const listWrapStyle: CSSProperties = { display: 'grid', gap: 10, maxHeight: '62vh', overflowY: 'auto', marginTop: 12, paddingRight: 4 };
 const statusBoxStyle: CSSProperties = { marginTop: 0, marginBottom: 12, fontSize: 12, color: '#334155' };
-const summaryWrapStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', marginBottom: 16 };
-const summaryCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#f8fafc' };
 const summaryHeaderStyle: CSSProperties = { fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', fontWeight: 700, marginBottom: 10 };
 const summaryGridStyle: CSSProperties = { display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' };
 const summaryLabelStyle: CSSProperties = { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 };
 const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600, lineHeight: 1.45 };
 const summaryHintStyle: CSSProperties = { fontSize: 12, color: '#475569', lineHeight: 1.5 };
-const onlineStatusDotStyle = (ready: boolean): CSSProperties => ({
-  width: 10,
-  height: 10,
-  borderRadius: 999,
-  backgroundColor: ready ? '#16a34a' : '#dc2626',
-  position: 'absolute',
-  top: 10,
-  right: 10,
-});
-const onlineStatusBadgeDotStyle = (ready: boolean): CSSProperties => ({
-  width: 10,
-  height: 10,
-  borderRadius: 999,
-  backgroundColor: ready ? '#16a34a' : '#dc2626',
-  flex: '0 0 auto',
-});
-const onlineStatusBadgeStyle = (ready: boolean): CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 8,
-  borderRadius: 999,
-  padding: '6px 10px',
-  fontSize: 11,
-  fontWeight: 700,
-  color: ready ? '#166534' : '#991b1b',
-  backgroundColor: ready ? '#dcfce7' : '#fee2e2',
-  border: `1px solid ${ready ? '#86efac' : '#fca5a5'}`,
-});
 const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
 const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
-const fieldCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 14, background: '#fff', padding: 14, display: 'grid', gap: 12 };
-const fieldPlainStyle: CSSProperties = { display: 'grid', gap: 8 };
-const fieldHeaderStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' };
 const editorGridStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'minmax(0, 1.25fr) minmax(260px, 0.75fr)' };
-const textareaWrapperStyle: CSSProperties = { display: 'grid', gap: 10 };
-const textareaStyle: CSSProperties = { minHeight: 150, border: '1px solid #cbd5e1', borderRadius: 12, padding: '12px 14px', fontSize: 14, lineHeight: 1.55, resize: 'vertical' };
-const inputStyle: CSSProperties = { border: '1px solid #cbd5e1', borderRadius: 12, padding: '12px 14px', fontSize: 14 };
-const aiActionsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' };
 const previewBoxStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc', padding: 12, display: 'grid', gap: 8 };
 const previewHeaderStyle: CSSProperties = { fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' };
 const previewContentStyle: CSSProperties = { fontSize: 13, color: '#0f172a', lineHeight: 1.6, whiteSpace: 'pre-wrap' };
@@ -473,49 +433,6 @@ const saveButtonStyle = (disabled: boolean): CSSProperties => ({
 });
 const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' };
 
-function listRowStyle(active: boolean): CSSProperties {
-  return {
-    width: '100%',
-    textAlign: 'left',
-    padding: 10,
-    borderRadius: 10,
-    border: '1px solid #e2e8f0',
-    backgroundColor: active ? '#f1f5f9' : '#fff',
-    cursor: 'pointer',
-    display: 'grid',
-    gridTemplateColumns: '112px minmax(0, 1fr)',
-    gap: 12,
-    alignItems: 'center',
-    minHeight: 84,
-    position: 'relative',
-  };
-}
-
-const workspaceListHeaderRowStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-  marginBottom: 12,
-};
-
-const workspaceDebugInfoButtonStyle: CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: '999px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#486b7a',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
-  flex: '0 0 auto',
-};
-
 const workspaceDebugModalOverlayStyle: CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -580,98 +497,6 @@ const workspaceDebugModalBodyStyle: CSSProperties = {
   color: '#334155',
 };
 
-const referenceRowMediaStyle: CSSProperties = {
-  display: 'flex',
-  width: 112,
-  height: 84,
-  borderRadius: 12,
-  overflow: 'hidden',
-  backgroundColor: '#e2e8f0',
-  border: '1px solid #cbd5e1',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flex: '0 0 auto',
-};
-
-const referenceRowImageStyle: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-};
-
-const referenceRowImagePlaceholderStyle: CSSProperties = {
-  color: '#64748b',
-  fontSize: 11,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-};
-
-const referenceRowContentStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 5,
-  minWidth: 0,
-  justifyContent: 'center',
-  paddingRight: 16,
-};
-
-const referenceRowTitleStyle: CSSProperties = {
-  fontWeight: 600,
-  color: '#0f172a',
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  lineHeight: 1.35,
-};
-
-const referenceRowMetaStyle: CSSProperties = {
-  fontSize: 12,
-  color: '#64748b',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  lineHeight: 1.4,
-};
-
-const referenceOverviewHeaderRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  rowGap: 12,
-  columnGap: 12,
-  marginBottom: 10,
-  flexWrap: 'wrap',
-};
-
-const referenceOverviewHeaderActionsStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  rowGap: 8,
-  columnGap: 8,
-  flexWrap: 'wrap',
-};
-
-const referenceOverviewInfoButtonStyle: CSSProperties = {
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#334155',
-  borderRadius: 10,
-  padding: '8px 12px',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const referenceOverviewGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  rowGap: 12,
-  columnGap: 12,
-};
-
 const referenceTextWorkspaceStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 0.75fr)',
@@ -683,27 +508,6 @@ const referenceContextCardStyle: CSSProperties = {
   display: 'grid',
   gap: 12,
 };
-
-const referenceListFilterRowStyle: CSSProperties = {
-  display: 'flex',
-  rowGap: '8px',
-  columnGap: '8px',
-  flexWrap: 'wrap',
-  marginTop: 10,
-  marginBottom: 12,
-};
-
-const filterButtonStyle = (active: boolean): CSSProperties => ({
-  flex: '1 1 0%',
-  padding: '6px 8px',
-  borderRadius: '999px',
-  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
-  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
-  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-});
 
 export default function ReferencesWorkspaceManager(props: Props) {
   const {
@@ -1184,31 +988,36 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     const showPreview = options?.showPreview ?? true;
     return (
-      <div style={showPreview ? fieldCardStyle : fieldPlainStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: 15, color: '#0f172a' }}>{label}</h4>
+      <div className={showPreview ? workspaceStyles.workspaceField : workspaceStyles.workspaceFieldPlain}>
+        <div className={workspaceStyles.workspaceFieldHeader}>
+          <h4 className={`${workspaceStyles.workspaceFieldTitle} ${workspaceStyles.workspaceFieldTitleStrong}`}>{label}</h4>
         </div>
-        <div style={showPreview ? editorGridStyle : textareaWrapperStyle}>
-          <div style={textareaWrapperStyle}>
+        <div
+          style={showPreview ? editorGridStyle : undefined}
+          className={!showPreview ? workspaceStyles.workspaceFieldStack : undefined}
+        >
+          <div className={workspaceStyles.workspaceFieldStack}>
             {options?.multiline === false ? (
               <input
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                style={inputStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             ) : (
               <textarea
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                style={textareaStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <div style={aiActionsRowStyle}>
+            <div className={workspaceStyles.workspaceAiActions}>
               <button
                 type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                className={`${workspaceStyles.workspaceAiButton} ${
+                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+                }`}
                 onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1217,13 +1026,13 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                style={promptToggleStyle}
+                className={workspaceStyles.workspacePromptButton}
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div style={promptPanelStyle}>
+              <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
                 <label style={promptInputLabelStyle}>
@@ -1266,22 +1075,24 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
-      <div style={fieldCardStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: 15, color: '#0f172a' }}>{label}</h4>
+      <div className={workspaceStyles.workspaceField}>
+        <div className={workspaceStyles.workspaceFieldHeader}>
+          <h4 className={`${workspaceStyles.workspaceFieldTitle} ${workspaceStyles.workspaceFieldTitleStrong}`}>{label}</h4>
         </div>
         <div style={editorGridStyle}>
-          <div style={textareaWrapperStyle}>
+          <div className={workspaceStyles.workspaceFieldStack}>
             <textarea
               value={value}
               onChange={(event) => updateField(key, event.target.value.split('\n').map((item) => item.trim()).filter(Boolean))}
-              style={textareaStyle}
+              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea}`}
               placeholder={placeholder}
             />
-            <div style={aiActionsRowStyle}>
+            <div className={workspaceStyles.workspaceAiActions}>
               <button
                 type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                className={`${workspaceStyles.workspaceAiButton} ${
+                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+                }`}
                 onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1290,13 +1101,13 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                style={promptToggleStyle}
+                className={workspaceStyles.workspacePromptButton}
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div style={promptPanelStyle}>
+              <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
                 <label style={promptInputLabelStyle}>
@@ -1369,32 +1180,32 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
 
   return (
     <div style={shellStyle}>
-      <section style={visibilityShellStyle}>
-        <div style={visibilityCardStyle}>
-          <div style={visibilityControlsRowStyle}>
+      <section className={workspaceStyles.workspaceControlShell}>
+        <div className={workspaceStyles.workspaceControlCard}>
+          <div className={workspaceStyles.workspaceControlRow}>
             {visibilityConfig ? (
-              <div style={visibilityModeWrapStyle}>
-                <span style={visibilitySelectWrapStyle}>
+              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupCompact}`}>
+                <span className={workspaceStyles.workspaceControlSelectWrap}>
                   <select
                     value={visibilityMode}
                     onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
                     disabled={visibilityBusy}
-                    style={visibilityModeSelectStyle}
+                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectCompact}`}
                   >
                     <option value="partner_wide">Referenzen partnerweit anzeigen</option>
                     <option value="strict_local">Referenzen nur lokal anzeigen</option>
                   </select>
-                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                 </span>
               </div>
             ) : null}
-            <div style={visibilityModelWrapStyle}>
+            <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
               {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                <span style={visibilitySelectWrapStyle}>
+                <span className={workspaceStyles.workspaceControlSelectWrap}>
                   <select
                     value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                     onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                    style={visibilityModelSelectStyle}
+                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
                     aria-label="KI-Modell auswählen"
                     disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                   >
@@ -1405,25 +1216,35 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                       </option>
                     ))}
                   </select>
-                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                 </span>
               ) : (
-                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+                <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
               )}
             </div>
           </div>
           {visibilityMessage ? (
-            <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
+            <div
+              className={`${workspaceStyles.workspaceControlMessage} ${
+                visibilityTone === 'success'
+                  ? workspaceStyles.workspaceControlMessageSuccess
+                  : visibilityTone === 'error'
+                    ? workspaceStyles.workspaceControlMessageError
+                    : workspaceStyles.workspaceControlMessageInfo
+              }`}
+            >
+              {visibilityMessage}
+            </div>
           ) : null}
         </div>
       </section>
       <div style={workspaceStyle}>
         <section style={panelStyle}>
-          <div style={workspaceListHeaderRowStyle}>
-            <h3 style={panelTitleStyle}>{referenceLoadSummary ?? '0 Referenzen geladen'}</h3>
+          <div className={workspaceStyles.workspaceListHeader}>
+            <h3 className={workspaceStyles.workspaceListTitle}>{referenceLoadSummary ?? '0 Referenzen geladen'}</h3>
             <button
               type="button"
-              style={workspaceDebugInfoButtonStyle}
+              className={workspaceStyles.workspaceListInfoButton}
               onClick={() => setReferenceDebugOpen(true)}
               disabled={!referenceLoadDebug}
               aria-label="Debug-Informationen anzeigen"
@@ -1435,32 +1256,38 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
             placeholder="Suchen..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            style={searchInputStyle}
+            className={workspaceStyles.workspaceSearchInput}
           />
-          <div style={referenceListFilterRowStyle}>
+          <div className={workspaceStyles.workspaceFilterBar}>
             <button
               type="button"
               onClick={() => setFilterType('all')}
-              style={filterButtonStyle(filterType === 'all')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                filterType === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
             >
               Alle
             </button>
             <button
               type="button"
               onClick={() => setFilterType('kauf')}
-              style={filterButtonStyle(filterType === 'kauf')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                filterType === 'kauf' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
             >
               Kauf
             </button>
             <button
               type="button"
               onClick={() => setFilterType('miete')}
-              style={filterButtonStyle(filterType === 'miete')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                filterType === 'miete' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
             >
               Miete
             </button>
           </div>
-          <div style={listWrapStyle}>
+          <div className={workspaceStyles.workspaceList} style={{ maxHeight: '62vh' }}>
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const previewImageUrl = getReferencePreviewImageUrl(payload);
@@ -1480,29 +1307,36 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                   key={row.id}
                   type="button"
                   onClick={() => setSelectedId(row.id)}
-                  style={listRowStyle(selectedId === row.id)}
+                  className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemWithMedia} ${
+                    selectedId === row.id ? workspaceStyles.workspaceListItemActive : ''
+                  }`}
                 >
-                  <span style={referenceRowMediaStyle}>
+                  <span className={workspaceStyles.workspaceListItemMedia}>
                     {previewImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={previewImageUrl}
                         alt={sourceTitle || 'Referenzbild'}
-                        style={referenceRowImageStyle}
+                        className={workspaceStyles.workspaceListItemImage}
                         loading="lazy"
                         decoding="async"
                       />
                     ) : (
-                      <span style={referenceRowImagePlaceholderStyle}>Kein Bild</span>
+                      <span className={workspaceStyles.workspaceListItemImagePlaceholder}>Kein Bild</span>
                     )}
                   </span>
-                  <span style={referenceRowContentStyle}>
-                    <span style={referenceRowTitleStyle}>{sourceTitle}</span>
-                    <span style={referenceRowMetaStyle}>
+                  <span className={workspaceStyles.workspaceListItemContent}>
+                    <span className={workspaceStyles.workspaceListItemTitle}>{sourceTitle}</span>
+                    <span className={workspaceStyles.workspaceListItemMeta}>
                       {`${marketingType} · ${objectType} · ${location}`}
                     </span>
                   </span>
-                  <span aria-hidden="true" style={onlineStatusDotStyle(isReady)} />
+                  <span
+                    aria-hidden="true"
+                    className={`${workspaceStyles.workspaceStatusDot} ${workspaceStyles.workspaceListStatusDot} ${
+                      isReady ? workspaceStyles.workspaceStatusDotReady : workspaceStyles.workspaceStatusDotBlocked
+                    }`}
+                  />
                 </button>
               );
             })}
@@ -1518,36 +1352,49 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
           {status.startsWith('Fehler') ? <p style={statusBoxStyle}>{status}</p> : null}
           {form && selectedRow ? (
             <>
-              <div style={summaryWrapStyle}>
-                <div style={summaryCardStyle}>
-                  <div style={referenceOverviewHeaderRowStyle}>
-                    <div style={summaryHeaderStyle}>Überblick</div>
-                    <div style={referenceOverviewHeaderActionsStyle}>
-                      <span style={onlineStatusBadgeStyle(isReferenceReady)}>
-                        <span aria-hidden="true" style={onlineStatusBadgeDotStyle(isReferenceReady)} />
-                        <span>{isReferenceReady ? 'Onlinefertig' : 'Nicht onlinefertig'}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setReferenceOverviewInfoOpen(true)}
-                        style={referenceOverviewInfoButtonStyle}
-                      >
-                        Info
-                      </button>
-                    </div>
+              <div className={workspaceStyles.workspaceOverviewCard}>
+                <div className={workspaceStyles.workspaceOverviewHeader}>
+                  <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
+                  <div className={workspaceStyles.workspaceOverviewActions}>
+                    <span
+                      className={`${workspaceStyles.workspaceStatusBadge} ${
+                        isReferenceReady
+                          ? workspaceStyles.workspaceStatusBadgeReady
+                          : workspaceStyles.workspaceStatusBadgeBlocked
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`${workspaceStyles.workspaceStatusDot} ${
+                          isReferenceReady
+                            ? workspaceStyles.workspaceStatusDotReady
+                            : workspaceStyles.workspaceStatusDotBlocked
+                        }`}
+                      />
+                      <span>{isReferenceReady ? 'Onlinefertig' : 'Nicht onlinefertig'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReferenceOverviewInfoOpen(true)}
+                      className={workspaceStyles.workspaceInfoButton}
+                    >
+                      Info
+                    </button>
                   </div>
-                  <div style={referenceOverviewGridStyle}>
-                    <div>
-                      <div style={summaryLabelStyle}>Referenz-ID</div>
-                      <div style={summaryValueStyle}>{selectedRow.id}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Quelle</div>
-                      <div style={summaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
-                    </div>
-                    <div>
-                      <div style={summaryLabelStyle}>Aktualisiert</div>
-                      <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}</div>
+                </div>
+                <div className={workspaceStyles.workspaceOverviewGrid}>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Referenz-ID</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.id}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
+                    <div className={workspaceStyles.workspaceMetaValue}>
+                      {formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}
                     </div>
                   </div>
                 </div>
@@ -2040,165 +1887,6 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     </div>
   );
 }
-
-const visibilityShellStyle: CSSProperties = {
-  width: '100%',
-  padding: '0 0 0',
-  marginBottom: 0,
-};
-
-const visibilityCardStyle: CSSProperties = {
-  border: '1px solid #99f6b4',
-  borderRadius: '12px',
-  background: 'rgb(72, 107, 122)',
-  padding: '14px 16px',
-  display: 'grid',
-  gap: '12px',
-  marginBottom: '8px',
-};
-
-const visibilityControlsRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: '12px',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  width: '100%',
-};
-
-const visibilityModelWrapStyle: CSSProperties = {
-  flex: '0 1 320px',
-  marginLeft: 'auto',
-  display: 'flex',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-};
-
-const visibilityModeWrapStyle: CSSProperties = {
-  flex: '0 1 300px',
-  display: 'flex',
-  justifyContent: 'flex-start',
-  alignItems: 'center',
-};
-
-const visibilitySelectWrapStyle: CSSProperties = {
-  position: 'relative',
-  display: 'inline-block',
-};
-
-const visibilitySelectStyle: CSSProperties = {
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  minHeight: '40px',
-  borderRadius: '10px',
-  border: '1px solid rgba(255, 255, 255, 0.35)',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '0 40px 0 12px',
-  fontSize: '13px',
-  fontWeight: 600,
-  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-  minWidth: '420px',
-};
-
-const visibilityModelSelectStyle: CSSProperties = {
-  ...visibilitySelectStyle,
-  minWidth: '320px',
-  maxWidth: '100%',
-};
-
-const visibilityModeSelectStyle: CSSProperties = {
-  ...visibilitySelectStyle,
-  minWidth: '300px',
-  maxWidth: '100%',
-};
-
-const visibilitySelectChevronStyle: CSSProperties = {
-  position: 'absolute',
-  right: '14px',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  fontSize: '14px',
-  lineHeight: 1,
-  color: '#475569',
-  pointerEvents: 'none',
-};
-
-function visibilityMessageStyle(tone: VisibilityTone): CSSProperties {
-  if (tone === 'success') {
-    return {
-      borderRadius: '999px',
-      background: '#ecfdf5',
-      color: '#166534',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  if (tone === 'error') {
-    return {
-      borderRadius: '999px',
-      background: '#fef2f2',
-      color: '#b91c1c',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  return {
-    borderRadius: '999px',
-    background: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '8px 12px',
-    fontSize: '12px',
-    fontWeight: 600,
-    width: 'fit-content',
-  };
-}
-
-const aiButtonStyle: CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '9px 16px',
-  backgroundColor: 'rgba(72, 107, 122, 0.12)',
-  color: 'rgb(72, 107, 122)',
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: '8px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const aiButtonLoadingStyle: CSSProperties = {
-  ...aiButtonStyle,
-  opacity: 0.7,
-  cursor: 'not-allowed',
-};
-
-const aiMissingHintStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#e2e8f0',
-};
-
-const promptToggleStyle: CSSProperties = {
-  alignSelf: 'flex-start',
-  backgroundColor: '#ffffff',
-  border: '1px solid rgb(72, 107, 122)',
-  color: 'rgb(72, 107, 122)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: '9px 16px',
-  borderRadius: '8px',
-};
-
-const promptPanelStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  padding: '12px',
-  backgroundColor: '#f8fafc',
-};
 
 const promptLabelStyle: CSSProperties = {
   fontSize: '10px',

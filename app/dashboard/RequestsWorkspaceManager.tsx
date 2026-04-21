@@ -626,31 +626,33 @@ export default function RequestsWorkspaceManager(props: Props) {
     );
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
-      <div style={fieldCardStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b' }}>{label}</h4>
+      <div className={workspaceStyles.workspaceFieldSubtle}>
+        <div className={workspaceStyles.workspaceFieldHeader}>
+          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
         <div style={editorSingleColumnStyle}>
-          <div style={textareaWrapperStyle}>
+          <div className={workspaceStyles.workspaceFieldStack}>
             {options?.multiline === false ? (
               <input
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                style={inputStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             ) : (
               <textarea
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                style={textareaStyle}
+                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <div style={aiActionsRowStyle}>
+            <div className={workspaceStyles.workspaceAiActions}>
               <button
                 type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                className={`${workspaceStyles.workspaceAiButton} ${
+                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+                }`}
                 onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -659,13 +661,13 @@ export default function RequestsWorkspaceManager(props: Props) {
               <button
                 type="button"
                 onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                style={promptToggleStyle}
+                className={workspaceStyles.workspacePromptButton}
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div style={promptPanelStyle}>
+              <div className={workspaceStyles.workspacePromptPanel}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
                 <div style={promptContentStyle}>{standardPrompt}</div>
                 <label style={promptInputLabelStyle}>
@@ -826,30 +828,30 @@ export default function RequestsWorkspaceManager(props: Props) {
   return (
     <div style={{ display: 'grid', gap: '10px' }}>
       {visibilityConfig ? (
-        <section style={visibilityShellStyle}>
-          <div style={visibilityCardStyle}>
-            <div style={visibilityControlsRowStyle}>
-              <label style={visibilityLabelStyle}>
-                <span style={visibilitySelectWrapStyle}>
+        <section className={workspaceStyles.workspaceControlShell}>
+          <div className={workspaceStyles.workspaceControlCard}>
+            <div className={workspaceStyles.workspaceControlRow}>
+              <label className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupWide}`}>
+                <span className={workspaceStyles.workspaceControlSelectWrap}>
                   <select
                     value={visibilityMode}
                     onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
                     disabled={visibilityBusy}
-                    style={visibilitySelectStyle}
+                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectWide}`}
                   >
                     <option value="partner_wide">Regionale Ausspielung für Gesuche partnerweit (zeigt alle Gesuche des Partners im Gebiet)</option>
                     <option value="strict_local">Regionale Ausspielung für Gesuche nur lokal (nutzt nur lokal gematchte Gesuche)</option>
                   </select>
-                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                 </span>
               </label>
-              <div style={visibilityModelWrapStyle}>
+              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                  <span style={visibilitySelectWrapStyle}>
+                  <span className={workspaceStyles.workspaceControlSelectWrap}>
                     <select
                       value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                       onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                      style={visibilityModelSelectStyle}
+                      className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
                       aria-label="KI-Modell auswählen"
                       disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     >
@@ -860,15 +862,25 @@ export default function RequestsWorkspaceManager(props: Props) {
                         </option>
                       ))}
                     </select>
-                    <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                    <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
                   </span>
                 ) : (
-                  <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+                  <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>
             {visibilityMessage ? (
-              <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
+              <div
+                className={`${workspaceStyles.workspaceControlMessage} ${
+                  visibilityTone === 'success'
+                    ? workspaceStyles.workspaceControlMessageSuccess
+                    : visibilityTone === 'error'
+                      ? workspaceStyles.workspaceControlMessageError
+                      : workspaceStyles.workspaceControlMessageInfo
+                }`}
+              >
+                {visibilityMessage}
+              </div>
             ) : null}
           </div>
         </section>
@@ -876,11 +888,11 @@ export default function RequestsWorkspaceManager(props: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
         <section style={panelStyle}>
-          <div style={workspaceListHeaderRowStyle}>
-            <h3 style={panelTitleStyle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
+          <div className={workspaceStyles.workspaceListHeader}>
+            <h3 className={workspaceStyles.workspaceListTitle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
             <button
               type="button"
-              style={workspaceDebugInfoButtonStyle}
+              className={workspaceStyles.workspaceListInfoButton}
               onClick={() => setRequestDebugOpen(true)}
               disabled={!requestLoadDebug}
               aria-label="Debug-Informationen anzeigen"
@@ -892,14 +904,44 @@ export default function RequestsWorkspaceManager(props: Props) {
             placeholder="Suchen..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            style={inputStyle}
+            className={workspaceStyles.workspaceSearchInput}
           />
-          <div style={requestListFilterRowStyle}>
-            <button type="button" onClick={() => setListFilter('all')} style={requestListFilterButtonStyle(listFilter === 'all')}>Alle</button>
-            <button type="button" onClick={() => setListFilter('haus')} style={requestListFilterButtonStyle(listFilter === 'haus')}>Haus</button>
-            <button type="button" onClick={() => setListFilter('wohnung')} style={requestListFilterButtonStyle(listFilter === 'wohnung')}>Wohnung</button>
+          <div className={workspaceStyles.workspaceFilterBar}>
+            <button
+              type="button"
+              onClick={() => setListFilter('all')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                listFilter === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
+            >
+              Alle
+            </button>
+            <button
+              type="button"
+              onClick={() => setListFilter('haus')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                listFilter === 'haus' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
+            >
+              Haus
+            </button>
+            <button
+              type="button"
+              onClick={() => setListFilter('wohnung')}
+              className={`${workspaceStyles.workspaceFilterButton} ${
+                listFilter === 'wohnung' ? workspaceStyles.workspaceFilterButtonActive : ''
+              }`}
+            >
+              Wohnung
+            </button>
           </div>
-          <div style={requestListViewportStyle}>
+          <div
+            className={workspaceStyles.workspaceList}
+            style={{
+              gap: REQUEST_LIST_ROW_GAP,
+              maxHeight: REQUEST_LIST_VISIBLE_ROWS * REQUEST_LIST_ROW_HEIGHT + (REQUEST_LIST_VISIBLE_ROWS - 1) * REQUEST_LIST_ROW_GAP,
+            }}
+          >
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const rowOverride = overrides.find(
@@ -914,15 +956,19 @@ export default function RequestsWorkspaceManager(props: Props) {
                 <button
                   key={row.id}
                   onClick={() => setSelectedId(row.id)}
-                  style={offerRowStyle(selectedId === row.id)}
+                  className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemPlain} ${
+                    selectedId === row.id ? workspaceStyles.workspaceListItemActive : ''
+                  }`}
                 >
-                  <span style={requestListTitleTextStyle}>{row.title || 'Gesuch'}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <span className={workspaceStyles.workspaceListItemTitle}>{row.title || 'Gesuch'}</span>
+                  <span className={workspaceStyles.workspaceListItemMeta}>
                     {`${formatRequestModeLabel(getPayloadText(payload, ['request_type']) || '—')} · ${formatRequestObjectTypeLabel(getPayloadText(payload, ['object_type']) || null)} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
                   </span>
                   <span
                     aria-hidden="true"
-                    style={requestListStatusDotStyle(rowIsReady)}
+                    className={`${workspaceStyles.workspaceStatusDot} ${workspaceStyles.workspaceListStatusDot} ${
+                      rowIsReady ? workspaceStyles.workspaceStatusDotReady : workspaceStyles.workspaceStatusDotBlocked
+                    }`}
                   />
                 </button>
               );
@@ -943,37 +989,39 @@ export default function RequestsWorkspaceManager(props: Props) {
                 const isReady = isRequestReadyForPublish(selectedOverride);
                 return (
                   <>
-                    <div style={workspaceSectionStyle}>
-                      <div style={offerSummaryTopCardStyle}>
-                        <div style={cardHeaderRowStyle}>
-                          <div style={offerSummaryHeaderStyle}>Überblick</div>
-                          <div style={statusBadgeStyle(isReady)}>
-                            <span
-                              aria-hidden="true"
-                              style={{
-                                width: '10px',
-                                height: '10px',
-                                borderRadius: '999px',
-                                background: isReady ? '#16a34a' : '#dc2626',
-                                flex: '0 0 auto',
-                              }}
-                            />
-                            <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
-                          </div>
+                    <div className={workspaceStyles.workspaceOverviewCard}>
+                      <div className={workspaceStyles.workspaceOverviewHeader}>
+                        <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
+                        <div
+                          className={`${workspaceStyles.workspaceStatusBadge} ${
+                            isReady
+                              ? workspaceStyles.workspaceStatusBadgeReady
+                              : workspaceStyles.workspaceStatusBadgeBlocked
+                          }`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={`${workspaceStyles.workspaceStatusDot} ${
+                              isReady
+                                ? workspaceStyles.workspaceStatusDotReady
+                                : workspaceStyles.workspaceStatusDotBlocked
+                            }`}
+                          />
+                          <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
                         </div>
-                        <div style={offerSummaryGridStyle}>
-                          <div>
-                            <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
-                            <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
-                          </div>
-                          <div>
-                            <div style={offerSummaryLabelStyle}>Quelle</div>
-                            <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
-                          </div>
-                          <div>
-                            <div style={offerSummaryLabelStyle}>Aktualisiert</div>
-                            <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
-                          </div>
+                      </div>
+                      <div className={workspaceStyles.workspaceOverviewGrid}>
+                        <div>
+                          <div className={workspaceStyles.workspaceMetaLabel}>Gesuch-ID</div>
+                          <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.id}</div>
+                        </div>
+                        <div>
+                          <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
+                          <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                        </div>
+                        <div>
+                          <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
+                          <div className={workspaceStyles.workspaceMetaValue}>{formatDateLabel(selectedUpdatedAt)}</div>
                         </div>
                       </div>
                     </div>
@@ -1309,210 +1357,9 @@ const panelStyle: CSSProperties = {
   padding: '16px',
 };
 
-const panelTitleStyle: CSSProperties = {
-  margin: '0 0 12px',
-  fontSize: '16px',
-  fontWeight: 700,
-};
-
-const visibilityShellStyle: CSSProperties = {
-  width: '100%',
-  padding: '0 0 0',
-  marginBottom: 0,
-};
-
-const visibilityCardStyle: CSSProperties = {
-  border: '1px solid #99f6b4',
-  borderRadius: '12px',
-  background: 'rgb(72, 107, 122)',
-  padding: '14px 16px',
-  display: 'grid',
-  gap: '12px',
-  marginBottom: '8px',
-};
-
-const visibilityControlsRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: '12px',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  width: '100%',
-};
-
-const visibilityLabelStyle: CSSProperties = {
-  display: 'block',
-  flex: '1 1 420px',
-};
-
-const visibilityModelWrapStyle: CSSProperties = {
-  flex: '0 1 320px',
-  marginLeft: 'auto',
-  display: 'flex',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-};
-
-const visibilitySelectWrapStyle: CSSProperties = {
-  position: 'relative',
-  display: 'inline-block',
-};
-
-const visibilitySelectStyle: CSSProperties = {
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  minHeight: '40px',
-  borderRadius: '10px',
-  border: '1px solid rgba(255, 255, 255, 0.35)',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '0 40px 0 12px',
-  fontSize: '13px',
-  fontWeight: 600,
-  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-  minWidth: '420px',
-};
-
-const visibilityModelSelectStyle: CSSProperties = {
-  ...visibilitySelectStyle,
-  minWidth: '320px',
-  maxWidth: '100%',
-};
-
-const visibilitySelectChevronStyle: CSSProperties = {
-  position: 'absolute',
-  right: '14px',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  fontSize: '14px',
-  lineHeight: 1,
-  color: '#475569',
-  pointerEvents: 'none',
-};
-
-function visibilityMessageStyle(tone: VisibilityTone): CSSProperties {
-  if (tone === 'success') {
-    return {
-      borderRadius: '999px',
-      background: '#ecfdf5',
-      color: '#166534',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  if (tone === 'error') {
-    return {
-      borderRadius: '999px',
-      background: '#fef2f2',
-      color: '#b91c1c',
-      padding: '8px 12px',
-      fontSize: '12px',
-      fontWeight: 600,
-      width: 'fit-content',
-    };
-  }
-  return {
-    borderRadius: '999px',
-    background: '#eff6ff',
-    color: '#1d4ed8',
-    padding: '8px 12px',
-    fontSize: '12px',
-    fontWeight: 600,
-    width: 'fit-content',
-  };
-}
-
-const aiMissingHintStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#e2e8f0',
-};
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '13px',
-};
-
-const textareaStyle: CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '13px',
-  minHeight: '80px',
-  resize: 'vertical',
-};
-
-const fieldCardStyle: CSSProperties = {
-  marginBottom: '2px',
-  paddingBottom: '8px',
-  borderBottom: '1px solid #f1f5f9',
-};
-
-const fieldHeaderStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '10px',
-};
-
 const editorSingleColumnStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
-};
-
-const textareaWrapperStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-};
-
-const aiActionsRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
-const aiButtonStyle: CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '9px 16px',
-  backgroundColor: 'rgba(72, 107, 122, 0.12)',
-  color: 'rgb(72, 107, 122)',
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: '8px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const aiButtonLoadingStyle: CSSProperties = {
-  ...aiButtonStyle,
-  opacity: 0.7,
-  cursor: 'not-allowed',
-};
-
-const promptToggleStyle: CSSProperties = {
-  alignSelf: 'flex-start',
-  backgroundColor: '#ffffff',
-  border: '1px solid rgb(72, 107, 122)',
-  color: 'rgb(72, 107, 122)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: '9px 16px',
-  borderRadius: '8px',
-};
-
-const promptPanelStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  padding: '12px',
-  backgroundColor: '#f8fafc',
 };
 
 const promptLabelStyle: CSSProperties = {
@@ -1550,43 +1397,6 @@ const promptInputStyle: CSSProperties = {
   lineHeight: 1.4,
   fontFamily: 'inherit',
 };
-
-const offerRowStyle = (active: boolean): CSSProperties => ({
-  width: '100%',
-  textAlign: 'left',
-  padding: '10px',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: active ? '#f1f5f9' : '#fff',
-  cursor: 'pointer',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px',
-  minHeight: `${REQUEST_LIST_ROW_HEIGHT}px`,
-  justifyContent: 'center',
-  position: 'relative',
-});
-
-const requestListTitleTextStyle: CSSProperties = {
-  fontWeight: 600,
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  lineHeight: 1.35,
-  paddingRight: '16px',
-};
-
-const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
-  width: '10px',
-  height: '10px',
-  borderRadius: '999px',
-  backgroundColor: active ? '#16a34a' : '#dc2626',
-  position: 'absolute',
-  top: '10px',
-  right: '10px',
-});
 
 const primaryButtonStyle = (disabled = false): CSSProperties => ({
   padding: '10px 14px',
@@ -1772,19 +1582,6 @@ const requestNoteInfoTextStyle: CSSProperties = {
   lineHeight: 1.55,
 };
 
-const statusBadgeStyle = (active: boolean): CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '8px',
-  borderRadius: '999px',
-  padding: '6px 10px',
-  fontSize: '11px',
-  fontWeight: 700,
-  color: active ? '#166534' : '#b91c1c',
-  backgroundColor: active ? '#dcfce7' : '#fee2e2',
-  border: `1px solid ${active ? '#86efac' : '#fecaca'}`,
-});
-
 const requestMatchPreviewWrapStyle: CSSProperties = {
   borderRadius: '12px',
   overflow: 'hidden',
@@ -1917,31 +1714,6 @@ const modalCloseButtonStyle: CSSProperties = {
   cursor: 'pointer',
 };
 
-const workspaceListHeaderRowStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '12px',
-  marginBottom: '12px',
-};
-
-const workspaceDebugInfoButtonStyle: CSSProperties = {
-  width: '24px',
-  height: '24px',
-  borderRadius: '999px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#486b7a',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
-  flex: '0 0 auto',
-};
-
 const workspaceDebugModalCardStyle: CSSProperties = {
   width: 'min(340px, 100%)',
   borderRadius: '16px',
@@ -1958,36 +1730,6 @@ const workspaceDebugModalBodyStyle: CSSProperties = {
   gap: '8px',
   fontSize: '13px',
   color: '#334155',
-};
-
-const requestListFilterRowStyle: CSSProperties = {
-  display: 'flex',
-  rowGap: '8px',
-  columnGap: '8px',
-  flexWrap: 'wrap',
-  marginTop: '10px',
-  marginBottom: '12px',
-};
-
-const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
-  flex: '1 1 0%',
-  padding: '6px 8px',
-  borderRadius: '999px',
-  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
-  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
-  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-});
-
-const requestListViewportStyle: CSSProperties = {
-  display: 'grid',
-  gap: `${REQUEST_LIST_ROW_GAP}px`,
-  marginTop: '12px',
-  maxHeight: `${REQUEST_LIST_VISIBLE_ROWS * REQUEST_LIST_ROW_HEIGHT + (REQUEST_LIST_VISIBLE_ROWS - 1) * REQUEST_LIST_ROW_GAP}px`,
-  overflowY: 'auto',
-  paddingRight: '4px',
 };
 
 const textSourceNoteCardStyle: CSSProperties = {
