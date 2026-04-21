@@ -626,58 +626,56 @@ export default function RequestsWorkspaceManager(props: Props) {
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
-        <div className="d-grid">
-          <div className={workspaceStyles.workspaceFieldStack}>
-            {options?.multiline === false ? (
-              <input
-                value={value}
-                onChange={(event) => updateField(key, event.target.value)}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
-                placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
-              />
-            ) : (
-              <textarea
-                value={value}
-                onChange={(event) => updateField(key, event.target.value)}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
-                placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
-              />
-            )}
-            <div className={workspaceStyles.workspaceAiActions}>
-              <button
-                type="button"
-                className={`${workspaceStyles.workspaceAiButton} ${
-                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-                }`}
-                onClick={() => void runAiRewrite(key, label, effectivePrompt)}
-                disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-              >
-                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                className={workspaceStyles.workspacePromptButton}
-              >
-                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-              </button>
-            </div>
-            {showPrompt ? (
-              <div className={workspaceStyles.workspacePromptPanel}>
-                <div className={workspaceStyles.workspacePromptLabel}>Standard-Prompt</div>
-                <div className={workspaceStyles.workspacePromptContent}>{standardPrompt}</div>
-                <label className={`d-flex flex-column gap-1 ${workspaceStyles.workspacePromptInputLabel}`}>
-                  Eigener Prompt (optional)
-                  <textarea
-                    value={customPrompt}
-                    onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                    className={workspaceStyles.workspacePromptInput}
-                    placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
-                  />
-                </label>
-              </div>
-            ) : null}
+        <div className={workspaceStyles.workspaceFieldStack}>
+          {options?.multiline === false ? (
+            <input
+              value={value}
+              onChange={(event) => updateField(key, event.target.value)}
+              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+              placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
+            />
+          ) : (
+            <textarea
+              value={value}
+              onChange={(event) => updateField(key, event.target.value)}
+              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+              placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
+            />
+          )}
+          <div className={workspaceStyles.workspaceAiActions}>
+            <button
+              type="button"
+              className={`${workspaceStyles.workspaceAiButton} ${
+                isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
+              }`}
+              onClick={() => void runAiRewrite(key, label, effectivePrompt)}
+              disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+            >
+              {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
+              className={workspaceStyles.workspacePromptButton}
+            >
+              {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+            </button>
           </div>
+          {showPrompt ? (
+            <div className={workspaceStyles.workspacePromptPanel}>
+              <div className={workspaceStyles.workspacePromptLabel}>Standard-Prompt</div>
+              <div className={workspaceStyles.workspacePromptContent}>{standardPrompt}</div>
+              <label className={`d-flex flex-column gap-1 ${workspaceStyles.workspacePromptInputLabel}`}>
+                Eigener Prompt (optional)
+                <textarea
+                  value={customPrompt}
+                  onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
+                  className={workspaceStyles.workspacePromptInput}
+                  placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+                />
+              </label>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -822,7 +820,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
   return (
-    <div className="d-grid gap-2">
+    <div className={workspaceStyles.workspaceShell}>
       {visibilityConfig ? (
         <section className={workspaceStyles.workspaceControlShell}>
           <div className={workspaceStyles.workspaceControlCard}>
@@ -1029,7 +1027,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
 
                     {activeTab === 'criteria' ? (
-                      <div className="d-grid gap-2 mb-3">
+                      <div className={workspaceStyles.workspaceSectionStack}>
                         <div className={workspaceStyles.workspaceSoftCard}>
                           <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
                           <div className={workspaceStyles.workspaceMetaGrid}>
@@ -1071,11 +1069,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ) : null}
 
                     {activeTab === 'texts' || activeTab === 'seo' ? (
-                      <div className="d-grid gap-2 mb-3">
+                      <div className={workspaceStyles.workspaceSectionStack}>
                         <div className={workspaceStyles.workspaceEditorSplit}>
-                          <div className="d-grid">
+                          <div className={workspaceStyles.workspaceEditorColumn}>
                             <div className={workspaceStyles.workspaceSectionHeading}>Online-Gesuch erstellen</div>
-                            <div className="d-grid gap-1 mb-3">
+                            <div className={workspaceStyles.workspaceRequestNoteStack}>
                               <div className={workspaceStyles.workspaceInlineHeadingRow}>
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
                                 <button
@@ -1092,7 +1090,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             </div>
                             {activeTab === 'texts' ? (
-                              <div className="d-grid gap-2">
+                              <div className={workspaceStyles.workspaceFieldGroup}>
                                 {renderTextField('Gesuch-Titel', 'seo_h1', {
                                   multiline: false,
                                   placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1104,7 +1102,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             ) : null}
                             {activeTab === 'seo' ? (
-                              <div className="d-grid gap-2">
+                              <div className={workspaceStyles.workspaceFieldGroup}>
                                 {renderTextField('SEO‑Titel', 'seo_title', {
                                   multiline: false,
                                   placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
@@ -1137,7 +1135,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 Info
                               </button>
                             </div>
-                            <div className="d-grid gap-2">
+                            <div className={workspaceStyles.workspaceFieldGroup}>
                               {effectiveRequestImagePreview?.imageUrl ? (
                                 <div className={workspaceStyles.workspaceRequestImageFrame}>
                                   <img
@@ -1147,7 +1145,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   />
                                 </div>
                               ) : null}
-                              <div className="d-grid gap-2">
+                              <div className={workspaceStyles.workspaceFieldGroup}>
                                 <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
                                 <div className={workspaceStyles.workspaceImageChoiceGrid}>
                                   {readyRequestImageChoices.map((item) => {
@@ -1156,7 +1154,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                       <button
                                         key={item.id}
                                         type="button"
-                                        className={`d-grid gap-2 ${workspaceStyles.workspaceImageChoiceCard} ${
+                                        className={`${workspaceStyles.workspaceImageChoiceCard} ${
                                           active ? workspaceStyles.workspaceImageChoiceCardActive : ''
                                         }`}
                                         onClick={() => setPendingRequestImageSelectionId(item.id)}
@@ -1201,10 +1199,10 @@ export default function RequestsWorkspaceManager(props: Props) {
                             </div>
                           </div>
                         </div>
-                        <div className="d-grid gap-2">
+                        <div className={workspaceStyles.workspaceFieldGroup}>
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div className={workspaceStyles.workspacePreviewSplit}>
-                            <div className="d-grid gap-3">
+                            <div className={workspaceStyles.workspacePreviewStack}>
                               <div className={workspaceStyles.workspaceContentPreviewCard}>
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
@@ -1217,7 +1215,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             <div className={workspaceStyles.workspaceContentPreviewCard}>
                               <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
                               {effectiveRequestImagePreview?.imageUrl ? (
-                                <div className="d-grid gap-2">
+                                <div className={workspaceStyles.workspaceFieldGroup}>
                                   <div className={workspaceStyles.workspaceRequestImageFrame}>
                                     <img
                                       src={effectiveRequestImagePreview.imageUrl}
@@ -1269,7 +1267,7 @@ export default function RequestsWorkspaceManager(props: Props) {
           }}
         >
           <div
-            className={`d-grid gap-3 ${workspaceStyles.workspaceDebugModalCard}`}
+            className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceDebugModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="request-workspace-debug-title"
@@ -1286,7 +1284,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                 Schließen
               </button>
             </div>
-            <div className={`d-grid gap-2 ${workspaceStyles.workspaceModalText}`}>
+            <div className={`${workspaceStyles.workspaceModalBodyStack} ${workspaceStyles.workspaceModalText}`}>
               <div>requests={requestLoadDebug.requests}</div>
               <div>overrides={requestLoadDebug.overrides}</div>
             </div>
@@ -1295,14 +1293,14 @@ export default function RequestsWorkspaceManager(props: Props) {
       ) : null}
       {imageInfoOpen ? (
         <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`d-grid gap-3 ${workspaceStyles.workspaceModalCard}`}>
+          <div className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div className={workspaceStyles.workspaceSmallHeading}>Matching-Info</div>
               <button type="button" onClick={() => setImageInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
                 Schließen
               </button>
             </div>
-            <div className="d-grid gap-3">
+            <div className={workspaceStyles.workspaceModalStack}>
               <div>
                 <div className={workspaceStyles.workspaceMetaLabel}>Erkannte Persona</div>
                 <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
@@ -1329,7 +1327,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       ) : null}
       {requestNoteInfoOpen ? (
         <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`d-grid gap-3 ${workspaceStyles.workspaceModalCard}`}>
+          <div className={`${workspaceStyles.workspaceModalStack} ${workspaceStyles.workspaceModalCard}`}>
             <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
               <div className={workspaceStyles.workspaceSmallHeading}>CRM-Notiz</div>
               <button type="button" onClick={() => setRequestNoteInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
