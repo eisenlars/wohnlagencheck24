@@ -626,7 +626,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     );
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
-      <div className={workspaceStyles.workspaceFieldSubtle}>
+      <div className={workspaceStyles.workspaceFieldPlain}>
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
@@ -1085,19 +1085,21 @@ export default function RequestsWorkspaceManager(props: Props) {
                         <div style={onlineCreateGridStyle}>
                           <div style={requestTextEditBlockStyle}>
                             <div style={offerSummaryHeaderStyle}>Online-Gesuch erstellen</div>
-                            <div style={requestNoteHeadingRowStyle}>
-                              <div style={requestNoteHeadingStyle}>CRM-Notiz</div>
-                              <button
-                                type="button"
-                                onClick={() => setRequestNoteInfoOpen(true)}
-                                style={requestNoteInfoButtonStyle}
-                                aria-label="Information zur CRM-Notiz anzeigen"
-                              >
-                                i
-                              </button>
-                            </div>
-                            <div style={textSourceNoteCardStyle}>
-                              <div style={requestNoteBodyStyle}>
+                            <div
+                              className={`${workspaceStyles.workspaceStackXs} ${workspaceStyles.workspaceMtSm} ${workspaceStyles.workspaceMbXl}`}
+                            >
+                              <div className={workspaceStyles.workspaceInlineHeadingRow}>
+                                <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
+                                <button
+                                  type="button"
+                                  onClick={() => setRequestNoteInfoOpen(true)}
+                                  className={workspaceStyles.workspaceInlineInfoButton}
+                                  aria-label="Information zur CRM-Notiz anzeigen"
+                                >
+                                  i
+                                </button>
+                              </div>
+                              <div className={workspaceStyles.workspaceNoteBox}>
                                 {selectedNote || 'Keine CRM-Notiz vorhanden.'}
                               </div>
                             </div>
@@ -1536,46 +1538,6 @@ const offerSummaryValueStyle: CSSProperties = {
   lineHeight: 1.45,
 };
 
-const requestNoteBodyStyle: CSSProperties = {
-  color: '#334155',
-  fontSize: '13px',
-  lineHeight: 1.5,
-  whiteSpace: 'pre-wrap',
-};
-
-const requestNoteHeadingStyle: CSSProperties = {
-  fontSize: '12px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#64748b',
-  fontWeight: 700,
-};
-
-const requestNoteHeadingRowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  marginTop: '8px',
-  marginBottom: '8px',
-};
-
-const requestNoteInfoButtonStyle: CSSProperties = {
-  width: '20px',
-  height: '20px',
-  borderRadius: '999px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#486b7a',
-  fontSize: '12px',
-  fontWeight: 800,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
-  lineHeight: 1,
-};
-
 const requestNoteInfoTextStyle: CSSProperties = {
   color: '#334155',
   fontSize: '13px',
@@ -1730,14 +1692,4 @@ const workspaceDebugModalBodyStyle: CSSProperties = {
   gap: '8px',
   fontSize: '13px',
   color: '#334155',
-};
-
-const textSourceNoteCardStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  backgroundColor: '#f8fafc',
-  padding: '10px 12px',
-  marginBottom: '6px',
-  display: 'grid',
-  gap: '6px',
 };

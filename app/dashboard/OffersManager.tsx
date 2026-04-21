@@ -927,7 +927,7 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div className={workspaceStyles.workspaceFieldSubtle}>
+      <div className={workspaceStyles.workspaceField}>
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
           <div style={fieldHeaderActionsStyle}>
@@ -1026,7 +1026,7 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div className={workspaceStyles.workspaceFieldSubtle}>
+      <div className={workspaceStyles.workspaceField}>
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
           <div style={fieldHeaderActionsStyle}>
