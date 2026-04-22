@@ -622,8 +622,8 @@ export default function RequestsWorkspaceManager(props: Props) {
     );
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
-      <div className={workspaceStyles.workspaceFieldPlain}>
-        <div className={workspaceStyles.workspaceFieldHeader}>
+      <div className="d-flex flex-column gap-2">
+        <div className="d-flex justify-content-between align-items-center gap-3">
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
         <div className="d-flex flex-column gap-2">
@@ -822,42 +822,36 @@ export default function RequestsWorkspaceManager(props: Props) {
   return (
     <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
-        <section className={workspaceStyles.workspaceControlShell}>
-          <div className={workspaceStyles.workspaceControlCard}>
-            <div className={workspaceStyles.workspaceControlRow}>
-              <label className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupWide}`}>
-                <span className={workspaceStyles.workspaceControlSelectWrap}>
-                  <select
-                    value={visibilityMode}
-                    onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                    disabled={visibilityBusy}
-                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectWide}`}
-                  >
-                    <option value="partner_wide">Regionale Ausspielung für Gesuche partnerweit (zeigt alle Gesuche des Partners im Gebiet)</option>
-                    <option value="strict_local">Regionale Ausspielung für Gesuche nur lokal (nutzt nur lokal gematchte Gesuche)</option>
-                  </select>
-                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                </span>
+        <section className="mb-2">
+          <div className={`border rounded-3 p-3 d-flex flex-column gap-3 mb-2 ${workspaceStyles.workspaceControlTone}`}>
+            <div className="row g-3 align-items-center">
+              <label className="col-12 col-xl">
+                <select
+                  value={visibilityMode}
+                  onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                  disabled={visibilityBusy}
+                  className="form-select fw-semibold"
+                >
+                  <option value="partner_wide">Regionale Ausspielung für Gesuche partnerweit (zeigt alle Gesuche des Partners im Gebiet)</option>
+                  <option value="strict_local">Regionale Ausspielung für Gesuche nur lokal (nutzt nur lokal gematchte Gesuche)</option>
+                </select>
               </label>
-              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
+              <div className="col-12 col-xl-4">
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                  <span className={workspaceStyles.workspaceControlSelectWrap}>
-                    <select
-                      value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                      onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                      className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
-                      aria-label="KI-Modell auswählen"
-                      disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                    >
-                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                      {llmOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                  </span>
+                  <select
+                    value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+                    onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
+                    className="form-select fw-semibold"
+                    aria-label="KI-Modell auswählen"
+                    disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+                  >
+                    {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                    {llmOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
                   <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
                 )}
@@ -865,12 +859,12 @@ export default function RequestsWorkspaceManager(props: Props) {
             </div>
             {visibilityMessage ? (
               <div
-                className={`${workspaceStyles.workspaceControlMessage} ${
+                className={`rounded-pill px-3 py-2 small fw-semibold align-self-start ${
                   visibilityTone === 'success'
-                    ? workspaceStyles.workspaceControlMessageSuccess
+                    ? 'bg-success-subtle text-success border border-success-subtle'
                     : visibilityTone === 'error'
-                      ? workspaceStyles.workspaceControlMessageError
-                      : workspaceStyles.workspaceControlMessageInfo
+                      ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                      : 'bg-primary-subtle text-primary border border-primary-subtle'
                 }`}
               >
                 {visibilityMessage}
@@ -880,13 +874,14 @@ export default function RequestsWorkspaceManager(props: Props) {
         </section>
       ) : null}
 
-      <div className={workspaceStyles.workspaceMainGrid}>
-        <section className={workspaceStyles.workspacePanel}>
-          <div className={workspaceStyles.workspaceListHeader}>
-            <h3 className={workspaceStyles.workspaceListTitle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
+      <div className="row g-3 g-xl-4 align-items-start">
+        <section className="col-12 col-xl-4">
+          <div className="bg-white border rounded-4 p-3">
+          <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <h3 className="m-0 fs-6 fw-bold text-dark">{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
             <button
               type="button"
-              className={workspaceStyles.workspaceListInfoButton}
+              className={`btn btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center fw-bold ${workspaceStyles.workspaceListInfoButton}`}
               onClick={() => setRequestDebugOpen(true)}
               disabled={!requestLoadDebug}
               aria-label="Debug-Informationen anzeigen"
@@ -898,14 +893,16 @@ export default function RequestsWorkspaceManager(props: Props) {
             placeholder="Suchen..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            className={workspaceStyles.workspaceSearchInput}
+            className="form-control form-control-sm"
           />
-          <div className={workspaceStyles.workspaceFilterBar}>
+          <div className="d-flex flex-wrap gap-2 mt-2 mb-3">
             <button
               type="button"
               onClick={() => setListFilter('all')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                listFilter === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
+              className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
+                listFilter === 'all'
+                  ? workspaceStyles.workspaceFilterToneActive
+                  : workspaceStyles.workspaceFilterTone
               }`}
             >
               Alle
@@ -913,8 +910,10 @@ export default function RequestsWorkspaceManager(props: Props) {
             <button
               type="button"
               onClick={() => setListFilter('haus')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                listFilter === 'haus' ? workspaceStyles.workspaceFilterButtonActive : ''
+              className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
+                listFilter === 'haus'
+                  ? workspaceStyles.workspaceFilterToneActive
+                  : workspaceStyles.workspaceFilterTone
               }`}
             >
               Haus
@@ -922,15 +921,17 @@ export default function RequestsWorkspaceManager(props: Props) {
             <button
               type="button"
               onClick={() => setListFilter('wohnung')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                listFilter === 'wohnung' ? workspaceStyles.workspaceFilterButtonActive : ''
+              className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
+                listFilter === 'wohnung'
+                  ? workspaceStyles.workspaceFilterToneActive
+                  : workspaceStyles.workspaceFilterTone
               }`}
             >
               Wohnung
             </button>
           </div>
           <div
-            className={`${workspaceStyles.workspaceList} ${workspaceStyles.workspaceRequestList}`}
+            className={`d-flex flex-column gap-2 mt-3 pe-1 overflow-auto ${workspaceStyles.workspaceRequestList}`}
           >
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
@@ -946,45 +947,47 @@ export default function RequestsWorkspaceManager(props: Props) {
                 <button
                   key={row.id}
                   onClick={() => setSelectedId(row.id)}
-                  className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemPlain} ${
-                    selectedId === row.id ? workspaceStyles.workspaceListItemActive : ''
+                  className={`btn w-100 text-start p-2 pe-4 rounded-3 border position-relative d-flex flex-column gap-1 justify-content-center ${
+                    selectedId === row.id ? 'bg-light' : 'bg-white'
                   }`}
                 >
                   <span className={workspaceStyles.workspaceListItemTitle}>{row.title || 'Gesuch'}</span>
-                  <span className={workspaceStyles.workspaceListItemMeta}>
+                  <span className="small text-secondary fw-bold text-uppercase lh-sm">
                     {`${formatRequestModeLabel(getPayloadText(payload, ['request_type']) || '—')} · ${formatRequestObjectTypeLabel(getPayloadText(payload, ['object_type']) || null)} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`${workspaceStyles.workspaceStatusDot} ${workspaceStyles.workspaceListStatusDot} ${
+                    className={`position-absolute top-0 end-0 mt-2 me-2 ${workspaceStyles.workspaceStatusDot} ${
                       rowIsReady ? workspaceStyles.workspaceStatusDotReady : workspaceStyles.workspaceStatusDotBlocked
                     }`}
                   />
                 </button>
               );
             })}
-            {filteredRows.length === 0 ? <div className={workspaceStyles.workspaceMutedText}>Keine Gesuche gefunden.</div> : null}
+            {filteredRows.length === 0 ? <div className="small text-secondary">Keine Gesuche gefunden.</div> : null}
+          </div>
           </div>
         </section>
 
-        <section className={workspaceStyles.workspacePanel}>
-          {status ? <p className={workspaceStyles.workspaceErrorText}>{status}</p> : null}
+        <section className="col-12 col-xl-8">
+          <div className="bg-white border rounded-4 p-3">
+          {status ? <p className="small text-danger mb-2">{status}</p> : null}
           {!form || !selectedRow ? (
-            <div className={workspaceStyles.workspaceMutedText}>Kein Gesuch ausgewählt.</div>
+            <div className="small text-secondary">Kein Gesuch ausgewählt.</div>
           ) : (
             <>
               {(() => {
                 const isReady = isRequestReadyForPublish(selectedOverride);
                 return (
                   <>
-                    <div className={workspaceStyles.workspaceOverviewCard}>
-                      <div className={workspaceStyles.workspaceOverviewHeader}>
-                        <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
+                    <div className="bg-light border rounded-4 p-3">
+                      <div className="d-flex align-items-center justify-content-between gap-3 mb-2 flex-wrap">
+                        <div className={`${workspaceStyles.workspaceSectionHeading} mb-2`}>Überblick</div>
                         <div
-                          className={`${workspaceStyles.workspaceStatusBadge} ${
+                          className={`d-inline-flex align-items-center gap-2 rounded-pill px-2 py-1 small fw-bold border ${
                             isReady
-                              ? workspaceStyles.workspaceStatusBadgeReady
-                              : workspaceStyles.workspaceStatusBadgeBlocked
+                              ? 'text-success bg-success-subtle border-success-subtle'
+                              : 'text-danger bg-danger-subtle border-danger-subtle'
                           }`}
                         >
                           <span
@@ -998,23 +1001,23 @@ export default function RequestsWorkspaceManager(props: Props) {
                           <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
                         </div>
                       </div>
-                      <div className={workspaceStyles.workspaceOverviewGrid}>
-                        <div>
+                      <div className="row g-3">
+                        <div className="col-12 col-md-4">
                           <div className={workspaceStyles.workspaceMetaLabel}>Gesuch-ID</div>
                           <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.id}</div>
                         </div>
-                        <div>
+                        <div className="col-12 col-md-4">
                           <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
                           <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
                         </div>
-                        <div>
+                        <div className="col-12 col-md-4">
                           <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
                           <div className={workspaceStyles.workspaceMetaValue}>{formatDateLabel(selectedUpdatedAt)}</div>
                         </div>
                       </div>
                     </div>
 
-                    <div className={workspaceStyles.workspaceTabs}>
+                    <div className="d-flex flex-wrap gap-2 my-4">
                       <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>
                         Texte
                       </button>
@@ -1028,7 +1031,7 @@ export default function RequestsWorkspaceManager(props: Props) {
 
                     {activeTab === 'criteria' ? (
                       <div className="d-flex flex-column gap-2 mb-3">
-                        <div className={workspaceStyles.workspaceSoftCard}>
+                        <div className="bg-light border rounded-4 p-3">
                           <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
                           <div className="row g-3">
                             <div className="col-12 col-sm-6 col-xl-3">
@@ -1131,7 +1134,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             ) : null}
                           </div>
                           <div className="col-12 col-xl-5">
-                            <div className={workspaceStyles.workspaceSoftCard}>
+                            <div className="bg-light border rounded-4 p-3">
                               <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
                                 <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
                                 <button type="button" onClick={() => setImageInfoOpen(true)} className={workspaceStyles.workspaceTextButton}>
@@ -1157,7 +1160,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                         <div key={item.id} className="col">
                                           <button
                                             type="button"
-                                            className={`w-100 ${workspaceStyles.workspaceImageChoiceCard} ${
+                                            className={`w-100 d-grid gap-2 ${workspaceStyles.workspaceImageChoiceCard} ${
                                               active ? workspaceStyles.workspaceImageChoiceCardActive : ''
                                             }`}
                                             onClick={() => setPendingRequestImageSelectionId(item.id)}
@@ -1208,17 +1211,17 @@ export default function RequestsWorkspaceManager(props: Props) {
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div className="row g-3 mb-3">
                             <div className="col-12 col-xl-7 d-flex flex-column gap-3">
-                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                              <div className="bg-light border rounded-3 p-3">
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
                               </div>
-                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                              <div className="bg-light border rounded-3 p-3">
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Beschreibung</div>
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
                               </div>
                             </div>
                             <div className="col-12 col-xl-5">
-                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                              <div className="bg-light border rounded-3 p-3">
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
                                 {effectiveRequestImagePreview?.imageUrl ? (
                                   <div className="d-flex flex-column gap-2">
@@ -1241,7 +1244,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                             <button
                               onClick={() => void saveOverride()}
                               disabled={saving || !canSaveRequest}
-                              className={workspaceStyles.workspaceActionPrimaryButton}
+                              className="btn btn-dark btn-sm fw-semibold px-3 py-2"
                             >
                               {saving ? 'Speichern...' : 'Gesuchetexte speichern'}
                             </button>
@@ -1249,7 +1252,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                               type="button"
                               onClick={() => void resetRequestTextOverrides()}
                               disabled={saving || (!currentRequestTitle && !currentRequestDescription)}
-                              className={workspaceStyles.workspaceActionSecondaryButton}
+                              className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2"
                             >
                               Gesuchetexte zurücksetzen
                             </button>
@@ -1263,6 +1266,7 @@ export default function RequestsWorkspaceManager(props: Props) {
 
             </>
           )}
+          </div>
         </section>
       </div>
       {requestDebugOpen && requestLoadDebug ? (
