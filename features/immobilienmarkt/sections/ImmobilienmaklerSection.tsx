@@ -101,7 +101,7 @@ export function ImmobilienmaklerSection({
   const wohnlagencheck = asRecord(text["wohnlagencheck"]) ?? {};
 
   const name = firstNonEmpty(asString(makler["makler_name"])) ?? "Maklerempfehlung";
-  const empfehlung = asString(makler["makler_empfehlung"]) ?? "";
+  const intro = asString(makler["makler_empfehlung"]) ?? "";
   const beschreibung = asString(makler["makler_beschreibung"]) ?? "";
   const benefitsRaw = asString(makler["makler_benefits"]) ?? "";
   const provision = asString(makler["makler_provision"]) ?? "";
@@ -169,13 +169,17 @@ export function ImmobilienmaklerSection({
       <section>
         <p className="small text-uppercase text-body-secondary fw-semibold mb-2">WOHNLAGENCHECK24 Maklerempfehlung</p>
         <h1 className="mb-3">Immobilienmakler in {kreisName}</h1>
-        <p className="text-body-secondary mb-0">
-          Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
-          Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
-        </p>
+        {intro ? (
+          <p className="text-body-secondary mb-0">{intro}</p>
+        ) : (
+          <p className="text-body-secondary mb-0">
+            Unser Portal empfiehlt Ihnen einen erfahrenen Immobilienmakler aus der Region {kreisName}.
+            Die Partnerauswahl basiert auf Marktkenntnis, Servicequalitaet und nachweislicher Performance.
+          </p>
+        )}
       </section>
 
-      {empfehlung ? (
+      {beschreibung ? (
         <section className="card border-0 shadow-none rounded-4">
           <div className="card-body p-3">
             <div className="row g-4 align-items-center">
@@ -193,9 +197,9 @@ export function ImmobilienmaklerSection({
                 </div>
               </div>
               <div className="col">
-                <h2 className="mb-1">{name}</h2>
-                <p className="fw-semibold mb-0">Warum wir diesen Makler empfehlen</p>
-                <p className="text-body-secondary mb-0">{empfehlung}</p>
+                <h2 className="mb-1">Profil</h2>
+                <p className="fw-semibold mb-2">{name}</p>
+                <p className="text-body-secondary mb-0">{beschreibung}</p>
               </div>
             </div>
           </div>
@@ -211,15 +215,6 @@ export function ImmobilienmaklerSection({
           initialViewMode="3d"
           showCountInHeading
         />
-      ) : null}
-
-      {beschreibung ? (
-        <section className="card border-0 shadow-none rounded-4">
-          <div className="card-body p-3">
-            <h2 className="mb-1">Profil</h2>
-            <p className="text-body-secondary mb-0">{beschreibung}</p>
-          </div>
-        </section>
       ) : null}
 
       {wohnlagencheckAllgemein || regionalGallery.length > 0 ? (

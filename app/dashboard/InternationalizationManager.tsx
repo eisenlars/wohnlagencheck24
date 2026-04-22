@@ -729,6 +729,7 @@ const TAB_SECTION_CONFIG_RAW: Record<string, Array<{ key: string; label: string;
   ],
   makler: [
     { key: 'makler_name', label: 'Firma / Name', type: 'individual' },
+    { key: 'makler_empfehlung', label: 'Intro', type: 'individual' },
     { key: 'makler_email', label: 'E-Mail', type: 'individual' },
     { key: 'makler_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
     { key: 'makler_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
@@ -736,7 +737,6 @@ const TAB_SECTION_CONFIG_RAW: Record<string, Array<{ key: string; label: string;
     { key: 'makler_adresse_hnr', label: 'Hausnummer', type: 'individual' },
     { key: 'makler_adresse_plz', label: 'PLZ', type: 'individual' },
     { key: 'makler_adresse_ort', label: 'Ort', type: 'individual' },
-    { key: 'makler_empfehlung', label: 'Empfehlungstext', type: 'individual' },
     { key: 'makler_beschreibung', label: 'Leistungsbeschreibung', type: 'individual' },
     { key: 'makler_benefits', label: 'Vorteile / Benefits', type: 'individual' },
     { key: 'makler_provision', label: 'Provisionshinweis', type: 'individual' },

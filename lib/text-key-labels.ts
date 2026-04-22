@@ -19,7 +19,7 @@ const TEXT_KEY_LABELS: Record<string, string> = {
   makler_adresse_hnr: "Hausnummer",
   makler_adresse_plz: "PLZ",
   makler_adresse_ort: "Ort",
-  makler_empfehlung: "Empfehlungstext",
+  makler_empfehlung: "Intro",
   makler_beschreibung: "Leistungsbeschreibung",
   makler_benefits: "Vorteile / Benefits",
   makler_provision: "Provisionshinweis",

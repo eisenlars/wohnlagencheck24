@@ -245,6 +245,16 @@ function buildPrompt(args: { text: string; areaName: string; type?: string; sect
     };
   }
 
+  if (label.includes('intro')) {
+    return {
+      system: 'Du bist ein deutscher Immobilien-Redakteur. Schreibe kurze, vertrauensbildende Introtexte ohne neue Fakten.',
+      user:
+        `Formuliere einen kurzen Introtext für die Maklerseite in ${areaName}. ` +
+        `2–3 Sätze, regionaler Bezug, professionell und vertrauenswürdig. ` +
+        `Keine langen Empfehlungsabschnitte, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
   if (label.includes('alt-texte') || label.includes('alttexte')) {
     return {
       system: 'Du bist ein deutscher Immobilien-Redakteur. Schreibe sachliche Bildbeschreibungen.',

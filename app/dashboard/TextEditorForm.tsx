@@ -121,6 +121,7 @@ const RAW_TAB_CONFIG = [
   ]},
   { id: 'makler', label: 'Makler', icon: '🏢', sections: [
     { key: 'makler_name', label: 'Firma / Name', type: 'individual' },
+    { key: 'makler_empfehlung', label: 'Intro', type: 'individual' },
     { key: 'makler_email', label: 'E-Mail', type: 'individual' },
     { key: 'makler_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
     { key: 'makler_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
@@ -128,7 +129,6 @@ const RAW_TAB_CONFIG = [
     { key: 'makler_adresse_hnr', label: 'Hausnummer', type: 'individual' },
     { key: 'makler_adresse_plz', label: 'PLZ', type: 'individual' },
     { key: 'makler_adresse_ort', label: 'Ort', type: 'individual' },
-    { key: 'makler_empfehlung', label: 'Empfehlungstext', type: 'individual' },
     { key: 'makler_beschreibung', label: 'Leistungsbeschreibung', type: 'individual' },
     { key: 'makler_benefits', label: 'Vorteile / Benefits', type: 'individual' },
     { key: 'makler_provision', label: 'Provisionshinweis', type: 'individual' },
@@ -1992,6 +1992,9 @@ function getStandardPromptText(label: string, type: string, areaName: string) {
     }
     if (type === 'data_driven') {
         return `Formuliere den Text flüssiger. Alle Zahlen und Fakten müssen exakt gleich bleiben.`;
+    }
+    if (lowerLabel.includes('intro')) {
+        return `Formuliere einen kurzen Introtext für die Maklerseite in ${areaName}. 2–3 Sätze, regionaler Bezug, professionell und vertrauenswürdig. Keine langen Empfehlungsabschnitte, keine neuen Fakten.`;
     }
     if (type === 'individual') {
         return `Formuliere den Text professionell und leicht individuell. Keine neuen Fakten hinzufügen.`;
