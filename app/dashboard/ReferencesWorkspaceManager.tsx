@@ -5,8 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
 import { createClient } from '@/utils/supabase/client';
-import workspaceStyles from './styles/workspace.module.css';
-
 type RawReferenceRow = {
   id: string;
   partner_id: string;
@@ -146,8 +144,18 @@ function formatReferenceResult(value: string): string {
   return value || '—';
 }
 
-function getReferencePreviewImageUrl(payload: Record<string, unknown>): string | null {
-  return parseMediaAssets(payload).find((asset) => asset.kind === 'image')?.url ?? null;
+function getReferencePreviewImageUrl(
+  payload: Record<string, unknown>,
+  overrideImageUrl?: string | null,
+  fallbackPayload?: Record<string, unknown>,
+): string | null {
+  const overrideUrl = asText(overrideImageUrl);
+  if (overrideUrl) return overrideUrl;
+  return (
+    parseMediaAssets(payload).find((asset) => asset.kind === 'image')?.url ??
+    (fallbackPayload ? parseMediaAssets(fallbackPayload).find((asset) => asset.kind === 'image')?.url : null) ??
+    null
+  );
 }
 
 function getReferenceZipCode(payload: Record<string, unknown>): string {
@@ -1094,10 +1102,9 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                 Miete
               </button>
             </div>
-            <div className={`d-flex flex-column gap-2 mt-3 pe-1 overflow-auto ${workspaceStyles.workspaceReferenceList}`}>
+            <div className="d-flex flex-column gap-2 mt-3 pe-1 overflow-auto">
               {filteredRows.map((row) => {
                 const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-                const previewImageUrl = getReferencePreviewImageUrl(payload);
                 const sourceTitle = getPayloadText(payload, ['source_title']) || row.title || row.external_id;
                 const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
                 const objectType = getPayloadText(payload, ['object_type']) || '—';
@@ -1108,6 +1115,8 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                     entry.source === row.provider &&
                     entry.external_id === row.external_id,
                 ) ?? null;
+                const sourcePayload = (row.source_payload ?? {}) as Record<string, unknown>;
+                const previewImageUrl = getReferencePreviewImageUrl(payload, rowOverride?.image_url, sourcePayload);
                 const isReady = isReferenceReadyForPublish(row, rowOverride);
                 return (
                   <button
@@ -1116,9 +1125,9 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                     onClick={() => setSelectedId(row.id)}
                     className={`btn w-100 text-start p-2 pe-4 rounded-3 border position-relative ${selectedId === row.id ? 'bg-light' : 'bg-white'}`}
                   >
-                    <span className="row g-2 align-items-center">
-                      <span className="col-4">
-                        <span className="ratio ratio-4x3 rounded-3 overflow-hidden border bg-secondary-subtle">
+                    <span className="row g-2 align-items-center flex-nowrap">
+                      <span className="col-2">
+                        <span className="ratio ratio-1x1 rounded-2 overflow-hidden border bg-secondary-subtle">
                           {previewImageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -1134,8 +1143,8 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                         </span>
                       </span>
                       <span className="col d-flex flex-column gap-1 overflow-hidden">
-                        <span className={workspaceStyles.workspaceListItemTitle}>{sourceTitle}</span>
-                        <span className="small text-secondary fw-bold text-uppercase lh-sm">
+                        <span className="fw-semibold text-dark text-truncate lh-sm">{sourceTitle}</span>
+                        <span className="small text-secondary fw-bold text-uppercase lh-sm text-truncate">
                           {`${marketingType} · ${objectType} · ${location}`}
                         </span>
                       </span>
@@ -1213,59 +1222,173 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               </div>
 
               {activeTab === 'texts' ? (
-                <div className="row g-3 align-items-start">
-                  <div className="col-12 col-xl-7 d-flex flex-column gap-3">
-                    {renderTextField('Referenz-Titel', 'seo_h1', getReferenceSourceTitle(selectedRow, selectedPayload), {
-                      multiline: false,
-                      showPreview: false,
-                      placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                    {renderTextField('Referenztext', 'long_description', rawDescription, {
-                      multiline: true,
-                      showPreview: false,
-                      placeholder: 'Referenztext wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                    {renderTextField('Herausforderungen (optional)', 'features_text', rawChallengeText, {
-                      multiline: true,
-                      showPreview: false,
-                      placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen',
-                    })}
-
-                    <div className="row g-3">
-                      <div className="col-12 col-lg-4">
-                        <div className="bg-light border rounded-3 p-3 h-100">
+                <div className="d-flex flex-column gap-3">
+                  <div className="row g-3 align-items-start">
+                    <div className="col-12 col-xl-7">
+                      <div className={`${workspaceHeadingClassName} mb-3`}>Online Referenz erstellen</div>
+                      <div className="d-flex flex-column gap-3">
+                        {renderTextField('Referenz-Titel', 'seo_h1', getReferenceSourceTitle(selectedRow, selectedPayload), {
+                          multiline: false,
+                          showPreview: false,
+                          placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                        })}
+                        {renderTextField('Referenztext', 'long_description', rawDescription, {
+                          multiline: true,
+                          showPreview: false,
+                          placeholder: 'Referenztext wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                        })}
+                        {renderTextField('Herausforderungen (optional)', 'features_text', rawChallengeText, {
+                          multiline: true,
+                          showPreview: false,
+                          placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen',
+                        })}
+                        {selectedChallengeCategories.length > 0 ? (
+                          <div className="bg-light border rounded-3 p-3">
+                            <div className={`${workspaceHeadingClassName} mb-2`}>Erkannte Herausforderungskategorien</div>
+                            <div className={workspacePreviewBodyClassName}>
+                              {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="col-12 col-xl-5">
+                      <div className="bg-light border rounded-4 p-3">
+                        <div className={`${workspaceHeadingClassName} mb-2`}>Motivwahl</div>
+                        <div className="d-flex flex-column gap-2">
+                          {effectiveReferenceImage ? (
+                            <div className="d-flex flex-column gap-2">
+                              <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={effectiveReferenceImage.url}
+                                  alt={effectiveReferenceImage.title ?? selectedRow.title ?? 'Referenzbild'}
+                                  className="w-100 h-100 object-fit-cover"
+                                  loading="eager"
+                                  decoding="async"
+                                />
+                              </div>
+                              <div className={workspacePreviewBodyClassName}>
+                                {effectiveReferenceImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
+                          )}
+                          <div className="d-flex flex-column gap-2">
+                            <div className={workspaceMetaLabelClassName}>Alternative Bildauswahl (übertragene Bilder)</div>
+                            {imageAssets.length > 0 ? (
+                              <>
+                                <div className="row row-cols-2 row-cols-md-3 g-2">
+                                  {imageAssets.map((asset, index) => {
+                                    const active = pendingReferenceImageUrl
+                                      ? pendingReferenceImageUrl === asset.url
+                                      : selectedReferenceImageOverrideUrl === asset.url;
+                                    return (
+                                      <div key={`${asset.url}-${index}`} className="col">
+                                        <button
+                                          type="button"
+                                          className={`btn w-100 d-grid gap-2 p-2 rounded-3 border text-start ${
+                                            active ? 'btn-success bg-success-subtle text-dark border-success' : 'btn-light'
+                                          }`}
+                                          onClick={() => setPendingReferenceImageUrl(asset.url)}
+                                        >
+                                          <span className="ratio ratio-4x3 rounded-2 overflow-hidden bg-secondary-subtle">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                              src={asset.url}
+                                              alt={asset.title ?? `Referenzbild ${index + 1}`}
+                                              className="w-100 h-100 object-fit-cover"
+                                              loading="lazy"
+                                              decoding="async"
+                                            />
+                                          </span>
+                                          <span className="small fw-semibold text-dark lh-sm">{asset.title ?? `Referenzbild ${index + 1}`}</span>
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="d-flex flex-wrap justify-content-end gap-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm fw-bold px-3 py-2"
+                                    disabled={!hasPendingReferenceImageSelection || saving}
+                                    onClick={() => void applyReferenceImageSelection(pendingReferenceImageUrl)}
+                                  >
+                                    Bild wählen
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 text-start"
+                                    disabled={saving || (!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
+                                    onClick={() => {
+                                      setPendingReferenceImageUrl(null);
+                                      void applyReferenceImageSelection(null);
+                                    }}
+                                  >
+                                    Objekthauptbild nutzen
+                                  </button>
+                                </div>
+                                {referenceImageSelectionStatus ? (
+                                  <div className="alert alert-danger small mb-0 py-2 px-3">{referenceImageSelectionStatus}</div>
+                                ) : null}
+                              </>
+                            ) : (
+                              <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload sind keine übertragenen Bilder verfügbar.</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="d-flex flex-column gap-2">
+                    <div className={workspaceHeadingClassName}>Referenz-Zusammenfassung vor speichern</div>
+                    <div className="row g-3 mb-3">
+                      <div className="col-12 col-xl-7 d-flex flex-column gap-3">
+                        <div className="bg-light border rounded-3 p-3">
                           <div className={workspacePreviewLabelClassName}>Referenz-Titel</div>
                           <div className={workspacePreviewBodyClassName}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
                         </div>
-                      </div>
-                      <div className="col-12 col-lg-4">
-                        <div className="bg-light border rounded-3 p-3 h-100">
+                        <div className="bg-light border rounded-3 p-3">
                           <div className={workspacePreviewLabelClassName}>Referenztext</div>
                           <div className={workspacePreviewBodyClassName}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
                         </div>
-                      </div>
-                      <div className="col-12 col-lg-4">
-                        <div className="bg-light border rounded-3 p-3 h-100">
+                        <div className="bg-light border rounded-3 p-3">
                           <div className={workspacePreviewLabelClassName}>Herausforderungen</div>
                           <div className={workspacePreviewBodyClassName}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
                         </div>
                       </div>
-                    </div>
-                    {selectedChallengeCategories.length > 0 ? (
-                      <div className="bg-white border rounded-4 p-3">
-                        <div className={`${workspaceHeadingClassName} mb-2`}>Erkannte Herausforderungskategorien</div>
-                        <div className={workspacePreviewBodyClassName}>
-                          {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
+                      <div className="col-12 col-xl-5">
+                        <div className="bg-light border rounded-3 p-3">
+                          <div className={workspacePreviewLabelClassName}>Motiv</div>
+                          {effectiveReferenceImage ? (
+                            <div className="d-flex flex-column gap-2">
+                              <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={effectiveReferenceImage.url}
+                                  alt={effectiveReferenceImage.title ?? selectedRow.title ?? 'Referenzbild'}
+                                  className="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </div>
+                              <div className={workspacePreviewBodyClassName}>
+                                {effectiveReferenceImage.title ?? selectedRow.title ?? 'Motiv gewählt'}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={workspacePreviewBodyClassName}>Kein Motiv gewählt.</div>
+                          )}
                         </div>
                       </div>
-                    ) : null}
-
+                    </div>
                     {!canSaveReferenceContent ? (
                       <div className="small text-secondary lh-base">
                         Für die Veröffentlichung und das Speichern werden ein eigener Referenz-Titel und ein eigener Referenztext benötigt. Rohdaten aus CRM-Titel oder Objektbeschreibung reichen nicht aus.
                       </div>
                     ) : null}
-
                     <div className="d-flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -1283,91 +1406,6 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                       >
                         Referenztexte zurücksetzen
                       </button>
-                    </div>
-                  </div>
-                  <div className="col-12 col-xl-5 d-flex flex-column gap-3">
-                    <div className={workspaceHeadingClassName}>Objekthauptbild</div>
-                    {effectiveReferenceImage ? (
-                      <div className="d-flex flex-column gap-2">
-                        <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={effectiveReferenceImage.url}
-                            alt={effectiveReferenceImage.title ?? selectedRow.title ?? 'Referenzbild'}
-                            className="w-100 h-100 object-fit-cover"
-                            loading="eager"
-                            decoding="async"
-                          />
-                        </div>
-                        <div className={workspacePreviewBodyClassName}>
-                          {effectiveReferenceImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
-                    )}
-                    <div className="d-flex flex-column gap-2">
-                      <div className={workspaceMetaLabelClassName}>Alternative Bildauswahl (übertragene Bilder)</div>
-                      {imageAssets.length > 0 ? (
-                        <>
-                          <div className="row row-cols-2 row-cols-md-3 g-2">
-                            {imageAssets.map((asset, index) => {
-                              const active = pendingReferenceImageUrl
-                                ? pendingReferenceImageUrl === asset.url
-                                : selectedReferenceImageOverrideUrl === asset.url;
-                              return (
-                                <div key={`${asset.url}-${index}`} className="col">
-                                  <button
-                                    type="button"
-                                    className={`btn w-100 d-grid gap-2 p-2 rounded-3 border text-start ${
-                                      active ? 'btn-success bg-success-subtle text-dark border-success' : 'btn-light'
-                                    }`}
-                                    onClick={() => setPendingReferenceImageUrl(asset.url)}
-                                  >
-                                    <span className="ratio ratio-4x3 rounded-2 overflow-hidden bg-secondary-subtle">
-                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                      <img
-                                        src={asset.url}
-                                        alt={asset.title ?? `Referenzbild ${index + 1}`}
-                                        className="w-100 h-100 object-fit-cover"
-                                        loading="lazy"
-                                        decoding="async"
-                                      />
-                                    </span>
-                                    <span className="small fw-semibold text-dark lh-sm">{asset.title ?? `Referenzbild ${index + 1}`}</span>
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="d-flex flex-wrap justify-content-end gap-2">
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm fw-bold px-3 py-2"
-                              disabled={!hasPendingReferenceImageSelection || saving}
-                              onClick={() => void applyReferenceImageSelection(pendingReferenceImageUrl)}
-                            >
-                              Bild wählen
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 text-start"
-                              disabled={saving || (!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
-                              onClick={() => {
-                                setPendingReferenceImageUrl(null);
-                                void applyReferenceImageSelection(null);
-                              }}
-                            >
-                              Objekthauptbild nutzen
-                            </button>
-                          </div>
-                          {referenceImageSelectionStatus ? (
-                            <div className="alert alert-danger small mb-0 py-2 px-3">{referenceImageSelectionStatus}</div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload sind keine übertragenen Bilder verfügbar.</div>
-                      )}
                     </div>
                   </div>
                 </div>

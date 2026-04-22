@@ -329,10 +329,6 @@
   padding-right: 16px;
 }
 
-.workspaceReferenceList {
-  max-height: 62vh;
-}
-
 .workspaceListItemTitle {
   font-weight: 600;
   color: #0f172a;
