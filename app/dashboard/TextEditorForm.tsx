@@ -1618,6 +1618,174 @@ export default function TextEditorForm({
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
   const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && visibleScopeAreaItems.length > 1;
 
+  if (isMarketing) {
+    return (
+      <div className="w-100">
+        {showTopLlmCard ? (
+          <section className="border border-success-subtle rounded-3 p-3 mb-3 bg-success-subtle">
+            <div className="row g-3 align-items-center">
+              <div className="col-12 col-xl-4 ms-xl-auto">
+                <select
+                  value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
+                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                  className="form-select fw-semibold"
+                  aria-label="KI-Modell auswählen"
+                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
+                >
+                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                  {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                  {llmIntegrations.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="bg-white border rounded-4 p-3 p-xl-4">
+          <div id={topicSectionAnchorId} className="mb-4">
+            <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
+          </div>
+
+          <div className="row g-3 g-xl-4 align-items-start">
+            {showScopeAreaSidebar ? (
+              <aside className="col-12 col-xl-4">
+                <div className="bg-light border rounded-4 p-3">
+                  <div className="d-flex flex-column gap-2">
+                    {visibleScopeAreaItems.map((item) => {
+                      const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
+                      const active = item.area_id === selectedAreaConfig?.area_id;
+                      return (
+                        <button
+                          key={item.area_id}
+                          type="button"
+                          className={`btn w-100 text-start rounded-3 border p-3 ${
+                            active ? 'btn-secondary' : 'btn-light'
+                          }`}
+                          onClick={() => setSelectedScopeAreaId(item.area_id)}
+                        >
+                          <span className="d-flex align-items-center justify-content-between gap-2">
+                            <strong className="small">{item.areas?.name || item.area_id}</strong>
+                            <span className={`badge rounded-pill ${active ? 'text-bg-light' : 'text-bg-secondary'}`}>
+                              {itemIsOrtslage ? 'Ortslage' : 'Kreis'}
+                            </span>
+                          </span>
+                          <span className={`d-block small mt-1 ${active ? 'text-white-50' : 'text-secondary'}`}>
+                            {item.area_id}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </aside>
+            ) : null}
+
+            <div className={showScopeAreaSidebar ? 'col-12 col-xl-8' : 'col-12'}>
+              <div className="d-flex flex-column gap-4">
+                <div className="d-flex flex-wrap gap-2 my-4">
+                  {visibleTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`btn btn-sm rounded-pill px-3 ${
+                        activeTab === tab.id ? 'btn-secondary fw-bold' : 'btn-outline-secondary fw-semibold'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="d-flex flex-column gap-4">
+                  {activeSections.length === 0 ? (
+                    <div className="border border-secondary-subtle rounded-3 p-3 small text-secondary bg-light">
+                      Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
+                    </div>
+                  ) : activeSections.map((section) => {
+                    const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+                    return (
+                      <TextEditorField
+                        key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+                        label={section.label}
+                        sectionKey={section.key}
+                        sectionGroup={sectionGroup}
+                        type={section.type}
+                        rawText={getRawTextFromJSON(section.key, sectionGroup)}
+                        dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+                        areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+                        onSave={saveText}
+                        onResetToSystem={resetTextToSystem}
+                        onAiRewrite={handleAiRewrite}
+                        tableName={tableName as HintTable}
+                        enableApproval={enableApproval}
+                        isRewriting={rewritingKey === section.key}
+                        isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+                        mediaUpload={null}
+                      />
+                    );
+                  })}
+
+                  {enableApproval ? (
+                    <div className="d-flex flex-column align-items-end gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveAndApprove}
+                        className={`btn fw-bold px-4 py-3 ${!publishing && hasPublishableChanges ? 'btn-success' : 'btn-secondary disabled'}`}
+                        disabled={publishing || !hasPublishableChanges}
+                      >
+                        {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
+                      </button>
+                      <span className="small text-secondary text-end">
+                        Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {saving ? (
+          <div className="position-fixed bottom-0 end-0 m-4 bg-dark text-white rounded-3 px-4 py-3 shadow small">
+            Speichere Änderungen...
+          </div>
+        ) : null}
+        {publishModalOpen ? (
+          <div className="modal d-block bg-dark bg-opacity-50" tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered" role="dialog" aria-modal="true">
+              <div className="modal-content rounded-4 border-0 shadow">
+                <div className="modal-header">
+                  <h3 className="modal-title fs-5">Deutsche Freigabe laeuft</h3>
+                </div>
+                <div className="modal-body d-flex flex-column gap-2">
+                  <p className="m-0 small text-secondary">{publishStatus}</p>
+                  <p className="m-0 small fw-bold text-dark">Fortschritt: {publishDone}/{publishTotal}</p>
+                  {publishError ? <p className="m-0 small text-danger">{publishError}</p> : null}
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary fw-semibold"
+                    onClick={() => setPublishModalOpen(false)}
+                    disabled={publishing}
+                  >
+                    {publishing ? 'Bitte warten …' : 'Schließen'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: '100%' }}>
       <div style={showTopLlmCard || showGlobalClassActions ? workflowCardStackStyle : undefined}>
@@ -2037,7 +2205,7 @@ function FieldInfoHint({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <span
-      style={fieldInfoWrapStyle}
+      className="position-relative d-inline-flex align-items-center"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
@@ -2045,8 +2213,12 @@ function FieldInfoHint({ text }: { text: string }) {
       tabIndex={0}
       aria-label={text}
     >
-      <span style={fieldInfoIconStyle}>i</span>
-      {open ? <span style={fieldInfoTooltipStyle}>{text}</span> : null}
+      <span className="badge rounded-circle text-secondary bg-light border fw-bold">i</span>
+      {open ? (
+        <span className="position-absolute top-100 start-0 mt-2 bg-white border rounded-3 shadow p-2 small text-secondary lh-base z-3">
+          {text}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -2118,161 +2290,170 @@ function TextEditorField({
     const hasOverride = Boolean(dbEntry?.optimized_content);
 
     return (
-        <div style={fieldCardStyle} id={`text-section-${sectionKey}`}>
-            <div style={fieldHeaderGridStyle}>
-              <div style={fieldHeaderStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
-                  <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                  {fieldHint ? (
-                    <FieldInfoHint text={fieldHint} />
-                  ) : null}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {isMandatory && displayClass === 'profile' ? (
-                    <span style={statePillStyle(hasOverride)}>
-                      {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
-                    </span>
-                  ) : null}
-                  {showStatus ? (
-                    <span style={statusBadgeStyle(status === 'approved')}>
-                      {status === 'approved' ? 'Freigegeben' : 'Entwurf'}
-                    </span>
-                  ) : null}
-                  {isLockedDataDriven ? (
-                    <span style={lockedBadgeStyle}>Gesperrt (Data-Driven)</span>
-                  ) : null}
-                </div>
+      <div className="border-bottom pb-4" id={`text-section-${sectionKey}`}>
+        <div className="row g-3 align-items-start mb-3">
+          <div className="col-12 col-xl-7">
+            <div className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
+                <span className="badge rounded-pill text-secondary bg-light border">
+                  {displayTextClassLabel(displayClass)}
+                </span>
+                {fieldHint ? (
+                  <FieldInfoHint text={fieldHint} />
+                ) : null}
               </div>
-              <div style={headerRightSlotStyle}>
-                {showSourceState ? (
-                  <div style={previewSourceRowStyle}>
-                    <span style={previewSourceLabelStyle}>
-                      Quelle:{' '}
-                      <span style={hasOverride ? sourceOverrideTextStyle : sourceSystemTextStyle}>
-                        {hasOverride ? 'Individuell angepasst' : 'System'}
-                      </span>
-                    </span>
-                    {hasOverride ? (
-                      <button
-                        type="button"
-                        style={previewResetButtonStyle}
-                        title="Systemtext nutzen"
-                        aria-label="Systemtext nutzen"
-                        onClick={async () => {
-                          await onResetToSystem(sectionKey);
-                          setLocalValue(null);
-                        }}
-                      >
-                        ↺
-                      </button>
-                    ) : null}
-                  </div>
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                {isMandatory && displayClass === 'profile' ? (
+                  <span className={`badge rounded-pill ${hasOverride ? 'text-success bg-success-subtle border border-success-subtle' : 'text-danger bg-danger-subtle border border-danger-subtle'}`}>
+                    {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
+                  </span>
+                ) : null}
+                {showStatus ? (
+                  <span className={`badge rounded-pill ${status === 'approved' ? 'text-success bg-success-subtle' : 'text-warning bg-warning-subtle'}`}>
+                    {status === 'approved' ? 'Freigegeben' : 'Entwurf'}
+                  </span>
+                ) : null}
+                {isLockedDataDriven ? (
+                  <span className="badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle">Gesperrt (Data-Driven)</span>
                 ) : null}
               </div>
             </div>
-            
-            <div style={editorGridStyle}>
-                <div style={textareaWrapperStyle}>
-                    {isSingleLine ? (
-                      <input
-                        type={resolveInputType(sectionKey)}
-                        value={currentText}
-                        onChange={(e) => setLocalValue(e.target.value)}
-                        onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
-                        style={inputStyle(isLockedDataDriven)}
-                        readOnly={isLockedDataDriven}
-                        placeholder="Inhalt bearbeiten..."
-                      />
-                    ) : (
-                      <textarea 
-                          value={currentText}
-                          onChange={(e) => setLocalValue(e.target.value)}
-                          onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
-                          style={textareaStyle(isLockedDataDriven)}
-                          readOnly={isLockedDataDriven}
-                          placeholder="Inhalt bearbeiten..."
-                      />
-                    )}
-                    {isDataDriven ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isDataDrivenUnlocked) {
-                            setIsDataDrivenUnlocked(false);
-                            return;
-                          }
-                          const ok = window.confirm(
-                            'Achtung: Kontextverlust moeglich. Manuelle Aenderung von Data-Driven Texten ist nicht erwuenscht. Wirklich freischalten?',
-                          );
-                          if (ok) setIsDataDrivenUnlocked(true);
-                        }}
-                        style={unlockButtonStyle(isDataDrivenUnlocked)}
-                      >
-                        {isDataDrivenUnlocked ? 'Bearbeitung sperren' : 'Manuelle Bearbeitung freischalten'}
-                      </button>
-                    ) : null}
-                    {showAiTools ? (
-                      <div style={aiRewriteControlsStyle}>
-                        <button
-                            style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                            onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
-                            disabled={isRewriting}
-                        >
-                            {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-                        </button>
-                      </div>
-                    ) : null}
-                    {showAiTools ? (
-                      <button
-                          type="button"
-                          onClick={() => setShowPrompt((prev) => !prev)}
-                          style={promptToggleStyle}
-                      >
-                          {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                      </button>
-                    ) : null}
-                    {showAiTools && showPrompt ? (
-                        <>
-                            <div style={promptPanelStyle}>
-                                <div style={promptLabelStyle}>Standard-Prompt</div>
-                                <div style={promptContentStyle}>{standardPrompt}</div>
-                                <label style={promptInputLabelStyle}>
-                                    Eigener Prompt (optional)
-                                    <textarea
-                                        value={customPrompt}
-                                        onChange={(e) => setCustomPrompt(e.target.value)}
-                                        style={promptInputStyle}
-                                        placeholder="Eigenen Prompt eingeben (zusatzlich zum Standard-Prompt)"
-                                    />
-                                </label>
-                            </div>
-                        </>
-                    ) : null}
-                </div>
-                {mediaUpload ? (
-                  <MandatoryMediaUploadCard
-                    label={mediaUpload.label}
-                    assetKey={mediaUpload.key}
-                    maxWidth={mediaUpload.maxWidth}
-                    maxHeight={mediaUpload.maxHeight}
-                    maxUploadBytes={mediaUpload.maxUploadBytes}
-                    currentUrl={mediaUpload.currentUrl}
-                    hasOverride={mediaUpload.hasOverride}
-                    uploading={mediaUpload.uploading}
-                    error={mediaUpload.error}
-                    onUpload={mediaUpload.onUpload}
-                  />
-                ) : !isIndividual ? (
-                  <div style={previewPaneStyle}>
-                    <div style={previewBoxStyle}>
-                      <div style={previewHeaderStyle}>ORIGINAL BASIS-TEXT (SYSTEM)</div>
-                      <div style={previewContentStyle}>{rawText || 'Keine System-Vorlage vorhanden.'}</div>
-                    </div>
-                  </div>
+          </div>
+          <div className="col-12 col-xl-5 d-flex justify-content-xl-end">
+            {showSourceState ? (
+              <div className="d-flex align-items-center justify-content-between gap-2 w-100">
+                <span className="small text-secondary fw-semibold">
+                  Quelle:{' '}
+                  <span className={hasOverride ? 'text-success fw-bold' : 'text-secondary fw-bold'}>
+                    {hasOverride ? 'Individuell angepasst' : 'System'}
+                  </span>
+                </span>
+                {hasOverride ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1"
+                    title="Systemtext nutzen"
+                    aria-label="Systemtext nutzen"
+                    onClick={async () => {
+                      await onResetToSystem(sectionKey);
+                      setLocalValue(null);
+                    }}
+                  >
+                    ↺
+                  </button>
                 ) : null}
-            </div>
+              </div>
+            ) : null}
+          </div>
         </div>
+
+        <div className="row g-3 align-items-stretch">
+          <div className="col-12 col-xl-7 d-flex flex-column gap-2">
+            {isSingleLine ? (
+              <input
+                type={resolveInputType(sectionKey)}
+                value={currentText}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
+                className={`form-control ${isLockedDataDriven ? 'bg-danger-subtle border-danger' : ''}`}
+                readOnly={isLockedDataDriven}
+                placeholder="Inhalt bearbeiten..."
+              />
+            ) : (
+              <textarea
+                value={currentText}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
+                className={`form-control ${isLockedDataDriven ? 'bg-danger-subtle border-danger' : ''}`}
+                rows={8}
+                readOnly={isLockedDataDriven}
+                placeholder="Inhalt bearbeiten..."
+              />
+            )}
+            {isDataDriven ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isDataDrivenUnlocked) {
+                    setIsDataDrivenUnlocked(false);
+                    return;
+                  }
+                  const ok = window.confirm(
+                    'Achtung: Kontextverlust moeglich. Manuelle Aenderung von Data-Driven Texten ist nicht erwuenscht. Wirklich freischalten?',
+                  );
+                  if (ok) setIsDataDrivenUnlocked(true);
+                }}
+                className={`btn btn-sm fw-semibold align-self-start ${isDataDrivenUnlocked ? 'btn-outline-secondary' : 'btn-outline-danger'}`}
+              >
+                {isDataDrivenUnlocked ? 'Bearbeitung sperren' : 'Manuelle Bearbeitung freischalten'}
+              </button>
+            ) : null}
+            {showAiTools ? (
+              <div className="d-flex align-items-center flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary fw-semibold"
+                  onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
+                  disabled={isRewriting}
+                >
+                  {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                </button>
+              </div>
+            ) : null}
+            {showAiTools ? (
+              <button
+                type="button"
+                onClick={() => setShowPrompt((prev) => !prev)}
+                className="btn btn-sm btn-outline-secondary fw-semibold align-self-start"
+              >
+                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+              </button>
+            ) : null}
+            {showAiTools && showPrompt ? (
+              <div className="border rounded-3 p-3 bg-light">
+                <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+                <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
+                  <span>Eigener Prompt (optional)</span>
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    className="form-control form-control-sm"
+                    rows={4}
+                    placeholder="Eigenen Prompt eingeben (zusatzlich zum Standard-Prompt)"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+          {mediaUpload ? (
+            <MandatoryMediaUploadCard
+              label={mediaUpload.label}
+              assetKey={mediaUpload.key}
+              maxWidth={mediaUpload.maxWidth}
+              maxHeight={mediaUpload.maxHeight}
+              maxUploadBytes={mediaUpload.maxUploadBytes}
+              currentUrl={mediaUpload.currentUrl}
+              hasOverride={mediaUpload.hasOverride}
+              uploading={mediaUpload.uploading}
+              error={mediaUpload.error}
+              onUpload={mediaUpload.onUpload}
+            />
+          ) : !isIndividual ? (
+            <div className="col-12 col-xl-5">
+              <div className="bg-light border rounded-3 h-100 d-flex flex-column">
+                <div className="small text-secondary text-uppercase fw-bold border-bottom px-3 py-2">
+                  Original Basis-Text (System)
+                </div>
+                <div className="small text-secondary lh-base p-3 flex-grow-1 text-break">
+                  {rawText || 'Keine System-Vorlage vorhanden.'}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
     );
 }
 
@@ -2372,111 +2553,6 @@ const localSiteClassGridStyle: React.CSSProperties = {
   ...textWorkflowClassGridStyle,
   gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
 };
-const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
-const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
-const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const headerRightSlotStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  minHeight: 24,
-};
-const editorGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', alignItems: 'stretch' as const };
-const textareaWrapperStyle = { display: 'flex', flexDirection: 'column' as const, gap: '12px', height: '100%' };
-const inputStyle = (readOnly = false) => ({
-  width: '100%',
-  height: '44px',
-  padding: '10px 12px',
-  borderRadius: '10px',
-  border: readOnly ? '1px dashed #ef4444' : '1px solid #cbd5e0',
-  backgroundColor: readOnly ? '#fef2f2' : '#fff',
-  fontSize: '14px',
-  lineHeight: '1.4',
-  fontFamily: 'inherit',
-  color: '#334155',
-});
-const textareaStyle = (readOnly = false) => ({
-  width: '100%',
-  minHeight: '200px',
-  padding: '18px',
-  borderRadius: '10px',
-  border: readOnly ? '1px dashed #ef4444' : '1px solid #cbd5e0',
-  backgroundColor: readOnly ? '#fef2f2' : '#fff',
-  fontSize: '14.5px',
-  lineHeight: '1.6',
-  fontFamily: 'inherit',
-  color: '#334155',
-});
-const previewPaneStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  height: '100%',
-};
-const previewSourceRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-};
-const previewSourceLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#64748b',
-  fontWeight: 600,
-};
-const sourceSystemTextStyle: React.CSSProperties = {
-  color: '#64748b',
-  fontWeight: 700,
-};
-const sourceOverrideTextStyle: React.CSSProperties = {
-  color: '#047857',
-  fontWeight: 700,
-};
-const previewResetButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: '999px',
-  width: 24,
-  height: 24,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#fff',
-  color: '#334155',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-const previewBoxStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-};
-const previewHeaderStyle = { padding: '10px 15px', fontSize: '9px', fontWeight: '800', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', letterSpacing: '0.05em' };
-const previewContentStyle: React.CSSProperties = {
-  padding: '15px',
-  fontSize: '12.5px',
-  color: '#64748b',
-  lineHeight: '1.5',
-  fontStyle: 'italic',
-  minHeight: 200,
-  flex: 1,
-};
-const aiRewriteControlsStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  flexWrap: 'wrap' as const,
-};
-const aiButtonStyle = { alignSelf: 'flex-start', padding: '10px 18px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' };
-const aiButtonLoadingStyle = { ...aiButtonStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f1f5f9' };
-const promptToggleStyle = { alignSelf: 'flex-start', background: 'transparent', border: 'none', color: '#2563eb', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: 0 };
-const promptPanelStyle = { border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px', backgroundColor: '#f8fafc' };
-const promptLabelStyle = { fontSize: '10px', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#94a3b8', fontWeight: '700', marginBottom: '6px' };
-const promptContentStyle = { fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: 1.5 };
-const promptInputLabelStyle = { display: 'flex', flexDirection: 'column' as const, gap: '6px', fontSize: '11px', fontWeight: '600', color: '#1e293b' };
-const promptInputStyle = { width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', lineHeight: '1.4', fontFamily: 'inherit' };
 const statePillStyle = (completed: boolean): React.CSSProperties => ({
   fontSize: '10px',
   fontWeight: 700,
@@ -2486,62 +2562,6 @@ const statePillStyle = (completed: boolean): React.CSSProperties => ({
   backgroundColor: completed ? '#dcfce7' : '#fee2e2',
   color: completed ? '#166534' : '#991b1b',
 });
-const lockedBadgeStyle = {
-  color: '#991b1b',
-  backgroundColor: '#fee2e2',
-  border: '1px solid #fecaca',
-  fontSize: '10px',
-  fontWeight: 700,
-  borderRadius: '6px',
-  padding: '3px 8px',
-};
-const statusBadgeStyle = (approved: boolean) => ({
-  fontSize: '10px',
-  padding: '2px 6px',
-  borderRadius: '6px',
-  backgroundColor: approved ? '#dcfce7' : '#fef3c7',
-  color: approved ? '#166534' : '#92400e',
-  fontWeight: '700',
-  textTransform: 'uppercase' as const,
-});
-const fieldInfoIconStyle: React.CSSProperties = {
-  width: 18,
-  height: 18,
-  borderRadius: '999px',
-  border: '1px solid #cbd5e1',
-  color: '#64748b',
-  backgroundColor: '#f8fafc',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 11,
-  fontWeight: 700,
-  cursor: 'help',
-  userSelect: 'none',
-};
-const fieldInfoWrapStyle: React.CSSProperties = {
-  position: 'relative',
-  display: 'inline-flex',
-  alignItems: 'center',
-  zIndex: 3,
-  outline: 'none',
-};
-const fieldInfoTooltipStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: 'calc(100% + 8px)',
-  left: 0,
-  minWidth: 240,
-  maxWidth: 360,
-  padding: '9px 10px',
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#334155',
-  fontSize: 12,
-  lineHeight: 1.4,
-  boxShadow: '0 10px 24px rgba(15, 23, 42, 0.16)',
-  whiteSpace: 'normal',
-};
 const approvalFooterStyle: React.CSSProperties = {
   marginTop: '24px',
   display: 'flex',
@@ -2566,17 +2586,6 @@ const approvalHintStyle: React.CSSProperties = {
   color: '#64748b',
   textAlign: 'right',
 };
-const unlockButtonStyle = (unlocked: boolean) => ({
-  alignSelf: 'flex-start',
-  padding: '9px 14px',
-  borderRadius: '8px',
-  border: unlocked ? '1px solid #e2e8f0' : '1px solid #fca5a5',
-  backgroundColor: unlocked ? '#f8fafc' : '#fee2e2',
-  color: unlocked ? '#334155' : '#991b1b',
-  fontSize: '12px',
-  fontWeight: '600',
-  cursor: 'pointer',
-});
 const globalReportStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '10px',
