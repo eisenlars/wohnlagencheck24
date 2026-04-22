@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
@@ -64,8 +64,13 @@ type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
-    : workspaceStyles.workspaceTab;
+    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
+    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
+const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
+const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
+const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm text-break';
+const workspacePreviewLabelClassName = 'small text-secondary text-uppercase fw-bold mb-2';
+const workspacePreviewBodyClassName = 'small text-secondary lh-base text-break';
 type ReferenceListFilter = 'all' | 'kauf' | 'miete';
 type VisibilityMode = 'partner_wide' | 'strict_local';
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -320,194 +325,6 @@ function buildReferenceAiSourceContext(row: RawReferenceRow | null, payload: Rec
     .map(([label, value]) => `${label}: ${value}`);
   return facts.join('\n');
 }
-
-const shellStyle: CSSProperties = { display: 'grid', gap: '10px' };
-const workspaceStyle: CSSProperties = { display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' };
-const panelStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
-const statusBoxStyle: CSSProperties = { marginTop: 0, marginBottom: 12, fontSize: 12, color: '#334155' };
-const summaryHeaderStyle: CSSProperties = { fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', fontWeight: 700, marginBottom: 10 };
-const summaryGridStyle: CSSProperties = { display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' };
-const summaryLabelStyle: CSSProperties = { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 };
-const summaryValueStyle: CSSProperties = { fontSize: 13, color: '#0f172a', fontWeight: 600, lineHeight: 1.45 };
-const summaryHintStyle: CSSProperties = { fontSize: 12, color: '#475569', lineHeight: 1.5 };
-const sectionCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#fff' };
-const sectionHintStyle: CSSProperties = { color: '#64748b', fontSize: 12, lineHeight: 1.5 };
-const editorGridStyle: CSSProperties = { display: 'grid', gap: 14, gridTemplateColumns: 'minmax(0, 1.25fr) minmax(260px, 0.75fr)' };
-const previewBoxStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc', padding: 12, display: 'grid', gap: 8 };
-const previewHeaderStyle: CSSProperties = { fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' };
-const previewContentStyle: CSSProperties = { fontSize: 13, color: '#0f172a', lineHeight: 1.6, whiteSpace: 'pre-wrap' };
-const previewGridStyle: CSSProperties = { display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' };
-const previewCardStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc', padding: 12, display: 'grid', gap: 6 };
-const previewLabelStyle: CSSProperties = { fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' };
-const factsGridStyle: CSSProperties = { display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' };
-const mediaStageStyle: CSSProperties = { position: 'relative', minHeight: 320, borderRadius: 14, overflow: 'hidden', background: '#e2e8f0' };
-const mediaImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
-const mediaMetaStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', color: '#334155', fontSize: 13 };
-const thumbRailStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8 };
-const thumbButtonStyle = (active: boolean): CSSProperties => ({
-  border: active ? '2px solid #0f766e' : '1px solid #cbd5e1',
-  borderRadius: 10,
-  overflow: 'hidden',
-  padding: 0,
-  width: 80,
-  height: 60,
-  background: '#fff',
-  cursor: 'pointer',
-});
-const thumbImageStyle: CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
-const imageChoiceGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-  gap: 10,
-};
-const imageChoiceCardStyle = (active: boolean): CSSProperties => ({
-  display: 'grid',
-  gap: 8,
-  padding: 8,
-  borderRadius: 12,
-  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
-  backgroundColor: active ? '#ecfeff' : '#fff',
-  cursor: 'pointer',
-  textAlign: 'left',
-});
-const imageChoiceImageStyle: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  height: 88,
-  objectFit: 'cover',
-  borderRadius: 8,
-  backgroundColor: '#e2e8f0',
-};
-const imageChoiceTitleStyle: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 600,
-  color: '#0f172a',
-  lineHeight: 1.35,
-};
-const imageChoiceActionsRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: 10,
-  justifyContent: 'flex-end',
-  flexWrap: 'wrap',
-};
-const imageChoicePrimaryButtonStyle = (disabled: boolean): CSSProperties => ({
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid transparent',
-  backgroundColor: disabled ? '#94a3b8' : '#486b7a',
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.7 : 1,
-});
-const imageChoiceResetButtonStyle = (disabled: boolean): CSSProperties => ({
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#fff',
-  color: '#0f172a',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.65 : 1,
-});
-const imageSelectionStatusStyle: CSSProperties = {
-  borderRadius: 10,
-  backgroundColor: '#fef2f2',
-  border: '1px solid #fecaca',
-  color: '#b91c1c',
-  padding: '10px 12px',
-  fontSize: 12,
-  lineHeight: 1.45,
-};
-const saveButtonStyle = (disabled: boolean): CSSProperties => ({
-  padding: '10px 14px',
-  borderRadius: 10,
-  border: 'none',
-  backgroundColor: disabled ? '#cbd5e1' : '#0f172a',
-  color: disabled ? '#64748b' : '#fff',
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.85 : 1,
-});
-const secondaryActionButtonStyle: CSSProperties = { padding: '10px 14px', borderRadius: 10, border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' };
-
-const workspaceDebugModalOverlayStyle: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15, 23, 42, 0.28)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-  padding: 20,
-};
-
-const workspaceDebugModalCardStyle: CSSProperties = {
-  width: '100%',
-  maxWidth: 340,
-  borderRadius: 14,
-  border: '1px solid #dbe5ea',
-  background: '#ffffff',
-  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-  padding: 16,
-  display: 'grid',
-  gap: 12,
-};
-
-const referenceOverviewInfoModalCardStyle: CSSProperties = {
-  width: '100%',
-  maxWidth: 720,
-  borderRadius: 14,
-  border: '1px solid #dbe5ea',
-  background: '#ffffff',
-  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-  padding: 16,
-  display: 'grid',
-  gap: 16,
-};
-
-const workspaceDebugModalHeadStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-};
-
-const workspaceDebugModalTitleStyle: CSSProperties = {
-  fontSize: 14,
-  color: '#0f172a',
-};
-
-const workspaceDebugModalCloseStyle: CSSProperties = {
-  border: 'none',
-  background: 'transparent',
-  color: '#64748b',
-  fontSize: 20,
-  lineHeight: 1,
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const workspaceDebugModalBodyStyle: CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  fontSize: 13,
-  color: '#334155',
-};
-
-const referenceTextWorkspaceStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 0.75fr)',
-  gap: 18,
-  alignItems: 'start',
-};
-
-const referenceContextCardStyle: CSSProperties = {
-  display: 'grid',
-  gap: 12,
-};
 
 export default function ReferencesWorkspaceManager(props: Props) {
   const {
@@ -988,36 +805,32 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     const showPreview = options?.showPreview ?? true;
     return (
-      <div className={showPreview ? workspaceStyles.workspaceField : workspaceStyles.workspaceFieldPlain}>
-        <div className={workspaceStyles.workspaceFieldHeader}>
-          <h4 className={`${workspaceStyles.workspaceFieldTitle} ${workspaceStyles.workspaceFieldTitleStrong}`}>{label}</h4>
+      <div className={showPreview ? 'bg-white border rounded-4 p-3 d-flex flex-column gap-3' : 'd-flex flex-column gap-2'}>
+        <div className="d-flex justify-content-between align-items-center gap-3">
+          <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
         </div>
-        <div
-          style={showPreview ? editorGridStyle : undefined}
-          className={!showPreview ? workspaceStyles.workspaceFieldStack : undefined}
-        >
-          <div className={workspaceStyles.workspaceFieldStack}>
+        <div className={showPreview ? 'row g-3 align-items-start' : 'd-flex flex-column gap-2'}>
+          <div className={showPreview ? 'col-12 col-xl-7 d-flex flex-column gap-2' : 'd-flex flex-column gap-2'}>
             {options?.multiline === false ? (
               <input
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput}`}
+                className="form-control form-control-sm"
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             ) : (
               <textarea
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea}`}
+                className="form-control form-control-sm"
+                rows={5}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <div className={workspaceStyles.workspaceAiActions}>
+            <div className="d-flex align-items-center flex-wrap gap-2">
               <button
                 type="button"
-                className={`${workspaceStyles.workspaceAiButton} ${
-                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-                }`}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
                 onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1026,21 +839,22 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                className={workspaceStyles.workspacePromptButton}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div className={workspaceStyles.workspacePromptPanel}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
+              <div className="border rounded-3 p-3 bg-light">
+                <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+                <label className="d-flex flex-column gap-1 small fw-semibold text-dark">
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
                     onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                    style={promptInputStyle}
+                    className="form-control form-control-sm"
+                    rows={4}
                     placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                   />
                 </label>
@@ -1048,9 +862,11 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
             ) : null}
           </div>
           {showPreview ? (
-            <div style={previewBoxStyle}>
-              <div style={previewHeaderStyle}>CRM-Original</div>
-              <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+            <div className="col-12 col-xl-5">
+              <div className="bg-light border rounded-3 p-3 h-100">
+                <div className={workspacePreviewLabelClassName}>CRM-Original</div>
+                <div className={workspacePreviewBodyClassName}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+              </div>
             </div>
           ) : null}
         </div>
@@ -1075,24 +891,23 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     const standardPrompt = getStandardPromptText(label, getReferencePromptContext(selectedRow, selectedPayload));
     const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
-      <div className={workspaceStyles.workspaceField}>
-        <div className={workspaceStyles.workspaceFieldHeader}>
-          <h4 className={`${workspaceStyles.workspaceFieldTitle} ${workspaceStyles.workspaceFieldTitleStrong}`}>{label}</h4>
+      <div className="bg-white border rounded-4 p-3 d-flex flex-column gap-3">
+        <div className="d-flex justify-content-between align-items-center gap-3">
+          <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
         </div>
-        <div style={editorGridStyle}>
-          <div className={workspaceStyles.workspaceFieldStack}>
+        <div className="row g-3 align-items-start">
+          <div className="col-12 col-xl-7 d-flex flex-column gap-2">
             <textarea
               value={value}
               onChange={(event) => updateField(key, event.target.value.split('\n').map((item) => item.trim()).filter(Boolean))}
-              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea}`}
+              className="form-control form-control-sm"
+              rows={5}
               placeholder={placeholder}
             />
-            <div className={workspaceStyles.workspaceAiActions}>
+            <div className="d-flex align-items-center flex-wrap gap-2">
               <button
                 type="button"
-                className={`${workspaceStyles.workspaceAiButton} ${
-                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-                }`}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
                 onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1101,30 +916,33 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               <button
                 type="button"
                 onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                className={workspaceStyles.workspacePromptButton}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div className={workspaceStyles.workspacePromptPanel}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
+              <div className="border rounded-3 p-3 bg-light">
+                <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+                <label className="d-flex flex-column gap-1 small fw-semibold text-dark">
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
                     onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                    style={promptInputStyle}
+                    className="form-control form-control-sm"
+                    rows={4}
                     placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                   />
                 </label>
               </div>
             ) : null}
           </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM-Original</div>
-            <div style={previewContentStyle}>{rawValueText || 'Keine CRM-Vorlage vorhanden.'}</div>
+          <div className="col-12 col-xl-5">
+            <div className="bg-light border rounded-3 p-3 h-100">
+              <div className={workspacePreviewLabelClassName}>CRM-Original</div>
+              <div className={workspacePreviewBodyClassName}>{rawValueText || 'Keine CRM-Vorlage vorhanden.'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1179,58 +997,52 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
   if (loading) return <FullscreenLoader show label="Referenzen werden geladen..." />;
 
   return (
-    <div style={shellStyle}>
-      <section className={workspaceStyles.workspaceControlShell}>
-        <div className={workspaceStyles.workspaceControlCard}>
-          <div className={workspaceStyles.workspaceControlRow}>
+    <div className="d-flex flex-column gap-2">
+      <section className="mb-2">
+        <div className="border border-success rounded-3 p-3 d-flex flex-column gap-3 mb-2 bg-secondary">
+          <div className="row g-3 align-items-center">
             {visibilityConfig ? (
-              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupCompact}`}>
-                <span className={workspaceStyles.workspaceControlSelectWrap}>
-                  <select
-                    value={visibilityMode}
-                    onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                    disabled={visibilityBusy}
-                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectCompact}`}
-                  >
-                    <option value="partner_wide">Referenzen partnerweit anzeigen</option>
-                    <option value="strict_local">Referenzen nur lokal anzeigen</option>
-                  </select>
-                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                </span>
+              <div className="col-12 col-xl">
+                <select
+                  value={visibilityMode}
+                  onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                  disabled={visibilityBusy}
+                  className="form-select fw-semibold"
+                >
+                  <option value="partner_wide">Referenzen partnerweit anzeigen</option>
+                  <option value="strict_local">Referenzen nur lokal anzeigen</option>
+                </select>
               </div>
             ) : null}
-            <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
+            <div className="col-12 col-xl-4 ms-xl-auto">
               {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                <span className={workspaceStyles.workspaceControlSelectWrap}>
-                  <select
-                    value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                    onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
-                    aria-label="KI-Modell auswählen"
-                    disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                  >
-                    {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                    {llmOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                </span>
+                <select
+                  value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+                  onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
+                  className="form-select fw-semibold"
+                  aria-label="KI-Modell auswählen"
+                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+                >
+                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                  {llmOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               ) : (
-                <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
+                <span className="small text-light">Keine aktive LLM-Integration</span>
               )}
             </div>
           </div>
           {visibilityMessage ? (
             <div
-              className={`${workspaceStyles.workspaceControlMessage} ${
+              className={`rounded-pill px-3 py-2 small fw-semibold align-self-start ${
                 visibilityTone === 'success'
-                  ? workspaceStyles.workspaceControlMessageSuccess
+                  ? 'bg-success-subtle text-success border border-success-subtle'
                   : visibilityTone === 'error'
-                    ? workspaceStyles.workspaceControlMessageError
-                    : workspaceStyles.workspaceControlMessageInfo
+                    ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                    : 'bg-primary-subtle text-primary border border-primary-subtle'
               }`}
             >
               {visibilityMessage}
@@ -1238,169 +1050,162 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
           ) : null}
         </div>
       </section>
-      <div style={workspaceStyle}>
-        <section style={panelStyle}>
-          <div className={workspaceStyles.workspaceListHeader}>
-            <h3 className={workspaceStyles.workspaceListTitle}>{referenceLoadSummary ?? '0 Referenzen geladen'}</h3>
-            <button
-              type="button"
-              className={workspaceStyles.workspaceListInfoButton}
-              onClick={() => setReferenceDebugOpen(true)}
-              disabled={!referenceLoadDebug}
-              aria-label="Debug-Informationen anzeigen"
-            >
-              i
-            </button>
-          </div>
-          <input
-            placeholder="Suchen..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className={workspaceStyles.workspaceSearchInput}
-          />
-          <div className={workspaceStyles.workspaceFilterBar}>
-            <button
-              type="button"
-              onClick={() => setFilterType('all')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                filterType === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
-              }`}
-            >
-              Alle
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType('kauf')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                filterType === 'kauf' ? workspaceStyles.workspaceFilterButtonActive : ''
-              }`}
-            >
-              Kauf
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType('miete')}
-              className={`${workspaceStyles.workspaceFilterButton} ${
-                filterType === 'miete' ? workspaceStyles.workspaceFilterButtonActive : ''
-              }`}
-            >
-              Miete
-            </button>
-          </div>
-          <div className={workspaceStyles.workspaceList} style={{ maxHeight: '62vh' }}>
-            {filteredRows.map((row) => {
-              const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-              const previewImageUrl = getReferencePreviewImageUrl(payload);
-              const sourceTitle = getPayloadText(payload, ['source_title']) || row.title || row.external_id;
-              const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
-              const objectType = getPayloadText(payload, ['object_type']) || '—';
-              const location = getReferenceLocationLabel(payload);
-              const rowOverride = overrides.find(
-                (entry) =>
-                  entry.partner_id === row.partner_id &&
-                  entry.source === row.provider &&
-                  entry.external_id === row.external_id,
-              ) ?? null;
-              const isReady = isReferenceReadyForPublish(row, rowOverride);
-              return (
-                <button
-                  key={row.id}
-                  type="button"
-                  onClick={() => setSelectedId(row.id)}
-                  className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemWithMedia} ${
-                    selectedId === row.id ? workspaceStyles.workspaceListItemActive : ''
-                  }`}
-                >
-                  <span className={workspaceStyles.workspaceListItemMedia}>
-                    {previewImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={previewImageUrl}
-                        alt={sourceTitle || 'Referenzbild'}
-                        className={workspaceStyles.workspaceListItemImage}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span className={workspaceStyles.workspaceListItemImagePlaceholder}>Kein Bild</span>
-                    )}
-                  </span>
-                  <span className={workspaceStyles.workspaceListItemContent}>
-                    <span className={workspaceStyles.workspaceListItemTitle}>{sourceTitle}</span>
-                    <span className={workspaceStyles.workspaceListItemMeta}>
-                      {`${marketingType} · ${objectType} · ${location}`}
+      <div className="row g-3 g-xl-4 align-items-start">
+        <section className="col-12 col-xl-4">
+          <div className="bg-white border rounded-4 p-3">
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+              <h3 className="m-0 fs-6 fw-bold text-dark">{referenceLoadSummary ?? '0 Referenzen geladen'}</h3>
+              <button
+                type="button"
+                className="btn btn-sm btn-light border rounded-circle fw-bold lh-1"
+                onClick={() => setReferenceDebugOpen(true)}
+                disabled={!referenceLoadDebug}
+                aria-label="Debug-Informationen anzeigen"
+              >
+                i
+              </button>
+            </div>
+            <input
+              placeholder="Suchen..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="form-control form-control-sm"
+            />
+            <div className="d-flex flex-wrap gap-2 mt-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setFilterType('all')}
+                className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'all' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              >
+                Alle
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType('kauf')}
+                className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'kauf' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              >
+                Kauf
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterType('miete')}
+                className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'miete' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              >
+                Miete
+              </button>
+            </div>
+            <div className={`d-flex flex-column gap-2 mt-3 pe-1 overflow-auto ${workspaceStyles.workspaceReferenceList}`}>
+              {filteredRows.map((row) => {
+                const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
+                const previewImageUrl = getReferencePreviewImageUrl(payload);
+                const sourceTitle = getPayloadText(payload, ['source_title']) || row.title || row.external_id;
+                const marketingType = getPayloadText(payload, ['offer_type', 'vermarktungsart']) || '—';
+                const objectType = getPayloadText(payload, ['object_type']) || '—';
+                const location = getReferenceLocationLabel(payload);
+                const rowOverride = overrides.find(
+                  (entry) =>
+                    entry.partner_id === row.partner_id &&
+                    entry.source === row.provider &&
+                    entry.external_id === row.external_id,
+                ) ?? null;
+                const isReady = isReferenceReadyForPublish(row, rowOverride);
+                return (
+                  <button
+                    key={row.id}
+                    type="button"
+                    onClick={() => setSelectedId(row.id)}
+                    className={`btn w-100 text-start p-2 pe-4 rounded-3 border position-relative ${selectedId === row.id ? 'bg-light' : 'bg-white'}`}
+                  >
+                    <span className="row g-2 align-items-center">
+                      <span className="col-4">
+                        <span className="ratio ratio-4x3 rounded-3 overflow-hidden border bg-secondary-subtle">
+                          {previewImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={previewImageUrl}
+                              alt={sourceTitle || 'Referenzbild'}
+                              className="w-100 h-100 object-fit-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span className="d-flex align-items-center justify-content-center small text-secondary fw-bold text-uppercase">Kein Bild</span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="col d-flex flex-column gap-1 overflow-hidden">
+                        <span className={workspaceStyles.workspaceListItemTitle}>{sourceTitle}</span>
+                        <span className="small text-secondary fw-bold text-uppercase lh-sm">
+                          {`${marketingType} · ${objectType} · ${location}`}
+                        </span>
+                      </span>
                     </span>
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`${workspaceStyles.workspaceStatusDot} ${workspaceStyles.workspaceListStatusDot} ${
-                      isReady ? workspaceStyles.workspaceStatusDotReady : workspaceStyles.workspaceStatusDotBlocked
-                    }`}
-                  />
-                </button>
-              );
-            })}
-            {!filteredRows.length ? (
-              <div style={{ color: '#64748b', fontSize: 13 }}>
-                Keine Referenzen vorhanden. Nach dem CRM-Sync werden hier synchronisierte Referenzobjekte angezeigt.
-              </div>
-            ) : null}
+                    <span
+                      aria-hidden="true"
+                      className={`position-absolute top-0 end-0 mt-2 me-2 badge rounded-pill p-1 ${isReady ? 'bg-success' : 'bg-danger'}`}
+                    />
+                  </button>
+                );
+              })}
+              {!filteredRows.length ? (
+                <div className="small text-secondary">
+                  Keine Referenzen vorhanden. Nach dem CRM-Sync werden hier synchronisierte Referenzobjekte angezeigt.
+                </div>
+              ) : null}
+            </div>
           </div>
         </section>
 
-        <section style={panelStyle}>
-          {status.startsWith('Fehler') ? <p style={statusBoxStyle}>{status}</p> : null}
-          {form && selectedRow ? (
-            <>
-              <div className={workspaceStyles.workspaceOverviewCard}>
-                <div className={workspaceStyles.workspaceOverviewHeader}>
-                  <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
-                  <div className={workspaceStyles.workspaceOverviewActions}>
+        <section className="col-12 col-xl-8">
+          <div className="bg-white border rounded-4 p-3">
+            {status.startsWith('Fehler') ? <p className="small text-danger mb-2">{status}</p> : null}
+            {form && selectedRow ? (
+              <>
+              <div className="bg-light border rounded-4 p-3">
+                <div className="d-flex align-items-center justify-content-between gap-3 mb-2 flex-wrap">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>Überblick</div>
+                  <div className="d-inline-flex align-items-center flex-wrap gap-2">
                     <span
-                      className={`${workspaceStyles.workspaceStatusBadge} ${
+                      className={`d-inline-flex align-items-center gap-2 rounded-pill px-2 py-1 small fw-bold border ${
                         isReferenceReady
-                          ? workspaceStyles.workspaceStatusBadgeReady
-                          : workspaceStyles.workspaceStatusBadgeBlocked
+                          ? 'text-success bg-success-subtle border-success-subtle'
+                          : 'text-danger bg-danger-subtle border-danger-subtle'
                       }`}
                     >
                       <span
                         aria-hidden="true"
-                        className={`${workspaceStyles.workspaceStatusDot} ${
-                          isReferenceReady
-                            ? workspaceStyles.workspaceStatusDotReady
-                            : workspaceStyles.workspaceStatusDotBlocked
-                        }`}
+                        className={`badge rounded-pill p-1 ${isReferenceReady ? 'bg-success' : 'bg-danger'}`}
                       />
                       <span>{isReferenceReady ? 'Onlinefertig' : 'Nicht onlinefertig'}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => setReferenceOverviewInfoOpen(true)}
-                      className={workspaceStyles.workspaceInfoButton}
+                      className="btn btn-sm btn-outline-secondary fw-semibold"
                     >
                       Info
                     </button>
                   </div>
                 </div>
-                <div className={workspaceStyles.workspaceOverviewGrid}>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Referenz-ID</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.id}</div>
+                <div className="row g-3">
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Referenz-ID</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRow.id}</div>
                   </div>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Quelle</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRow.provider} · {selectedRow.external_id}</div>
                   </div>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Aktualisiert</div>
+                    <div className={workspaceMetaValueClassName}>
                       {formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className={workspaceStyles.workspaceTabs}>
+              <div className="d-flex flex-wrap gap-2 my-4">
                 <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>Texte</button>
                 <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>SEO / GEO</button>
                 <button type="button" onClick={() => setActiveTab('facts')} className={workspaceTabClassName(activeTab === 'facts')}>Referenzdaten</button>
@@ -1408,8 +1213,8 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               </div>
 
               {activeTab === 'texts' ? (
-                <div style={referenceTextWorkspaceStyle}>
-                  <div style={{ display: 'grid', gap: 18 }}>
+                <div className="row g-3 align-items-start">
+                  <div className="col-12 col-xl-7 d-flex flex-column gap-3">
                     {renderTextField('Referenz-Titel', 'seo_h1', getReferenceSourceTitle(selectedRow, selectedPayload), {
                       multiline: false,
                       showPreview: false,
@@ -1426,41 +1231,47 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                       placeholder: 'Optional: nur bei klar erkennbaren Herausforderungen befüllen',
                     })}
 
-                    <div style={previewGridStyle}>
-                      <div style={previewCardStyle}>
-                        <div style={previewLabelStyle}>Referenz-Titel</div>
-                        <div style={previewContentStyle}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
+                    <div className="row g-3">
+                      <div className="col-12 col-lg-4">
+                        <div className="bg-light border rounded-3 p-3 h-100">
+                          <div className={workspacePreviewLabelClassName}>Referenz-Titel</div>
+                          <div className={workspacePreviewBodyClassName}>{form.seo_h1 || 'Kein Referenz-Titel gepflegt.'}</div>
+                        </div>
                       </div>
-                      <div style={previewCardStyle}>
-                        <div style={previewLabelStyle}>Referenztext</div>
-                        <div style={previewContentStyle}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
+                      <div className="col-12 col-lg-4">
+                        <div className="bg-light border rounded-3 p-3 h-100">
+                          <div className={workspacePreviewLabelClassName}>Referenztext</div>
+                          <div className={workspacePreviewBodyClassName}>{form.long_description || 'Kein Referenztext gepflegt.'}</div>
+                        </div>
                       </div>
-                      <div style={previewCardStyle}>
-                        <div style={previewLabelStyle}>Herausforderungen</div>
-                        <div style={previewContentStyle}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
+                      <div className="col-12 col-lg-4">
+                        <div className="bg-light border rounded-3 p-3 h-100">
+                          <div className={workspacePreviewLabelClassName}>Herausforderungen</div>
+                          <div className={workspacePreviewBodyClassName}>{form.features_text || 'Keine Herausforderungen gepflegt.'}</div>
+                        </div>
                       </div>
                     </div>
                     {selectedChallengeCategories.length > 0 ? (
-                      <div style={sectionCardStyle}>
-                        <div style={summaryHeaderStyle}>Erkannte Herausforderungskategorien</div>
-                        <div style={previewContentStyle}>
+                      <div className="bg-white border rounded-4 p-3">
+                        <div className={`${workspaceHeadingClassName} mb-2`}>Erkannte Herausforderungskategorien</div>
+                        <div className={workspacePreviewBodyClassName}>
                           {selectedChallengeCategories.map((entry) => formatReferenceChallengeCategory(entry)).join(' · ')}
                         </div>
                       </div>
                     ) : null}
 
                     {!canSaveReferenceContent ? (
-                      <div style={sectionHintStyle}>
+                      <div className="small text-secondary lh-base">
                         Für die Veröffentlichung und das Speichern werden ein eigener Referenz-Titel und ein eigener Referenztext benötigt. Rohdaten aus CRM-Titel oder Objektbeschreibung reichen nicht aus.
                       </div>
                     ) : null}
 
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div className="d-flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => void saveOverride()}
                         disabled={saving || !canSaveReferenceContent}
-                        style={saveButtonStyle(saving || !canSaveReferenceContent)}
+                        className="btn btn-dark btn-sm fw-semibold px-3 py-2"
                       >
                         {saving ? 'Speichert...' : 'Referenztexte speichern'}
                       </button>
@@ -1468,66 +1279,71 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                         type="button"
                         onClick={() => void resetReferenceTextOverrides()}
                         disabled={saving || (!requiredReferenceTitle && !requiredReferenceText && !asText(form.features_text))}
-                        style={secondaryActionButtonStyle}
+                        className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2"
                       >
                         Referenztexte zurücksetzen
                       </button>
                     </div>
                   </div>
-                  <div style={referenceContextCardStyle}>
-                    <div style={summaryHeaderStyle}>Objekthauptbild</div>
+                  <div className="col-12 col-xl-5 d-flex flex-column gap-3">
+                    <div className={workspaceHeadingClassName}>Objekthauptbild</div>
                     {effectiveReferenceImage ? (
-                      <div style={{ display: 'grid', gap: 12 }}>
-                        <div style={mediaStageStyle}>
+                      <div className="d-flex flex-column gap-2">
+                        <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={effectiveReferenceImage.url}
                             alt={effectiveReferenceImage.title ?? selectedRow.title ?? 'Referenzbild'}
-                            style={mediaImageStyle}
+                            className="w-100 h-100 object-fit-cover"
                             loading="eager"
                             decoding="async"
                           />
                         </div>
-                        <div style={previewContentStyle}>
+                        <div className={workspacePreviewBodyClassName}>
                           {effectiveReferenceImage.title ?? selectedRow.title ?? 'Objekthauptbild'}
                         </div>
                       </div>
                     ) : (
-                      <div style={sectionHintStyle}>Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
+                      <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload ist kein Objekthauptbild hinterlegt.</div>
                     )}
-                    <div style={{ display: 'grid', gap: 10 }}>
-                      <div style={summaryLabelStyle}>Alternative Bildauswahl (übertragene Bilder)</div>
+                    <div className="d-flex flex-column gap-2">
+                      <div className={workspaceMetaLabelClassName}>Alternative Bildauswahl (übertragene Bilder)</div>
                       {imageAssets.length > 0 ? (
                         <>
-                          <div style={imageChoiceGridStyle}>
+                          <div className="row row-cols-2 row-cols-md-3 g-2">
                             {imageAssets.map((asset, index) => {
                               const active = pendingReferenceImageUrl
                                 ? pendingReferenceImageUrl === asset.url
                                 : selectedReferenceImageOverrideUrl === asset.url;
                               return (
-                                <button
-                                  key={`${asset.url}-${index}`}
-                                  type="button"
-                                  style={imageChoiceCardStyle(active)}
-                                  onClick={() => setPendingReferenceImageUrl(asset.url)}
-                                >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={asset.url}
-                                    alt={asset.title ?? `Referenzbild ${index + 1}`}
-                                    style={imageChoiceImageStyle}
-                                    loading="lazy"
-                                    decoding="async"
-                                  />
-                                  <span style={imageChoiceTitleStyle}>{asset.title ?? `Referenzbild ${index + 1}`}</span>
-                                </button>
+                                <div key={`${asset.url}-${index}`} className="col">
+                                  <button
+                                    type="button"
+                                    className={`btn w-100 d-grid gap-2 p-2 rounded-3 border text-start ${
+                                      active ? 'btn-success bg-success-subtle text-dark border-success' : 'btn-light'
+                                    }`}
+                                    onClick={() => setPendingReferenceImageUrl(asset.url)}
+                                  >
+                                    <span className="ratio ratio-4x3 rounded-2 overflow-hidden bg-secondary-subtle">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={asset.url}
+                                        alt={asset.title ?? `Referenzbild ${index + 1}`}
+                                        className="w-100 h-100 object-fit-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                      />
+                                    </span>
+                                    <span className="small fw-semibold text-dark lh-sm">{asset.title ?? `Referenzbild ${index + 1}`}</span>
+                                  </button>
+                                </div>
                               );
                             })}
                           </div>
-                          <div style={imageChoiceActionsRowStyle}>
+                          <div className="d-flex flex-wrap justify-content-end gap-2">
                             <button
                               type="button"
-                              style={imageChoicePrimaryButtonStyle(!hasPendingReferenceImageSelection || saving)}
+                              className="btn btn-secondary btn-sm fw-bold px-3 py-2"
                               disabled={!hasPendingReferenceImageSelection || saving}
                               onClick={() => void applyReferenceImageSelection(pendingReferenceImageUrl)}
                             >
@@ -1535,7 +1351,7 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                             </button>
                             <button
                               type="button"
-                              style={imageChoiceResetButtonStyle(!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
+                              className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 text-start"
                               disabled={saving || (!selectedReferenceImageOverrideUrl && !pendingReferenceImageUrl)}
                               onClick={() => {
                                 setPendingReferenceImageUrl(null);
@@ -1546,11 +1362,11 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                             </button>
                           </div>
                           {referenceImageSelectionStatus ? (
-                            <div style={imageSelectionStatusStyle}>{referenceImageSelectionStatus}</div>
+                            <div className="alert alert-danger small mb-0 py-2 px-3">{referenceImageSelectionStatus}</div>
                           ) : null}
                         </>
                       ) : (
-                        <div style={sectionHintStyle}>Im aktuellen Referenz-Payload sind keine übertragenen Bilder verfügbar.</div>
+                        <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload sind keine übertragenen Bilder verfügbar.</div>
                       )}
                     </div>
                   </div>
@@ -1558,32 +1374,36 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               ) : null}
 
               {activeTab === 'seo' ? (
-                <div style={{ display: 'grid', gap: 18 }}>
+                <div className="d-flex flex-column gap-3">
                   {renderTextField('SEO-Titel', 'seo_title', getReferenceSourceTitle(selectedRow, selectedPayload), { multiline: false })}
                   {renderTextField('SEO-Description', 'seo_description', rawDescription, { multiline: true })}
                   {renderListField('Highlights', 'highlights', rawHighlights, 'Ein Highlight pro Zeile')}
                   {renderListField('Alt-Texte (eine Zeile = ein Bild)', 'image_alt_texts', [], 'Ein Alt-Text pro Zeile')}
 
-                  <div style={sectionCardStyle}>
-                    <div style={summaryHeaderStyle}>Snippet-Vorschau</div>
-                    <div style={previewGridStyle}>
-                      <div style={previewCardStyle}>
-                        <div style={previewLabelStyle}>SEO-Titel</div>
-                        <div style={previewContentStyle}>{form.seo_title || 'Kein SEO-Titel gepflegt.'}</div>
+                  <div className="bg-white border rounded-4 p-3">
+                    <div className={`${workspaceHeadingClassName} mb-2`}>Snippet-Vorschau</div>
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <div className="bg-light border rounded-3 p-3 h-100">
+                          <div className={workspacePreviewLabelClassName}>SEO-Titel</div>
+                          <div className={workspacePreviewBodyClassName}>{form.seo_title || 'Kein SEO-Titel gepflegt.'}</div>
+                        </div>
                       </div>
-                      <div style={previewCardStyle}>
-                        <div style={previewLabelStyle}>SEO-Description</div>
-                        <div style={previewContentStyle}>{form.seo_description || 'Keine SEO-Description gepflegt.'}</div>
+                      <div className="col-12 col-md-6">
+                        <div className="bg-light border rounded-3 p-3 h-100">
+                          <div className={workspacePreviewLabelClassName}>SEO-Description</div>
+                          <div className={workspacePreviewBodyClassName}>{form.seo_description || 'Keine SEO-Description gepflegt.'}</div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div className="d-flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => void saveOverride()}
                       disabled={saving || !canSaveReferenceContent}
-                      style={saveButtonStyle(saving || !canSaveReferenceContent)}
+                      className="btn btn-dark btn-sm fw-semibold px-3 py-2"
                     >
                       {saving ? 'Speichert...' : 'Referenztexte speichern'}
                     </button>
@@ -1592,260 +1412,267 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
               ) : null}
 
               {activeTab === 'facts' ? (
-                <div style={{ display: 'grid', gap: 18 }}>
-                  <div style={sectionCardStyle}>
-                    <div style={summaryHeaderStyle}>Strukturierte Referenzdaten</div>
-                    <div style={factsGridStyle}>
+                <div className="d-flex flex-column gap-3">
+                  <div className="bg-white border rounded-4 p-3">
+                    <div className={`${workspaceHeadingClassName} mb-3`}>Strukturierte Referenzdaten</div>
+                    <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                       <div>
-                        <div style={summaryLabelStyle}>Transaktion</div>
-                        <div style={summaryValueStyle}>{selectedTransaction}</div>
+                        <div className={workspaceMetaLabelClassName}>Transaktion</div>
+                        <div className={workspaceMetaValueClassName}>{selectedTransaction}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Objektart</div>
-                        <div style={summaryValueStyle}>{selectedType}</div>
+                        <div className={workspaceMetaLabelClassName}>Objektart</div>
+                        <div className={workspaceMetaValueClassName}>{selectedType}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Vermarktung</div>
-                        <div style={summaryValueStyle}>{selectedMode}</div>
+                        <div className={workspaceMetaLabelClassName}>Vermarktung</div>
+                        <div className={workspaceMetaValueClassName}>{selectedMode}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Zimmer</div>
-                        <div style={summaryValueStyle}>{selectedRooms ?? '—'}</div>
+                        <div className={workspaceMetaLabelClassName}>Zimmer</div>
+                        <div className={workspaceMetaValueClassName}>{selectedRooms ?? '—'}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Fläche</div>
-                        <div style={summaryValueStyle}>{selectedArea != null ? `${selectedArea} m²` : '—'}</div>
+                        <div className={workspaceMetaLabelClassName}>Fläche</div>
+                        <div className={workspaceMetaValueClassName}>{selectedArea != null ? `${selectedArea} m²` : '—'}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Ort</div>
-                        <div style={summaryValueStyle}>{selectedLocation}</div>
+                        <div className={workspaceMetaLabelClassName}>Ort</div>
+                        <div className={workspaceMetaValueClassName}>{selectedLocation}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Stadt</div>
-                        <div style={summaryValueStyle}>{getPayloadText(selectedPayload, ['city']) || '—'}</div>
+                        <div className={workspaceMetaLabelClassName}>Stadt</div>
+                        <div className={workspaceMetaValueClassName}>{getPayloadText(selectedPayload, ['city']) || '—'}</div>
                       </div>
                       <div>
-                        <div style={summaryLabelStyle}>Stadtteil / District</div>
-                        <div style={summaryValueStyle}>{getPayloadText(selectedPayload, ['district']) || '—'}</div>
+                        <div className={workspaceMetaLabelClassName}>Stadtteil / District</div>
+                        <div className={workspaceMetaValueClassName}>{getPayloadText(selectedPayload, ['district']) || '—'}</div>
                       </div>
                     </div>
                   </div>
-                  <div style={sectionCardStyle}>
-                    <div style={summaryHeaderStyle}>Referenztext-Basis</div>
-                    <div style={previewContentStyle}>{selectedDescription || 'Kein Referenztext im normalisierten Payload vorhanden.'}</div>
+                  <div className="bg-white border rounded-4 p-3">
+                    <div className={`${workspaceHeadingClassName} mb-2`}>Referenztext-Basis</div>
+                    <div className={workspacePreviewBodyClassName}>{selectedDescription || 'Kein Referenztext im normalisierten Payload vorhanden.'}</div>
                   </div>
                 </div>
               ) : null}
 
               {activeTab === 'media' ? (
-                <div style={{ display: 'grid', gap: 18 }}>
-                  <div style={sectionCardStyle}>
-                    <div style={summaryHeaderStyle}>Bildmaterial</div>
+                <div className="d-flex flex-column gap-3">
+                  <div className="bg-white border rounded-4 p-3">
+                    <div className={`${workspaceHeadingClassName} mb-3`}>Bildmaterial</div>
                     {activeImage ? (
-                      <div style={{ display: 'grid', gap: 12 }}>
-                        <div style={mediaStageStyle}>
+                      <div className="d-flex flex-column gap-3">
+                        <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             key={activeImage.url}
                             src={activeImage.url}
                             alt={activeImage.title ?? selectedRow.title ?? 'Referenzbild'}
-                            style={mediaImageStyle}
+                            className="w-100 h-100 object-fit-cover"
                             loading="eager"
                             decoding="async"
                           />
                         </div>
-                        <div style={mediaMetaStyle}>
+                        <div className="d-flex justify-content-between gap-3 small text-secondary fw-semibold">
                           <div>{activeImage.title ?? selectedRow.title ?? 'Referenzbild'}</div>
                           <div>{activeImageIndex + 1} / {imageAssets.length}</div>
                         </div>
                         {imageAssets.length > 1 ? (
-                          <div style={thumbRailStyle}>
+                          <div className="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2">
                             {imageAssets.map((asset, index) => (
-                              <button
-                                key={`${asset.url}-${index}`}
-                                type="button"
-                                onClick={() => setActiveImageIndex(index)}
-                                style={thumbButtonStyle(index === activeImageIndex)}
-                                aria-label={`Referenzbild ${index + 1} anzeigen`}
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={asset.url}
-                                  alt={asset.title ?? `Referenzbild ${index + 1}`}
-                                  style={thumbImageStyle}
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              </button>
+                              <div key={`${asset.url}-${index}`} className="col">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveImageIndex(index)}
+                                  className={`btn w-100 p-0 rounded-3 overflow-hidden border ${
+                                    index === activeImageIndex ? 'border-success border-2' : 'btn-light'
+                                  }`}
+                                  aria-label={`Referenzbild ${index + 1} anzeigen`}
+                                >
+                                  <span className="ratio ratio-4x3 bg-secondary-subtle">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={asset.url}
+                                      alt={asset.title ?? `Referenzbild ${index + 1}`}
+                                      className="w-100 h-100 object-fit-cover"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  </span>
+                                </button>
+                              </div>
                             ))}
                           </div>
                         ) : null}
                       </div>
                     ) : (
-                      <div style={sectionHintStyle}>Im aktuellen Referenz-Payload ist kein Bildmaterial hinterlegt.</div>
+                      <div className="small text-secondary lh-base">Im aktuellen Referenz-Payload ist kein Bildmaterial hinterlegt.</div>
                     )}
                   </div>
-                  <div style={sectionCardStyle}>
-                    <div style={summaryHeaderStyle}>Weitere Medien / Unterlagen</div>
+                  <div className="bg-white border rounded-4 p-3">
+                    <div className={`${workspaceHeadingClassName} mb-3`}>Weitere Medien / Unterlagen</div>
                     {documentAssets.length > 0 ? (
-                      <div style={{ display: 'grid', gap: 10 }}>
+                      <div className="d-flex flex-column gap-2">
                         {documentAssets.map((asset, index) => (
                           <a
                             key={`${asset.url}-${index}`}
                             href={asset.url}
                             target="_blank"
                             rel="noreferrer"
-                            style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 14px', color: '#0f172a', textDecoration: 'none', display: 'grid', gap: 4 }}
+                            className="border rounded-3 p-3 text-dark text-decoration-none d-flex flex-column gap-1"
                           >
-                            <span style={{ fontWeight: 700 }}>{asset.title ?? `Dokument ${index + 1}`}</span>
-                            <span style={{ color: '#64748b', fontSize: 12 }}>Datei extern öffnen</span>
+                            <span className="fw-bold">{asset.title ?? `Dokument ${index + 1}`}</span>
+                            <span className="small text-secondary">Datei extern öffnen</span>
                           </a>
                         ))}
                       </div>
                     ) : (
-                      <div style={sectionHintStyle}>Für Referenzen sind aktuell keine zusätzlichen Unterlagen erkannt.</div>
+                      <div className="small text-secondary lh-base">Für Referenzen sind aktuell keine zusätzlichen Unterlagen erkannt.</div>
                     )}
                   </div>
                 </div>
               ) : null}
-            </>
-          ) : (
-            <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
-              Keine Referenzen vorhanden. Nach dem CRM-Sync werden hier synchronisierte Referenzobjekte angezeigt.
-            </p>
-          )}
+              </>
+            ) : (
+              <p className="m-0 small text-secondary">
+                Keine Referenzen vorhanden. Nach dem CRM-Sync werden hier synchronisierte Referenzobjekte angezeigt.
+              </p>
+            )}
+          </div>
         </section>
       </div>
       {referenceOverviewInfoOpen && selectedRow ? (
         <div
-          style={workspaceDebugModalOverlayStyle}
+          className="modal d-block bg-dark bg-opacity-50"
+          tabIndex={-1}
           onClick={() => setReferenceOverviewInfoOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setReferenceOverviewInfoOpen(false);
           }}
         >
           <div
-            style={referenceOverviewInfoModalCardStyle}
+            className="modal-dialog modal-dialog-centered modal-lg"
             role="dialog"
             aria-modal="true"
             aria-labelledby="references-overview-info-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={workspaceDebugModalHeadStyle}>
-              <strong id="references-overview-info-title" style={workspaceDebugModalTitleStyle}>Referenzdetails</strong>
-              <button
-                type="button"
-                style={workspaceDebugModalCloseStyle}
-                onClick={() => setReferenceOverviewInfoOpen(false)}
-                aria-label="Info-Modal schließen"
-              >
-                ×
-              </button>
-            </div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <div style={summaryHeaderStyle}>CRM-Snapshot</div>
-              <div style={summaryGridStyle}>
-                <div>
-                  <div style={summaryLabelStyle}>Provider</div>
-                  <div style={summaryValueStyle}>{selectedRow.provider || '—'}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Extern-ID</div>
-                  <div style={summaryValueStyle}>{selectedRow.external_id || '—'}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Quelltitel</div>
-                  <div style={summaryValueStyle}>{selectedSourceTitle}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Status</div>
-                  <div style={summaryValueStyle}>{selectedStatus}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Status-ID</div>
-                  <div style={summaryValueStyle}>{selectedStatusId}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Region</div>
-                  <div style={summaryValueStyle}>{selectedRegion}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Lagescope</div>
-                  <div style={summaryValueStyle}>{selectedLocationScope}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Aktualisiert</div>
-                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}</div>
-                </div>
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <strong id="references-overview-info-title" className="modal-title fs-6">Referenzdetails</strong>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setReferenceOverviewInfoOpen(false)}
+                  aria-label="Info-Modal schließen"
+                />
               </div>
-              <div style={summaryHeaderStyle}>Sync / Klassifizierung</div>
-              <div style={summaryGridStyle}>
-                <div>
-                  <div style={summaryLabelStyle}>Transaktion</div>
-                  <div style={summaryValueStyle}>{selectedTransactionDebug}</div>
+              <div className="modal-body d-flex flex-column gap-3">
+                <div className={workspaceHeadingClassName}>CRM-Snapshot</div>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Provider</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRow.provider || '—'}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Extern-ID</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRow.external_id || '—'}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Quelltitel</div>
+                    <div className={workspaceMetaValueClassName}>{selectedSourceTitle}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Status</div>
+                    <div className={workspaceMetaValueClassName}>{selectedStatus}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Status-ID</div>
+                    <div className={workspaceMetaValueClassName}>{selectedStatusId}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Region</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRegion}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Lagescope</div>
+                    <div className={workspaceMetaValueClassName}>{selectedLocationScope}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Aktualisiert</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedRow.source_updated_at ?? selectedRow.updated_at)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={summaryLabelStyle}>Vermarktungsart</div>
-                  <div style={summaryValueStyle}>{selectedOfferTypeDebug}</div>
+                <div className={workspaceHeadingClassName}>Sync / Klassifizierung</div>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Transaktion</div>
+                    <div className={workspaceMetaValueClassName}>{selectedTransactionDebug}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Vermarktungsart</div>
+                    <div className={workspaceMetaValueClassName}>{selectedOfferTypeDebug}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>verkauft</div>
+                    <div className={workspaceMetaValueClassName}>{selectedSoldFlag}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>vermietet</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRentedFlag}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>reserviert</div>
+                    <div className={workspaceMetaValueClassName}>{selectedReservedFlag}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>veröffentlichen</div>
+                    <div className={workspaceMetaValueClassName}>{selectedPublishFlag}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>source_updated_at</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedRow.source_updated_at)}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>last_seen_at</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedRow.last_seen_at)}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>workspace updated_at</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedRow.updated_at)}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>is_active</div>
+                    <div className={workspaceMetaValueClassName}>{selectedRow.is_active === true ? 'ja' : selectedRow.is_active === false ? 'nein' : '—'}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={summaryLabelStyle}>verkauft</div>
-                  <div style={summaryValueStyle}>{selectedSoldFlag}</div>
+                <div className={workspaceHeadingClassName}>Medien-Diagnose</div>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Objekthauptbild</div>
+                    <div className={workspaceMetaValueClassName}>{selectedHasMainImage ? 'ja' : 'nein'}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>image_url</div>
+                    <div className={workspaceMetaValueClassName}>{selectedImageUrl || '—'}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>gallery</div>
+                    <div className={workspaceMetaValueClassName}>{selectedGalleryCount}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>gallery_assets</div>
+                    <div className={workspaceMetaValueClassName}>{selectedGalleryAssetCount}</div>
+                  </div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Bild-Assets gerendert</div>
+                    <div className={workspaceMetaValueClassName}>{imageAssets.length}</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={summaryLabelStyle}>vermietet</div>
-                  <div style={summaryValueStyle}>{selectedRentedFlag}</div>
+                <div className="small text-secondary lh-base bg-light border rounded-3 p-3">
+                  Wenn hier kein Objekthauptbild und keine Gallery-Assets auftauchen, ist im gespeicherten Referenz-Payload aktuell kein Bild angekommen. Dann sitzt das Problem upstream im CRM-Import oder im letzten Sync-Stand.
                 </div>
-                <div>
-                  <div style={summaryLabelStyle}>reserviert</div>
-                  <div style={summaryValueStyle}>{selectedReservedFlag}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>veröffentlichen</div>
-                  <div style={summaryValueStyle}>{selectedPublishFlag}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>source_updated_at</div>
-                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.source_updated_at)}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>last_seen_at</div>
-                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.last_seen_at)}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>workspace updated_at</div>
-                  <div style={summaryValueStyle}>{formatDateLabel(selectedRow.updated_at)}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>is_active</div>
-                  <div style={summaryValueStyle}>{selectedRow.is_active === true ? 'ja' : selectedRow.is_active === false ? 'nein' : '—'}</div>
-                </div>
-              </div>
-              <div style={summaryHeaderStyle}>Medien-Diagnose</div>
-              <div style={summaryGridStyle}>
-                <div>
-                  <div style={summaryLabelStyle}>Objekthauptbild</div>
-                  <div style={summaryValueStyle}>{selectedHasMainImage ? 'ja' : 'nein'}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>image_url</div>
-                  <div style={summaryValueStyle}>{selectedImageUrl || '—'}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>gallery</div>
-                  <div style={summaryValueStyle}>{selectedGalleryCount}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>gallery_assets</div>
-                  <div style={summaryValueStyle}>{selectedGalleryAssetCount}</div>
-                </div>
-                <div>
-                  <div style={summaryLabelStyle}>Bild-Assets gerendert</div>
-                  <div style={summaryValueStyle}>{imageAssets.length}</div>
-                </div>
-              </div>
-              <div style={summaryHintStyle}>
-                Wenn hier kein Objekthauptbild und keine Gallery-Assets auftauchen, ist im gespeicherten Referenz-Payload aktuell kein Bild angekommen. Dann sitzt das Problem upstream im CRM-Import oder im letzten Sync-Stand.
               </div>
             </div>
           </div>
@@ -1853,33 +1680,34 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
       ) : null}
       {referenceDebugOpen && referenceLoadDebug ? (
         <div
-          style={workspaceDebugModalOverlayStyle}
+          className="modal d-block bg-dark bg-opacity-50"
+          tabIndex={-1}
           onClick={() => setReferenceDebugOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setReferenceDebugOpen(false);
           }}
         >
           <div
-            style={workspaceDebugModalCardStyle}
+            className="modal-dialog modal-dialog-centered"
             role="dialog"
             aria-modal="true"
             aria-labelledby="references-workspace-debug-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={workspaceDebugModalHeadStyle}>
-              <strong id="references-workspace-debug-title" style={workspaceDebugModalTitleStyle}>Referenzen Debug</strong>
-              <button
-                type="button"
-                style={workspaceDebugModalCloseStyle}
-                onClick={() => setReferenceDebugOpen(false)}
-                aria-label="Debug-Modal schließen"
-              >
-                ×
-              </button>
-            </div>
-            <div style={workspaceDebugModalBodyStyle}>
-              <div>references={referenceLoadDebug.references}</div>
-              <div>overrides={referenceLoadDebug.overrides}</div>
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <strong id="references-workspace-debug-title" className="modal-title fs-6">Referenzen Debug</strong>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setReferenceDebugOpen(false)}
+                  aria-label="Debug-Modal schließen"
+                />
+              </div>
+              <div className="modal-body small text-secondary d-flex flex-column gap-2">
+                <div>references={referenceLoadDebug.references}</div>
+                <div>overrides={referenceLoadDebug.overrides}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1887,39 +1715,3 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
     </div>
   );
 }
-
-const promptLabelStyle: CSSProperties = {
-  fontSize: '10px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
-
-const promptContentStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#475569',
-  marginBottom: '10px',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const promptInputStyle: CSSProperties = {
-  width: '100%',
-  minHeight: '80px',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-};
