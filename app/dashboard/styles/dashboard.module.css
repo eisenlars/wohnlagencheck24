@@ -1,0 +1,392 @@
+.regionWorkspaceRoot {
+  width: 100%;
+}
+
+.regionHeaderSticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8fafc;
+  padding: 20px 0 40px;
+}
+
+.mainTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.headerDescription {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.hiddenTextsHeaderSpacer {
+  height: 40px;
+}
+
+.regionTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.regionStatus {
+  margin-top: 10px;
+  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.activationToneLive {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.activationTonePreview {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.activationToneError {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.activationToneAssigned {
+  background-color: #e2e8f0;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.headerDistrictSelector {
+  margin-top: 14px;
+}
+
+.headerDistrictTab {
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  background: #ffffff;
+}
+
+.headerDistrictTabActive {
+  font-weight: 700;
+}
+
+.headerDistrictTabStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.previewReadyCardShell {
+  margin-top: 12px;
+  border: 1px solid #f59e0b;
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff);
+  border-radius: 14px;
+  padding: 16px;
+  width: 100%;
+  box-shadow: 0 10px 24px rgba(180, 83, 9, 0.08);
+}
+
+.previewReadyText {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.previewReadyActionButton {
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.previewReadyGhostButton {
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #92400e;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.previewReadySuccessButton {
+  border: none;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #ffffff;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reviewPanelStrong {
+  margin-top: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.reviewPanelFull {
+  max-width: none;
+  width: 100%;
+}
+
+.reviewPanelTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.reviewPanelText {
+  font-size: 13px;
+  color: #334155;
+  margin: 0;
+}
+
+.reviewPanelList {
+  margin: 8px 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.reviewPanelMandatoryNotice {
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: #334155;
+}
+
+.inlineLinkButton {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.reviewIssueBox {
+  margin-top: 14px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #991b1b;
+}
+
+.reviewIssueText {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.progressWrap {
+  min-width: 320px;
+  margin: 0;
+}
+
+.progressWrapLoading {
+  min-height: 42px;
+}
+
+.progressHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.progressSkeleton {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+}
+
+.progressLabelSkeleton {
+  color: #64748b;
+}
+
+.progressValueSkeleton {
+  color: #94a3b8;
+}
+
+.progressNative {
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+  display: block;
+}
+
+.progressNative::-webkit-progress-bar {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.progressNative::-webkit-progress-value {
+  background: #0f766e;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.progressNative::-moz-progress-bar {
+  background: #0f766e;
+  border-radius: 999px;
+}
+
+.submitReviewButton {
+  border: none;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #ffffff;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitReviewButtonBusy {
+  background: #94a3b8;
+  cursor: default;
+}
+
+.reviewMessage {
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.reviewMessageInfo {
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.reviewMessageSuccess {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+
+.reviewMessageError {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.awaitingApprovalCardShell {
+  margin-top: 12px;
+  border: 1px solid #facc15;
+  background: #fef3c7;
+  border-radius: 12px;
+  padding: 14px;
+  width: 100%;
+}
+
+.awaitingApprovalPanel {
+  margin-top: 2px;
+}
+
+.awaitingApprovalBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #facc15;
+  background: #fde68a;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+}
+
+.awaitingApprovalTitle {
+  margin: 0 0 10px;
+  font-size: 21px;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #111827;
+}
+
+.awaitingApprovalText {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #374151;
+  line-height: 1.45;
+}
+
+.awaitingApprovalDashboardButton {
+  margin-top: 10px;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .regionHeaderSticky {
+    padding: 16px 0 28px;
+  }
+
+  .mainTitle {
+    font-size: 26px;
+  }
+
+  .reviewPanelMandatoryNotice {
+    white-space: normal;
+  }
+
+  .progressWrap {
+    min-width: 100%;
+  }
+}

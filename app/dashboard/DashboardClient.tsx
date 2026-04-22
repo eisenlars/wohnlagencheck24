@@ -25,6 +25,7 @@ import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillin
 import NetworkAIWorkspace from '@/components/network-partners/NetworkAIWorkspace';
 import NetworkPartnerManagementWorkspace from '@/components/network-partners/NetworkPartnerManagementWorkspace';
 import type { NetworkPartnerDetailSection } from '@/components/network-partners/NetworkPartnerManagementWorkspace';
+import dashboardStyles from './styles/dashboard.module.css';
 
 type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings' | 'network_partners';
 type WelcomeTool = {
@@ -285,21 +286,19 @@ function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
   return "assigned";
 }
 
-function getActivationStatusPalette(statusKey: string): {
-  backgroundColor: string;
-  color: string;
-  border: string;
-} {
-  if (statusKey === 'live') {
-    return { backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' };
-  }
+function activationToneClass(statusKey: string): string {
+  if (statusKey === 'live') return dashboardStyles.activationToneLive;
   if (statusKey === 'approved_preview' || statusKey === 'ready_for_review' || statusKey === 'in_review') {
-    return { backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' };
+    return dashboardStyles.activationTonePreview;
   }
-  if (statusKey === 'changes_requested') {
-    return { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' };
-  }
-  return { backgroundColor: '#e2e8f0', color: '#334155', border: '1px solid #cbd5e1' };
+  if (statusKey === 'changes_requested') return dashboardStyles.activationToneError;
+  return dashboardStyles.activationToneAssigned;
+}
+
+function reviewMessageToneClass(tone: 'info' | 'success' | 'error'): string {
+  if (tone === 'success') return dashboardStyles.reviewMessageSuccess;
+  if (tone === 'error') return dashboardStyles.reviewMessageError;
+  return dashboardStyles.reviewMessageInfo;
 }
 
 function findDistrictConfig(
@@ -2109,28 +2108,28 @@ export default function DashboardClient({
           </div>
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
-          <div style={{ width: '100%', position: 'relative' }}>
-            <header style={regionHeaderStickyStyle}>
+          <div className={`${dashboardStyles.regionWorkspaceRoot} position-relative w-100`}>
+            <header className={dashboardStyles.regionHeaderSticky}>
               {!hideTextsHeaderInActivationFlow ? (
-                <div style={{ marginBottom: '6px' }}>
-                  <h1 style={mainTitleStyle}>{headerConfig.title}</h1>
-                  <p style={headerDescriptionStyle}>{headerConfig.description}</p>
+                <div className="mb-1">
+                  <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
+                  <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
                 </div>
               ) : null}
               {(headerConfig.isRegionBased || headerConfig.showDistrictSelector) && effectiveAreaConfig ? (
-                <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '18px' }}>
-                  {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
+                <div className={hideTextsHeaderInActivationFlow ? undefined : 'mt-3'}>
+                  {hideTextsHeaderInActivationFlow ? <div className={dashboardStyles.hiddenTextsHeaderSpacer} /> : null}
                   {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
-                    <h2 style={regionTitleStyle}>{effectiveRegionHeaderTitle}</h2>
+                    <h2 className={dashboardStyles.regionTitle}>{effectiveRegionHeaderTitle}</h2>
                   ) : null}
                   {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
-                    <div style={regionStatusStyle(resolveActivationStatusKey(effectiveAreaConfig))}>
+                    <div className={`${dashboardStyles.regionStatus} ${activationToneClass(resolveActivationStatusKey(effectiveAreaConfig))}`}>
                       {formatActivationStatusLabel(effectiveAreaConfig)}
                     </div>
                   ) : null}
                   {headerConfig.showDistrictSelector && scopedMainDistricts.length > 0 ? (
-                    <div style={headerDistrictSelectorWrapStyle}>
-                      <div style={headerDistrictSelectorRowStyle}>
+                    <div className={dashboardStyles.headerDistrictSelector}>
+                      <div className="d-flex flex-wrap gap-2">
                         {scopedMainDistricts.map((district) => {
                           const active = district.area_id === effectiveAreaConfig.area_id;
                           const statusKey = resolveActivationStatusKey(district);
@@ -2143,11 +2142,11 @@ export default function DashboardClient({
                                 setSelectedConfig(district);
                                 setExpandedDistrict(district.area_id);
                               }}
-                              style={headerDistrictTabStyle(active, statusKey)}
+                              className={`${dashboardStyles.headerDistrictTab} ${activationToneClass(statusKey)} ${active ? dashboardStyles.headerDistrictTabActive : ''}`}
                             >
-                              <span style={headerDistrictTabContentStyle}>
+                              <span className="d-flex align-items-center gap-2">
                                 <span>{formatRegionHeaderTitle(configs, district)}</span>
-                                <span style={headerDistrictTabStatusStyle(statusKey)}>
+                                <span className={`${dashboardStyles.headerDistrictTabStatus} ${activationToneClass(statusKey)}`}>
                                   {statusLabel}
                                 </span>
                               </span>
@@ -2158,18 +2157,18 @@ export default function DashboardClient({
                     </div>
                   ) : null}
                   {showPreviewGuidanceForSelected ? (
-                    <div style={previewReadyCardShellStyle}>
-                      <p style={previewReadyTextStyle}>
+                    <div className={dashboardStyles.previewReadyCardShell}>
+                      <p className={dashboardStyles.previewReadyText}>
                         <strong>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</strong>
                       </p>
-                      <div style={previewReadyActionRowStyle}>
-                        <button type="button" onClick={() => handleToolSelect('factors')} style={previewReadyActionButtonStyle}>
+                      <div className="d-flex flex-wrap gap-2 mt-3">
+                        <button type="button" onClick={() => handleToolSelect('factors')} className={dashboardStyles.previewReadyActionButton}>
                           Werte pruefen
                         </button>
-                        <button type="button" onClick={() => handleToolSelect('texts')} style={previewReadyActionButtonStyle}>
+                        <button type="button" onClick={() => handleToolSelect('texts')} className={dashboardStyles.previewReadyActionButton}>
                           Texte pruefen
                         </button>
-                        <button type="button" onClick={() => handleToolSelect('marketing')} style={previewReadyActionButtonStyle}>
+                        <button type="button" onClick={() => handleToolSelect('marketing')} className={dashboardStyles.previewReadyActionButton}>
                           SEO & GEO pruefen
                         </button>
                         {selectedPreviewHref ? (
@@ -2177,13 +2176,13 @@ export default function DashboardClient({
                             href={selectedPreviewHref}
                             target="_blank"
                             rel="noreferrer"
-                            style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginLeft: 'auto' }}
+                            className={`${dashboardStyles.previewReadyGhostButton} d-inline-flex align-items-center justify-content-center text-decoration-none ms-auto`}
                           >
                             Frontend-Preview öffnen
                           </a>
                         ) : null}
                         {selectedPreviewSignoffAt ? (
-                          <span style={reviewMessageStyle('success')}>
+                          <span className={`${dashboardStyles.reviewMessage} ${dashboardStyles.reviewMessageSuccess}`}>
                             Livegang angefragt am {formatTimestampLabel(selectedPreviewSignoffAt)}
                           </span>
                         ) : (
@@ -2191,42 +2190,42 @@ export default function DashboardClient({
                             type="button"
                             onClick={() => void handleRequestLive(effectiveAreaConfig)}
                             disabled={previewRequestBusy}
-                            style={previewReadySuccessButtonStyle}
+                            className={dashboardStyles.previewReadySuccessButton}
                           >
                             {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                           </button>
                         )}
                       </div>
                       {previewRequestMessage ? (
-                        <div style={{ marginTop: '12px' }}>
-                          <span style={reviewMessageStyle(previewRequestTone)}>{previewRequestMessage}</span>
+                        <div className="mt-3">
+                          <span className={`${dashboardStyles.reviewMessage} ${reviewMessageToneClass(previewRequestTone)}`}>{previewRequestMessage}</span>
                         </div>
                       ) : null}
                     </div>
                   ) : null}
                   {showActivationPanelForEditorSelected ? (
                     <div
-                      style={
+                      className={
                         isAwaitingAdminApproval
-                          ? awaitingApprovalCardShellStyle
-                          : (hideTextsHeaderInActivationFlow ? { ...reviewPanelStrongStyle, maxWidth: 'none', width: '100%' } : reviewPanelStrongStyle)
+                          ? dashboardStyles.awaitingApprovalCardShell
+                          : `${dashboardStyles.reviewPanelStrong} ${hideTextsHeaderInActivationFlow ? dashboardStyles.reviewPanelFull : ''}`
                       }
                     >
                       {isAwaitingAdminApproval ? (
-                        <div style={awaitingApprovalPanelStyle}>
-                          <div style={awaitingApprovalBadgeRowStyle}>
-                            <span style={awaitingApprovalBadgeStyle}>
+                        <div className={dashboardStyles.awaitingApprovalPanel}>
+                          <div className="mb-4">
+                            <span className={dashboardStyles.awaitingApprovalBadge}>
                               {activationStatusKey === 'in_review' ? 'In Prüfung' : 'Freigabebereit'}
                             </span>
                           </div>
-                          <h3 style={awaitingApprovalTitleStyle}>Die Aktivierung ist eingereicht. Bitte warte auf die Adminfreigabe.</h3>
-                          <p style={awaitingApprovalTextStyle}>
+                          <h3 className={dashboardStyles.awaitingApprovalTitle}>Die Aktivierung ist eingereicht. Bitte warte auf die Adminfreigabe.</h3>
+                          <p className={dashboardStyles.awaitingApprovalText}>
                             Deine Pflichtangaben wurden erfolgreich übermittelt und liegen beim Admin zur Prüfung vor. Solange die Prüfung läuft, ist die Aktivierungsmaske gesperrt. Du kannst nach der Freigabe wie gewohnt weiterarbeiten.
                           </p>
                           <button
                             type="button"
                             onClick={() => setShowWelcome(true)}
-                            style={awaitingApprovalDashboardButtonStyle}
+                            className={dashboardStyles.awaitingApprovalDashboardButton}
                           >
                             Zum Dashboard
                           </button>
@@ -2235,17 +2234,17 @@ export default function DashboardClient({
                         <>
                           {!hideTextsHeaderInActivationFlow ? (
                             <>
-                              <div style={reviewPanelTitleStyle}>Aktivierung dieses Gebiets</div>
-                              <div style={reviewPanelTextStyle}>
+                              <div className={dashboardStyles.reviewPanelTitle}>Aktivierung dieses Gebiets</div>
+                              <div className={dashboardStyles.reviewPanelText}>
                                 Voraussetzung für die Freigabe:
                               </div>
-                              <ul style={reviewPanelListStyle}>
+                              <ul className={dashboardStyles.reviewPanelList}>
                                 <li>
                                   Marktüberblick:
                                   {' '}
                                   {mandatoryDirectLinks.map((item, idx) => (
                                     <span key={item.key}>
-                                      <button type="button" onClick={() => openTextEditorAt(item.key)} style={inlineLinkButtonStyle}>
+                                      <button type="button" onClick={() => openTextEditorAt(item.key)} className={dashboardStyles.inlineLinkButton}>
                                         {item.label}
                                       </button>
                                       {idx < mandatoryDirectLinks.length - 1 ? ', ' : ''}
@@ -2255,68 +2254,65 @@ export default function DashboardClient({
                                 <li>
                                   Berater:
                                   {' '}
-                                  <button type="button" onClick={() => openTextEditorAt('berater_name')} style={inlineLinkButtonStyle}>
+                                  <button type="button" onClick={() => openTextEditorAt('berater_name')} className={dashboardStyles.inlineLinkButton}>
                                     Alle Berater-Felder öffnen
                                   </button>
                                 </li>
                                 <li>
                                   Makler:
                                   {' '}
-                                  <button type="button" onClick={() => openTextEditorAt('makler_name')} style={inlineLinkButtonStyle}>
+                                  <button type="button" onClick={() => openTextEditorAt('makler_name')} className={dashboardStyles.inlineLinkButton}>
                                     Alle Makler-Felder öffnen
                                   </button>
                                 </li>
                                 <li>
                                   Bilder:
                                   {' '}
-                                  <button type="button" onClick={() => openTextEditorAt('berater_name')} style={inlineLinkButtonStyle}>
+                                  <button type="button" onClick={() => openTextEditorAt('berater_name')} className={dashboardStyles.inlineLinkButton}>
                                     Berater-Avatar
                                   </button>
                                   {', '}
-                                  <button type="button" onClick={() => openTextEditorAt('makler_name')} style={inlineLinkButtonStyle}>
+                                  <button type="button" onClick={() => openTextEditorAt('makler_name')} className={dashboardStyles.inlineLinkButton}>
                                     Makler-Logo + Makler-Bilder
                                   </button>
                                 </li>
                               </ul>
                             </>
                           ) : (
-                            <div style={{ ...reviewPanelTextStyle, fontSize: '15px', lineHeight: 1.5, whiteSpace: 'nowrap' }}>
+                            <div className={dashboardStyles.reviewPanelMandatoryNotice}>
                               Für eine erfolgreiche Aktivierung vervollständige bitte die Pflichtangaben inklusive Bild-Uploads in den untenstehenden Eingabeblöcken und klicke danach auf <strong>Freigabe anfordern</strong>.
                             </div>
                           )}
                           {activationStatusKey === 'changes_requested' && effectiveSelectedReviewNote ? (
-                            <div style={{ marginTop: '14px', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: '10px', padding: '12px 14px', color: '#991b1b' }}>
-                              <div style={{ fontWeight: 700, marginBottom: '6px' }}>Nachbesserung erforderlich</div>
-                              <div style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{effectiveSelectedReviewNote}</div>
+                            <div className={dashboardStyles.reviewIssueBox}>
+                              <div className="fw-bold mb-1">Nachbesserung erforderlich</div>
+                              <div className={dashboardStyles.reviewIssueText}>{effectiveSelectedReviewNote}</div>
                             </div>
                           ) : null}
-                          <div style={{ marginTop: '14px', display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div className="d-flex align-items-end flex-wrap gap-3 mt-3">
                             <div
-                              style={{
-                                ...progressWrapStyle,
-                                flex: 1,
-                                minWidth: '320px',
-                                margin: 0,
-                                minHeight: mandatoryProgressLoading ? '42px' : undefined,
-                              }}
+                              className={`${dashboardStyles.progressWrap} ${mandatoryProgressLoading ? dashboardStyles.progressWrapLoading : ''} flex-grow-1`}
                             >
                               {mandatoryProgressLoading ? (
                                 <>
-                                  <div style={progressHeadStyle}>
-                                    <span style={progressLabelSkeletonStyle}>Fortschritt Pflichtangaben</span>
-                                    <strong style={progressValueSkeletonStyle}>--/--</strong>
+                                  <div className={dashboardStyles.progressHead}>
+                                    <span className={dashboardStyles.progressLabelSkeleton}>Fortschritt Pflichtangaben</span>
+                                    <strong className={dashboardStyles.progressValueSkeleton}>--/--</strong>
                                   </div>
-                                  <div style={progressSkeletonStyle} />
+                                  <div className={dashboardStyles.progressSkeleton} />
                                 </>
                               ) : (
                                 <>
-                                  <div style={progressHeadStyle}>
+                                  <div className={dashboardStyles.progressHead}>
                                     <span>Fortschritt Pflichtangaben</span>
                                     <strong>{mandatoryProgress.completed}/{mandatoryProgress.total}</strong>
                                   </div>
-                                  <div style={progressTrackStyle}>
-                                    <div style={progressFillStyle(animatedMandatoryPercent)} />
-                                  </div>
+                                  <progress
+                                    className={dashboardStyles.progressNative}
+                                    value={animatedMandatoryPercent}
+                                    max={100}
+                                    aria-label="Fortschritt Pflichtangaben"
+                                  />
                                 </>
                               )}
                             </div>
@@ -2324,27 +2320,19 @@ export default function DashboardClient({
                               type="button"
                               onClick={handleSubmitForReview}
                               disabled={submitReviewBusy}
-                              style={{
-                                border: 'none',
-                                borderRadius: '8px',
-                                background: submitReviewBusy ? '#94a3b8' : '#0f766e',
-                                color: '#fff',
-                                padding: '8px 12px',
-                                fontWeight: 600,
-                                cursor: submitReviewBusy ? 'default' : 'pointer',
-                              }}
+                              className={`${dashboardStyles.submitReviewButton} ${submitReviewBusy ? dashboardStyles.submitReviewButtonBusy : ''}`}
                             >
                               {submitReviewBusy ? 'Prüfe Freigabe...' : 'Freigabe anfordern'}
                             </button>
                           </div>
                           {!hideTextsHeaderInActivationFlow ? (
-                            <div style={reviewPanelTextStyle}>
+                            <div className={dashboardStyles.reviewPanelText}>
                               Nach vollständiger Eingabe einfach auf <strong>Freigabe anfordern</strong> klicken.
                             </div>
                           ) : null}
-                          <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
                           {submitReviewMessage ? (
-                            <span style={reviewMessageStyle(submitReviewTone)}>{submitReviewMessage}</span>
+                            <span className={`${dashboardStyles.reviewMessage} ${reviewMessageToneClass(submitReviewTone)}`}>{submitReviewMessage}</span>
                           ) : null}
                         </div>
                         </>
@@ -2705,77 +2693,6 @@ const headerDescriptionStyle = {
   color: '#64748b'
 };
 
-const regionTitleStyle = {
-  fontSize: '24px',
-  fontWeight: '700',
-  color: '#0f172a',
-  margin: 0,
-  letterSpacing: '-0.01em'
-};
-
-const headerDistrictSelectorWrapStyle: React.CSSProperties = {
-  marginTop: '14px',
-};
-
-const headerDistrictSelectorRowStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '10px',
-};
-
-const headerDistrictTabStyle = (active: boolean, statusKey: string): React.CSSProperties => {
-  const palette = getActivationStatusPalette(statusKey);
-  return {
-  border: active ? `1px solid ${palette.color}` : palette.border,
-  background: active ? palette.backgroundColor : '#ffffff',
-  color: active ? palette.color : '#334155',
-  borderRadius: '999px',
-  padding: '8px 14px',
-  fontSize: '13px',
-  fontWeight: active ? 700 : 600,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-  };
-};
-
-const headerDistrictTabContentStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-};
-
-const headerDistrictTabStatusStyle = (statusKey: string): React.CSSProperties => {
-  const palette = getActivationStatusPalette(statusKey);
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '3px 8px',
-    borderRadius: '999px',
-    fontSize: '10px',
-    fontWeight: 800,
-    letterSpacing: '0.03em',
-    textTransform: 'uppercase',
-    backgroundColor: palette.backgroundColor,
-    color: palette.color,
-    border: palette.border,
-  };
-};
-
-
-const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
-  ...getActivationStatusPalette(statusKey),
-  marginTop: '10px',
-  marginBottom: '14px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '5px 10px',
-  borderRadius: '999px',
-  fontSize: '11px',
-  fontWeight: 800,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.04em',
-});
-
 const emptyStateStyle = {
   height: '100%',
   display: 'flex',
@@ -2840,14 +2757,6 @@ const reviewPanelTextStyle: React.CSSProperties = {
   fontSize: '13px',
   color: '#334155',
   margin: 0,
-};
-
-const reviewPanelListStyle: React.CSSProperties = {
-  margin: '8px 0',
-  paddingLeft: '18px',
-  color: '#334155',
-  fontSize: '13px',
-  lineHeight: 1.45,
 };
 
 const inlineLinkButtonStyle: React.CSSProperties = {
@@ -2920,29 +2829,8 @@ const reviewMessageStyle = (tone: 'info' | 'success' | 'error'): React.CSSProper
   padding: '8px 10px',
 });
 
-const awaitingApprovalCardShellStyle: React.CSSProperties = {
-  marginTop: '12px',
-  border: '1px solid #facc15',
-  background: '#fef3c7',
-  borderRadius: '12px',
-  padding: '14px',
-  width: '100%',
-};
-
-const awaitingApprovalPanelStyle: React.CSSProperties = {
-  marginTop: '2px',
-};
-
 const awaitingApprovalBadgeRowStyle: React.CSSProperties = {
   marginBottom: '20px',
-};
-
-const awaitingApprovalTitleStyle: React.CSSProperties = {
-  margin: '0 0 10px',
-  fontSize: '21px',
-  lineHeight: 1.35,
-  fontWeight: 800,
-  color: '#111827',
 };
 
 const awaitingApprovalBadgeStyle: React.CSSProperties = {
@@ -2957,34 +2845,6 @@ const awaitingApprovalBadgeStyle: React.CSSProperties = {
   letterSpacing: '0.03em',
   textTransform: 'uppercase',
   padding: '4px 9px',
-};
-
-const awaitingApprovalTextStyle: React.CSSProperties = {
-  margin: '0 0 8px',
-  fontSize: '15px',
-  color: '#374151',
-  lineHeight: 1.45,
-};
-
-const awaitingApprovalDashboardButtonStyle: React.CSSProperties = {
-  marginTop: '10px',
-  border: '1px solid #111827',
-  borderRadius: '8px',
-  background: '#ffffff',
-  color: '#111827',
-  padding: '8px 12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const previewReadyCardShellStyle: React.CSSProperties = {
-  marginTop: '12px',
-  border: '1px solid #f59e0b',
-  background: 'linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff)',
-  borderRadius: '14px',
-  padding: '16px',
-  width: '100%',
-  boxShadow: '0 10px 24px rgba(180, 83, 9, 0.08)',
 };
 
 const previewReadyWelcomeBoxStyle: React.CSSProperties = {
@@ -3395,17 +3255,4 @@ const alreadyActiveInfoStyle: React.CSSProperties = {
   padding: '10px 12px',
   fontSize: '13px',
   fontWeight: 600,
-};
-
-const regionHeaderStickyStyle: React.CSSProperties = {
-  position: 'sticky',
-  top: 0,
-  zIndex: 10,
-  background: '#f8fafc',
-  padding: '20px 0 40px',
-};
-
-const reviewPanelStrongStyle: React.CSSProperties = {
-  ...reviewPanelStyle,
-  border: '1px solid #e2e8f0',
 };
