@@ -53,7 +53,7 @@ function parseStructuredText(value: string): { isList: boolean; items: string[] 
   const listItems = lines
     .map((line) => line.replace(/^[-*•]\s+/, "").replace(/^\d+[.)]\s+/, "").trim())
     .filter(Boolean);
-  const isList = lines.length > 1 && lines.every((line) => /^([-*•]\s+|\d+[.)]\s+)/.test(line));
+  const isList = lines.length > 0 && lines.every((line) => /^([-*•]\s+|\d+[.)]\s+)/.test(line));
   return { isList, items: isList ? listItems : lines };
 }
 
@@ -180,10 +180,10 @@ export function ImmobilienberatungSection({
       </section>
 
       <section className="row g-4">
-        <div className="col-12 col-lg-6">
+        <div className="col-12">
           <div className="card border-0 shadow-sm rounded-4 h-100">
             <div className="card-body p-4">
-              <h3>Ausbildung & Qualifikation</h3>
+              <h3>Meine Qualifikation & Erfahrung</h3>
               {ausbildung.items.length && ausbildung.isList ? (
                 <ul className="text-body-secondary mb-0 ps-3">
                   {ausbildung.items.map((item, index) => (
@@ -204,39 +204,17 @@ export function ImmobilienberatungSection({
             </div>
           </div>
         </div>
-
-        <div className="col-12 col-lg-6">
-          <div className="card border-0 shadow-sm rounded-4 h-100">
-            <div className="card-body p-4">
-              <h3>Kontakt</h3>
-              <div className="d-grid gap-3">
-                {contactItems.map((item) => (
-                  <div key={item.label}>
-                    <span className="d-block small text-uppercase text-body-secondary fw-semibold mb-1">
-                      {item.label}
-                    </span>
-                    {item.href ? (
-                      <a href={item.href} className="link-dark fw-semibold text-decoration-none">
-                        {item.value}
-                      </a>
-                    ) : (
-                      <span className="fw-semibold">{item.value}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="row g-4 align-items-start">
         <div className="col-12 col-lg-6">
           <div className="card border-0 shadow-sm rounded-4 h-100">
             <div className="card-body p-4 d-grid gap-3">
-              <span className="badge rounded-pill text-bg-light border text-uppercase align-self-start">
-                Orientierung
-              </span>
+              <div>
+                <span className="badge rounded-pill text-bg-light border text-uppercase">
+                  Orientierung
+                </span>
+              </div>
               <h2 className="mb-0">Wann lohnt sich eine Immobilienberatung?</h2>
               <p className="text-body-secondary mb-0">
                 Eine Beratung ist vor allem dann sinnvoll, wenn Entscheidungen rund um Verkauf,
@@ -258,6 +236,24 @@ export function ImmobilienberatungSection({
               <p className="text-body-secondary">
                 Sie erhalten eine persoenliche Einschaetzung und klare Handlungsempfehlungen.
               </p>
+              {contactItems.length ? (
+                <div className="row g-3 mb-4">
+                  {contactItems.map((item) => (
+                    <div key={item.label} className="col-12 col-md-6">
+                      <span className="d-block small text-uppercase text-body-secondary fw-semibold mb-1">
+                        {item.label}
+                      </span>
+                      {item.href ? (
+                        <a href={item.href} className="link-dark fw-semibold text-decoration-none">
+                          {item.value}
+                        </a>
+                      ) : (
+                        <span className="fw-semibold">{item.value}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               <KontaktForm
                 targetEmail={emailTarget}
                 scope="berater"

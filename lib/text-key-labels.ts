@@ -10,7 +10,7 @@ const TEXT_KEY_LABELS: Record<string, string> = {
   berater_adresse_plz: "PLZ",
   berater_adresse_ort: "Ort",
   berater_beschreibung: "Kurz-Bio / Beschreibung",
-  berater_ausbildung: "Qualifikationen / Ausbildung",
+  berater_ausbildung: "Meine Qualifikation & Erfahrung",
   makler_name: "Firma / Name",
   makler_email: "E-Mail",
   makler_telefon_fest: "Telefon (Festnetz)",

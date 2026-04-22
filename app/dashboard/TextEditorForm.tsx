@@ -117,7 +117,7 @@ const RAW_TAB_CONFIG = [
     { key: 'berater_adresse_plz', label: 'PLZ', type: 'individual' },
     { key: 'berater_adresse_ort', label: 'Ort', type: 'individual' },
     { key: 'berater_beschreibung', label: 'Kurz-Bio / Beschreibung', type: 'individual' },
-    { key: 'berater_ausbildung', label: 'Qualifikationen / Ausbildung', type: 'individual' },
+    { key: 'berater_ausbildung', label: 'Meine Qualifikation & Erfahrung', type: 'individual' },
   ]},
   { id: 'makler', label: 'Makler', icon: '🏢', sections: [
     { key: 'makler_name', label: 'Firma / Name', type: 'individual' },

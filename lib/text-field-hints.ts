@@ -23,7 +23,7 @@ export function resolveFieldHint(args: {
   }
   if (type === 'individual') {
     if (sectionKey === 'berater_ausbildung') {
-      return 'Qualifikationen können als Fließtext oder Liste gepflegt werden. Für Listen bitte je Zeile mit "- " beginnen.';
+      return 'Meine Qualifikation & Erfahrung: Fließtext normal eingeben. Für Listen bitte jeden Eintrag mit "- " beginnen.';
     }
     if (sectionKey.startsWith('berater_') || sectionKey.startsWith('makler_')) {
       return 'Profiltext: Bei Änderungen an Person, Rolle oder Leistungen bitte aktualisieren.';
