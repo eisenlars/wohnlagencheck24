@@ -4,12 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
-import {
-  workflowTopCardStyle,
-  workflowTopControlsStyle,
-  workflowTopFieldStyle,
-  workflowTopSelectStyle,
-} from '@/app/dashboard/workflow-ui';
 
 type PartnerArea = {
   id?: string;
@@ -68,7 +62,6 @@ type LlmOptionApiRow = {
 export default function BlogManager({ config, onNavigateToTexts }: BlogManagerProps) {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
-  const [isNarrow, setIsNarrow] = useState(false);
   const [source, setSource] = useState<BlogSource>({ individual01: '', individual02: '', zitat: '' });
   const [authorName, setAuthorName] = useState<string>('');
   const [headline, setHeadline] = useState('');
@@ -109,19 +102,6 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
     if (item.key.endsWith('02')) return !source.individual02;
     return !source.zitat;
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const media = window.matchMedia('(max-width: 980px)');
-    const handleChange = () => setIsNarrow(media.matches);
-    handleChange();
-    if (typeof media.addEventListener === 'function') {
-      media.addEventListener('change', handleChange);
-      return () => media.removeEventListener('change', handleChange);
-    }
-    media.addListener(handleChange);
-    return () => media.removeListener(handleChange);
-  }, []);
 
   useEffect(() => {
     setHeadline('');
@@ -377,14 +357,14 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
   if (loading) return <FullscreenLoader show label="Blog-Bausteine werden geladen..." />;
 
   return (
-    <div style={{ width: '100%' }}>
-      <div style={workflowTopCardStyle}>
-        <div style={workflowTopControlsStyle}>
-          <label style={workflowTopFieldStyle}>
+    <div className="w-100">
+      <section className="border border-success-subtle rounded-3 p-3 mb-3 bg-success-subtle">
+        <div className="row g-3 align-items-center">
+          <div className="col-12 col-xl-4 ms-xl-auto">
             <select
               value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
               onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-              style={workflowTopSelectStyle}
+              className="form-select fw-semibold"
               aria-label="KI-Modell auswählen"
               disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
             >
@@ -396,45 +376,53 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
-      </div>
-      <div style={layoutGridStyle(isNarrow)}>
-        <div style={layoutLeftStyle}>
-          <div style={listCardStyle}>
-            <div style={listTitleStyle}>Blog-Übersicht</div>
+      </section>
+      <div className="row g-3 g-xl-4 align-items-start">
+        <section className="col-12 col-xl-4">
+          <div className="bg-white border rounded-4 p-3 shadow-sm">
+            <div className="m-0 mb-3 fs-6 fw-bold text-dark">Blog-Übersicht</div>
             {posts.length === 0 ? (
-              <div style={listEmptyStyle}>Keine Blogartikel vorhanden.</div>
+              <div className="small text-secondary">Keine Blogartikel vorhanden.</div>
             ) : (
-              <div style={listWrapStyle}>
+              <div className="d-flex flex-column gap-2">
                 {posts.map((post) => (
-                  <div key={post.id} style={listRowStyle}>
+                  <div key={post.id} className="d-flex flex-column gap-2 p-3 rounded-3 border bg-light">
                     <div>
-                      <div style={listHeadlineStyle}>{post.headline || 'Ohne Titel'}</div>
-                      <div style={listMetaStyle}>
+                      <div className="small fw-bold text-dark">{post.headline || 'Ohne Titel'}</div>
+                      <div className="small text-secondary mt-1">
                         {post.created_at ? new Date(post.created_at).toLocaleString('de-DE') : '—'}
                       </div>
-                      <div style={statusBadgeStyle(post.status)}>
+                      <div
+                        className={`badge rounded-pill mt-2 ${
+                          post.status === 'active'
+                            ? 'text-success bg-success-subtle'
+                            : post.status === 'inactive'
+                              ? 'text-danger bg-danger-subtle'
+                              : 'text-secondary bg-secondary-subtle'
+                        }`}
+                      >
                         {post.status === 'active' ? 'Aktiv' : post.status === 'inactive' ? 'Inaktiv' : 'Entwurf'}
                       </div>
                     </div>
-                    <div style={listActionsStyle}>
-                      <button type="button" onClick={() => handleEdit(post)} style={listButtonStyle}>
+                    <div className="d-flex flex-wrap gap-2">
+                      <button type="button" onClick={() => handleEdit(post)} className="btn btn-sm btn-outline-secondary fw-semibold">
                         Bearbeiten
                       </button>
                       {post.status !== 'active' ? (
-                        <button type="button" onClick={() => updateStatus(post.id, 'active')} style={listButtonPrimaryStyle}>
+                        <button type="button" onClick={() => updateStatus(post.id, 'active')} className="btn btn-sm btn-outline-primary fw-semibold">
                           Aktivieren
                         </button>
                       ) : (
-                        <button type="button" onClick={() => updateStatus(post.id, 'inactive')} style={listButtonStyle}>
+                        <button type="button" onClick={() => updateStatus(post.id, 'inactive')} className="btn btn-sm btn-outline-secondary fw-semibold">
                           Deaktivieren
                         </button>
                       )}
                       <button
                         type="button"
                         onClick={() => handleDelete(post.id, post.status)}
-                        style={listButtonDangerStyle(post.status === 'active')}
+                        className="btn btn-sm btn-outline-danger fw-semibold"
                         disabled={post.status === 'active'}
                       >
                         Löschen
@@ -445,97 +433,108 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        <div style={layoutRightStyle}>
-          <div style={cardStyle}>
-            <div style={cardHeaderStyle}>
+        <section className="col-12 col-xl-8 d-flex flex-column gap-3">
+          <div className="bg-white border rounded-4 p-3 p-xl-4 shadow-sm">
+            <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <div>
-                <div style={labelStyle}>Quelle</div>
-                <div style={titleStyle}>Marktüberblick – Individuelle Texte</div>
+                <div className="small text-secondary text-uppercase fw-bold">Quelle</div>
+                <div className="fs-5 fw-bold text-dark">Marktüberblick – Individuelle Texte</div>
               </div>
-          <div style={statusStyle(hasAllSources)}>
-            {hasAllSources ? 'Quellen vollständig' : 'Quellen unvollständig'}
-          </div>
-        </div>
-        {!hasAllSources ? (
-          <div style={missingHintStyle}>
-            <div style={missingTitleStyle}>Bitte ergänzen in „Berichte &amp; Texte → Marktüberblick“:</div>
-            <div style={missingLinksStyle}>
-              {missingSources.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  style={missingLinkStyle}
-                  onClick={() => onNavigateToTexts?.(item.key)}
-                >
-                  {item.label}
-                </button>
-              ))}
+              <div
+                className={`badge rounded-pill px-3 py-2 ${
+                  hasAllSources ? 'text-success bg-success-subtle' : 'text-danger bg-danger-subtle'
+                }`}
+              >
+                {hasAllSources ? 'Quellen vollständig' : 'Quellen unvollständig'}
+              </div>
             </div>
-          </div>
-        ) : null}
-
-            <div style={sourceStackStyle}>
-              <div>
-                <div style={sourceLabelStyle}>Zitat</div>
-                <div style={sourceBoxStyle}>{source.zitat || 'Kein Override vorhanden.'}</div>
-              </div>
-              <div style={sourceGridStyle(isNarrow)}>
-                <div>
-                  <div style={sourceLabelStyle}>Experteneinschätzung Text 01</div>
-                  <div style={sourceBoxStyle}>{source.individual01 || 'Kein Override vorhanden.'}</div>
-                </div>
-                <div>
-                  <div style={sourceLabelStyle}>Experteneinschätzung Text 02</div>
-                  <div style={sourceBoxStyle}>{source.individual02 || 'Kein Override vorhanden.'}</div>
+            {!hasAllSources ? (
+              <div className="alert alert-danger py-2 px-3 small">
+                <div className="fw-bold mb-2">Bitte ergänzen in „Berichte &amp; Texte → Marktüberblick“:</div>
+                <div className="d-flex flex-wrap gap-2">
+                  {missingSources.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="btn btn-sm btn-outline-danger rounded-pill fw-semibold"
+                      onClick={() => onNavigateToTexts?.(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </div>
+            ) : null}
+
+            <div className="d-flex flex-column gap-3">
+              <div>
+                <div className="small fw-bold text-dark mb-2">Zitat</div>
+                <div className="bg-light border rounded-3 p-3 small text-secondary lh-base text-break">
+                  {source.zitat || 'Kein Override vorhanden.'}
+                </div>
+              </div>
+              <div className="row g-3">
+                <div className="col-12 col-lg-6">
+                  <div className="small fw-bold text-dark mb-2">Experteneinschätzung Text 01</div>
+                  <div className="bg-light border rounded-3 p-3 small text-secondary lh-base text-break h-100">
+                    {source.individual01 || 'Kein Override vorhanden.'}
+                  </div>
+                </div>
+                <div className="col-12 col-lg-6">
+                  <div className="small fw-bold text-dark mb-2">Experteneinschätzung Text 02</div>
+                  <div className="bg-light border rounded-3 p-3 small text-secondary lh-base text-break h-100">
+                    {source.individual02 || 'Kein Override vorhanden.'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div style={cardStyle}>
-            <div style={cardHeaderStyle}>
+          <div className="bg-white border rounded-4 p-3 p-xl-4 shadow-sm">
+            <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
               <div>
-                <div style={labelStyle}>Blog-Generator</div>
-                <div style={titleStyle}>Headline, Subline &amp; Blogtext</div>
+                <div className="small text-secondary text-uppercase fw-bold">Blog-Generator</div>
+                <div className="fs-5 fw-bold text-dark">Headline, Subline &amp; Blogtext</div>
               </div>
             </div>
 
-            <div style={formColStyle}>
-              <label style={inputLabelStyle}>
-                Headline
+            <div className="d-flex flex-column gap-3">
+              <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
+                <span>Headline</span>
                 <input
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
-                  style={inputStyle}
+                  className="form-control"
                   placeholder="Headline"
                 />
               </label>
-              <label style={inputLabelStyle}>
-                Subline
+              <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
+                <span>Subline</span>
                 <input
                   value={subline}
                   onChange={(e) => setSubline(e.target.value)}
-                  style={inputStyle}
+                  className="form-control"
                   placeholder="Subline"
                 />
               </label>
-              <label style={inputLabelStyle}>
-                Blog (Markdown)
+              <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
+                <span>Blog (Markdown)</span>
                 <textarea
                   value={bodyMd}
                   onChange={(e) => setBodyMd(e.target.value)}
-                  style={textareaStyle}
+                  className="form-control"
+                  rows={10}
                   placeholder="Markdown-Text"
                 />
               </label>
 
-              <div style={buttonRowStyle}>
+              <div className="d-flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  style={primaryButtonStyle}
+                  className="btn btn-sm btn-outline-primary fw-semibold px-3 py-2"
                   disabled={!hasAllSources || generating || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                 >
                   {generating ? '⏳ KI generiert Blog...' : '✨ Blog per KI generieren'}
@@ -543,7 +542,7 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
                 <button
                   type="button"
                   onClick={handleSave}
-                  style={secondaryButtonStyle}
+                  className="btn btn-sm btn-dark fw-semibold px-3 py-2"
                   disabled={!headline || !bodyMd || saving}
                 >
                   {saving ? 'Speichern...' : selectedPostId ? 'Änderungen speichern' : 'Blog speichern'}
@@ -553,23 +552,24 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
               <button
                 type="button"
                 onClick={() => setShowPrompt((prev) => !prev)}
-                style={promptToggleStyle}
+                className="btn btn-sm btn-outline-secondary fw-semibold align-self-start"
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
               {showPrompt ? (
-                <div style={promptPanelStyle}>
-                  <div style={promptLabelStyle}>Standard-Prompt</div>
-                  <div style={promptContentStyle}>
+                <div className="border rounded-3 p-3 bg-light">
+                  <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                  <div className="small text-secondary lh-base mb-2">
                     Schreibe einen kompakten Blogartikel auf Basis der drei Quellen (Individuell 01/02 + Zitat).
                     Keine neuen Fakten, sachlich, 2–4 Abschnitte, klare Headline und Subline.
                   </div>
-                  <label style={promptInputLabelStyle}>
-                    Eigener Prompt (optional)
+                  <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
+                    <span>Eigener Prompt (optional)</span>
                     <textarea
                       value={customPrompt}
                       onChange={(e) => setCustomPrompt(e.target.value)}
-                      style={promptInputStyle}
+                      className="form-control form-control-sm"
+                      rows={4}
                       placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
                     />
                   </label>
@@ -577,343 +577,10 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
               ) : null}
             </div>
 
-            {error ? <div style={errorStyle}>{error}</div> : null}
+            {error ? <div className="alert alert-danger small fw-semibold mt-3 mb-0">{error}</div> : null}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
-
-const cardStyle = {
-  backgroundColor: '#fff',
-  borderRadius: '16px',
-  padding: '28px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 12px 20px rgba(15, 23, 42, 0.06)',
-  marginBottom: '24px',
-};
-
-const cardHeaderStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginBottom: '18px',
-};
-
-const labelStyle = {
-  fontSize: '11px',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-};
-
-const titleStyle = {
-  fontSize: '18px',
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const statusStyle = (ok: boolean) => ({
-  padding: '6px 10px',
-  borderRadius: '999px',
-  fontSize: '12px',
-  fontWeight: 600,
-  backgroundColor: ok ? '#dcfce7' : '#fee2e2',
-  color: ok ? '#166534' : '#b91c1c',
-});
-
-const missingHintStyle = {
-  marginTop: '12px',
-  padding: '10px 12px',
-  borderRadius: '10px',
-  border: '1px solid #fecaca',
-  backgroundColor: '#fff1f2',
-};
-
-const missingTitleStyle = {
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#b91c1c',
-  marginBottom: '8px',
-};
-
-const missingLinksStyle = {
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap' as const,
-};
-
-const missingLinkStyle = {
-  padding: '6px 10px',
-  borderRadius: '999px',
-  border: '1px solid #fecaca',
-  backgroundColor: '#fff',
-  color: '#b91c1c',
-  fontSize: '11px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const sourceStackStyle = {
-  display: 'grid',
-  gap: '16px',
-};
-
-const sourceGridStyle = (isNarrow: boolean) => ({
-  display: 'grid',
-  gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
-  gap: '16px',
-});
-
-const sourceLabelStyle = {
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#1e293b',
-  marginBottom: '8px',
-};
-
-const sourceBoxStyle = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  padding: '12px',
-  fontSize: '12.5px',
-  color: '#475569',
-  lineHeight: 1.6,
-  minHeight: '120px',
-  whiteSpace: 'pre-wrap' as const,
-};
-
-const formColStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '16px',
-};
-
-const inputLabelStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '6px',
-  fontSize: '12px',
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const inputStyle = {
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  padding: '10px 12px',
-  fontSize: '14px',
-};
-
-const textareaStyle = {
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  padding: '12px',
-  minHeight: '220px',
-  fontSize: '13px',
-  lineHeight: 1.6,
-  fontFamily: 'inherit',
-};
-
-const buttonRowStyle = {
-  display: 'flex',
-  gap: '12px',
-  flexWrap: 'wrap' as const,
-};
-
-const primaryButtonStyle = {
-  padding: '10px 16px',
-  borderRadius: '8px',
-  border: '1px solid #dbeafe',
-  backgroundColor: '#eff6ff',
-  color: '#2563eb',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const secondaryButtonStyle = {
-  padding: '10px 16px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: '#fff',
-  color: '#0f172a',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const promptToggleStyle = {
-  alignSelf: 'flex-start',
-  background: 'transparent',
-  border: 'none',
-  color: '#2563eb',
-  fontSize: '12px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const promptPanelStyle = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  padding: '12px',
-  backgroundColor: '#f8fafc',
-};
-
-const promptLabelStyle = {
-  fontSize: '10px',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: '700',
-  marginBottom: '6px',
-};
-
-const promptContentStyle = {
-  fontSize: '12px',
-  color: '#475569',
-  marginBottom: '10px',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '6px',
-  fontSize: '11px',
-  fontWeight: '600',
-  color: '#1e293b',
-};
-
-const promptInputStyle = {
-  width: '100%',
-  minHeight: '80px',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-};
-
-
-const layoutGridStyle = (isNarrow: boolean) => ({
-  display: 'grid',
-  gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'minmax(260px, 1fr) minmax(0, 2.2fr)',
-  gap: '24px',
-  alignItems: 'start',
-});
-
-const layoutLeftStyle = {
-  position: 'sticky' as const,
-  top: '16px',
-};
-
-const layoutRightStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '24px',
-};
-
-const listCardStyle = {
-  backgroundColor: '#fff',
-  borderRadius: '14px',
-  padding: '16px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 10px 18px rgba(15, 23, 42, 0.06)',
-};
-
-const listTitleStyle = {
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#0f172a',
-  marginBottom: '10px',
-};
-
-const listEmptyStyle = {
-  fontSize: '12px',
-  color: '#94a3b8',
-};
-
-const listWrapStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '12px',
-};
-
-const listRowStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '10px',
-  padding: '12px',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: '#f8fafc',
-};
-
-const listHeadlineStyle = {
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const listMetaStyle = {
-  fontSize: '11px',
-  color: '#64748b',
-  marginTop: '4px',
-};
-
-const listActionsStyle = {
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap' as const,
-};
-
-const listButtonStyle = {
-  padding: '6px 10px',
-  borderRadius: '8px',
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  borderColor: '#e2e8f0',
-  backgroundColor: '#fff',
-  fontSize: '11px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const listButtonPrimaryStyle = {
-  ...listButtonStyle,
-  borderColor: '#dbeafe',
-  backgroundColor: '#eff6ff',
-  color: '#2563eb',
-};
-
-const listButtonDangerStyle = (disabled: boolean) => ({
-  ...listButtonStyle,
-  borderColor: '#fecaca',
-  color: '#b91c1c',
-  opacity: disabled ? 0.4 : 1,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-});
-
-const statusBadgeStyle = (status: BlogPostRow['status']) => ({
-  display: 'inline-flex',
-  padding: '3px 8px',
-  borderRadius: '999px',
-  fontSize: '10px',
-  fontWeight: 700,
-  marginTop: '6px',
-  backgroundColor: status === 'active' ? '#dcfce7' : status === 'inactive' ? '#fee2e2' : '#e2e8f0',
-  color: status === 'active' ? '#166534' : status === 'inactive' ? '#b91c1c' : '#475569',
-});
-
-const errorStyle = {
-  marginTop: '16px',
-  color: '#b91c1c',
-  fontSize: '12px',
-  fontWeight: 600,
-};
