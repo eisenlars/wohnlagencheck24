@@ -10,7 +10,6 @@ import { resolveFieldHint, type HintTable } from '@/lib/text-field-hints';
 import {
   resolveDisplayTextClass,
   displayTextClassLabel,
-  displayTextBadgeStyle,
 } from '@/lib/text-display-class';
 import { estimateTokensFromText } from '@/lib/i18n-cost-estimate';
 import {
@@ -21,51 +20,9 @@ import {
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import LocalSiteTextEditor from './LocalSiteTextEditor';
 import MarketingTextEditor from './MarketingTextEditor';
-import {
-  workflowActionButtonStyle,
-  workflowAreaContentStackStyle,
-  workflowAreaContentWrapStyle as textAreaEditorWrapStyle,
-  workflowAreaGridStyle as textEditorGridStyle,
-  workflowAreaHeadlineStyle as textAreaListHeadlineStyle,
-  workflowAreaListCardStyle as textAreaListCardStyle,
-  workflowAreaListRowStyle as textAreaListRowStyle,
-  workflowAreaListRowTopStyle as textAreaListRowTopStyle,
-  workflowAreaListWrapStyle as textAreaListWrapStyle,
-  workflowAreaMetaLineStyle as textAreaListMetaLineStyle,
-  workflowAreaTypeBadgeStyle as textAreaTypeBadgeStyle,
-  workflowAnchorLinkStyle,
-  workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
-  workflowClassCardStyle as textWorkflowClassCardStyle,
-  workflowClassCostStyle as textWorkflowClassCostStyle,
-  workflowCostInfoPopoverStyle,
-  workflowCostInfoTriggerStyle,
-  workflowCostInfoWrapStyle,
-  workflowClassCycleStyle as textWorkflowClassCycleStyle,
-  workflowClassGridStyle as textWorkflowClassGridStyle,
-  workflowClassStatLineStyle as textWorkflowClassStatLineStyle,
-  workflowClassStatsStyle as textWorkflowClassStatsStyle,
-  workflowClassTextStyle as textWorkflowClassTextStyle,
-  workflowClassTopStyle as textWorkflowClassTopStyle,
-  workflowHeaderInlineStyle as textWorkflowHeaderInlineStyle,
-  workflowHeaderStyle as textWorkflowHeaderStyle,
-  workflowAnchorTargetStyle,
-  workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
-  workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
-  workflowTopCardStyle as textWorkflowTopCardStyle,
-  workflowTopControlsStyle as textWorkflowTopControlsStyle,
-  workflowTopFieldStyle as textWorkflowTopFieldStyle,
-  workflowTopSelectStyle as textWorkflowTopSelectStyle,
-  workflowCardStackStyle,
-  workflowPanelCardStyle as textWorkflowCardStyle,
-  workflowPromptLabelStyle as textWorkflowPromptLabelStyle,
-  workflowPromptTextareaStyle as textWorkflowPromptTextareaStyle,
-  workflowSectionIntroStyle as sectionTabsIntroStyle,
-  workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
-  workflowTabButtonStyle as tabButtonStyle,
-  workflowTabContainerStyle as tabContainerStyle,
-  workflowTabLabelStyle as tabLabelStyle,
-} from '@/app/dashboard/workflow-ui';
+import ReportTextEditor from './ReportTextEditor';
 
 const SINGLE_LINE_TEXT_KEYS = new Set([
   'berater_name',
@@ -1676,338 +1633,239 @@ export default function TextEditorForm({
     );
   }
 
+  if (isLocalSite) {
+    return (
+      <LocalSiteTextEditor
+        showTopLlmCard={showTopLlmCard}
+        selectedLlmIntegrationId={selectedLlmIntegrationId}
+        llmIntegrations={llmIntegrations}
+        llmOptionsLoading={llmOptionsLoading}
+        llmOptionsLoaded={llmOptionsLoaded}
+        onSelectLlmIntegration={setSelectedLlmIntegrationId}
+        formatProviderLabel={formatProviderLabel}
+        topicSectionAnchorId={topicSectionAnchorId}
+        bulkScope={bulkScope}
+        isOrtslage={isOrtslage}
+        isBulkRewriting={isBulkRewriting}
+        classBulkProgress={classBulkState ? { done: classBulkState.done, total: classBulkState.total } : null}
+        classCards={visibleGlobalClassOrder.map((classKey) => {
+          const meta = GLOBAL_CLASS_META[classKey];
+          const estimate = classEstimateMap[classKey];
+          const active = activeBulkClass === classKey;
+          const running = classBulkState?.classKey === classKey;
+          return {
+            classKey,
+            title: meta.title,
+            description: meta.description,
+            cycle: meta.cycle,
+            defaultPrompt: meta.defaultPrompt,
+            totalTexts: estimate.totalTexts,
+            areaMultiplier: estimate.areaMultiplier,
+            totalTokens: estimate.totalTokens,
+            estimatedCostUsd: formatEstimatedCost(estimate.estimatedCostUsd, 'USD'),
+            estimatedCostEur: formatEstimatedCost(estimate.estimatedCostEur, 'EUR'),
+            prompt: globalPrompts[classKey],
+            active,
+            running,
+            disabled: isBulkRewriting && !running,
+            costInfoOpen: costInfoOpenClass === classKey,
+          };
+        })}
+        globalBulkReport={globalBulkReport}
+        onChangeBulkScope={setBulkScope}
+        onSelectClass={setActiveBulkClass}
+        onToggleCostInfo={(classKey) => setCostInfoOpenClass((prev) => (prev === classKey ? null : classKey))}
+        onChangeGlobalPrompt={(classKey, prompt) => {
+          setGlobalPrompts((prev) => ({
+            ...prev,
+            [classKey]: prompt,
+          }));
+        }}
+        onRunBulkClass={(classKey) => {
+          void runBulkByTextClass(classKey);
+        }}
+        onScrollToTopicSection={scrollToTopicSection}
+        showScopeAreaSidebar={showScopeAreaSidebar}
+        visibleScopeAreaItems={visibleScopeAreaItems}
+        selectedAreaId={String(selectedAreaConfig?.area_id ?? '')}
+        onSelectScopeArea={setSelectedScopeAreaId}
+        visibleTabs={visibleTabs}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        activeSections={activeSections}
+        renderSection={(section) => {
+          const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+          return (
+            <TextEditorField
+              key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+              label={section.label}
+              sectionKey={section.key}
+              sectionGroup={sectionGroup}
+              type={section.type}
+              rawText={getRawTextFromJSON(section.key, sectionGroup)}
+              dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+              areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+              onSave={saveText}
+              onResetToSystem={resetTextToSystem}
+              onAiRewrite={handleAiRewrite}
+              tableName={tableName as HintTable}
+              enableApproval={enableApproval}
+              isRewriting={rewritingKey === section.key}
+              isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+              mediaUpload={null}
+            />
+          );
+        }}
+        enableApproval={enableApproval}
+        publishing={publishing}
+        hasPublishableChanges={hasPublishableChanges}
+        onSaveAndApprove={handleSaveAndApprove}
+        saving={saving}
+        publishModalOpen={publishModalOpen}
+        publishStatus={publishStatus}
+        publishDone={publishDone}
+        publishTotal={publishTotal}
+        publishError={publishError}
+        onClosePublishModal={() => setPublishModalOpen(false)}
+      />
+    );
+  }
+
   return (
-    <div style={{ width: '100%' }}>
-      <div style={showTopLlmCard || showGlobalClassActions ? workflowCardStackStyle : undefined}>
-      {showTopLlmCard ? (
-        <>
-          <div style={textWorkflowTopCardStyle}>
-            <div style={textWorkflowTopControlsStyle}>
-              <label style={textWorkflowTopFieldStyle}>
-                <select
-                  value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
-                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                  style={textWorkflowTopSelectStyle}
-                  aria-label="KI-Modell auswählen"
-                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
-                >
-                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                  {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                  {llmIntegrations.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-        </>
-      ) : null}
-      {showGlobalClassActions ? (
-        <>
-          <div style={{ ...textWorkflowCardStyle, marginBottom: 0 }}>
-            <div style={textWorkflowHeaderStyle}>
-              <div style={textWorkflowHeaderInlineStyle}>
-                <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
-                <label style={textWorkflowInlineFieldStyle}>
-                  <select
-                    value={bulkScope}
-                    onChange={(e) => setBulkScope(e.target.value as BulkScope)}
-                    style={textWorkflowInlineSelectStyle}
-                    disabled={isBulkRewriting || isOrtslage}
-                  >
-                    <option value="kreis">Nur Kreis</option>
-                    <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div style={isLocalSite ? localSiteClassGridStyle : textWorkflowClassGridStyle}>
-              {visibleGlobalClassOrder.map((classKey) => {
-                const meta = GLOBAL_CLASS_META[classKey];
-                const active = activeBulkClass === classKey;
-                const estimate = classEstimateMap[classKey];
-                const isRunningThisCard = classBulkState?.classKey === classKey;
-                const buttonDisabled = isBulkRewriting && !isRunningThisCard;
-                return (
-                  <div
-                    key={classKey}
-                    style={textWorkflowClassCardStyle(active)}
-                    onClick={() => setActiveBulkClass(classKey)}
-                  >
-                    <div style={textWorkflowClassTopStyle}>
-                      <span style={textWorkflowClassBadgeStyle(classKey)}>{meta.title}</span>
-                    </div>
-                    <p style={textWorkflowClassTextStyle}>Texttyp: {meta.description}</p>
-                    <p style={textWorkflowClassCycleStyle}>Zyklus: {meta.cycle}</p>
-                    <div style={textWorkflowClassStatsStyle}>
-                      <span style={textWorkflowClassStatLineStyle}>
-                        Gebiete: {estimate.areaMultiplier} Texte: {estimate.totalTexts} Tokens ca.: {estimate.totalTokens.toLocaleString('de-DE')}
-                      </span>
-                    </div>
-                    <div style={textWorkflowClassCostStyle}>
-                      <span style={textWorkflowClassStatLineStyle}>USD ca.: {formatEstimatedCost(estimate.estimatedCostUsd, 'USD')}</span>
-                      <span style={textWorkflowClassStatLineStyle}>EUR ca.: {formatEstimatedCost(estimate.estimatedCostEur, 'EUR')}</span>
-                      <span style={workflowCostInfoWrapStyle}>
-                        <button
-                          type="button"
-                          style={workflowCostInfoTriggerStyle}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCostInfoOpenClass((prev) => (prev === classKey ? null : classKey));
-                          }}
-                          aria-label="Hinweis zur Kostenberechnung"
-                        >
-                          i
-                        </button>
-                        {costInfoOpenClass === classKey ? (
-                          <span style={workflowCostInfoPopoverStyle}>
-                            Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <label style={textWorkflowPromptLabelStyle}>
-                      Standardprompt (anpassbar)
-                      <textarea
-                        value={globalPrompts[classKey]}
-                        onChange={(e) =>
-                          setGlobalPrompts((prev) => ({
-                            ...prev,
-                            [classKey]: e.target.value,
-                          }))
-                        }
-                        style={textWorkflowPromptTextareaStyle}
-                        placeholder={meta.defaultPrompt}
-                      />
-                    </label>
-                    <div style={textWorkflowClassActionRowStyle}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          scrollToTopicSection();
-                        }}
-                        style={workflowAnchorLinkStyle(String(displayTextBadgeStyle(classKey).color ?? '#486b7a'))}
-                      >
-                        Einzeltexte
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!active) {
-                            setActiveBulkClass(classKey);
-                            return;
-                          }
-                          void runBulkByTextClass(classKey);
-                        }}
-                        disabled={buttonDisabled}
-                        style={workflowActionButtonStyle({
-                          borderColor: String((displayTextBadgeStyle(classKey) as Record<string, unknown>).borderColor ?? '#cbd5e1'),
-                          background: String(displayTextBadgeStyle(classKey).background ?? '#f8fafc'),
-                          color: String(displayTextBadgeStyle(classKey).color ?? '#475569'),
-                          disabled: buttonDisabled,
-                        })}
-                      >
-                        {isRunningThisCard
-                          ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
-                          : 'Alle Texte KI-optimieren'}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {globalBulkReport ? (
-              <div style={globalReportStyle}>
-                <div style={globalReportTitleStyle}>Laufbericht</div>
-                <div style={globalReportRowStyle}>
-                  <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
-                </div>
-                <div style={globalReportRowStyle}>
-                  <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
-                </div>
-                <div style={globalReportRowStyle}>
-                  <strong>Fehler:</strong> {globalBulkReport.failed.length}
-                </div>
-                {globalBulkReport.failed.length > 0 ? (
-                  <div style={globalReportErrorListStyle}>
-                    {globalBulkReport.failed.slice(0, 8).map((item) => (
-                      <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </>
-      ) : null}
-
-      <div style={sectionEditorCardStyle}>
-        {/* TABS */}
-        <div id={topicSectionAnchorId} style={{ ...sectionTabsIntroStyle, ...workflowAnchorTargetStyle }}>
-          <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
-        </div>
-
-        {/* CONTENT AREA */}
-        <div style={showScopeAreaSidebar ? textEditorGridStyle : undefined}>
-          {showScopeAreaSidebar ? (
-            <aside style={textAreaListCardStyle}>
-              <div style={textAreaListWrapStyle}>
-                {visibleScopeAreaItems.map((item) => {
-                  const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
-                  const active = item.area_id === selectedAreaConfig?.area_id;
-                  return (
-                    <button
-                      key={item.area_id}
-                      type="button"
-                      style={textAreaListRowStyle(active)}
-                      onClick={() => setSelectedScopeAreaId(item.area_id)}
-                    >
-                      <div style={textAreaListRowTopStyle}>
-                        <strong style={textAreaListHeadlineStyle}>{item.areas?.name || item.area_id}</strong>
-                        <span style={textAreaTypeBadgeStyle(itemIsOrtslage)}>{itemIsOrtslage ? 'Ortslage' : 'Kreis'}</span>
-                      </div>
-                      <div style={textAreaListMetaLineStyle}>{item.area_id}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-          ) : null}
-
-          <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
-            <div style={workflowAreaContentStackStyle}>
-              <div style={tabContainerStyle}>
-                {visibleTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    style={tabButtonStyle(activeTab === tab.id)}
-                  >
-                    <span style={tabLabelStyle}>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div style={contentWrapperStyle}>
-                {activeSections.length === 0 ? (
-                  <div style={textWorkflowEmptyStateStyle}>
-                    Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
-                  </div>
-                ) : activeSections.map((section) => {
-                  const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
-                  const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
-                  const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
-                  const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
-                  return (
-                    <TextEditorField
-                      key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
-                      label={section.label}
-                      sectionKey={section.key}
-                      sectionGroup={sectionGroup}
-                      type={section.type}
-                      rawText={getRawTextFromJSON(section.key, sectionGroup)}
-                      dbEntry={dbTexts.find((t) => t.section_key === section.key)}
-                      areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
-                      onSave={saveText}
-                      onResetToSystem={resetTextToSystem}
-                      onAiRewrite={handleAiRewrite}
-                      tableName={tableName as HintTable}
-                      enableApproval={enableApproval}
-                      isRewriting={rewritingKey === section.key}
-                      isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
-                      mediaUpload={mediaSpec && tableName === 'report_texts' ? {
-                        key: mediaSpec.key,
-                        label: mediaSpec.label,
-                        maxWidth: mediaSpec.maxWidth,
-                        maxHeight: mediaSpec.maxHeight,
-                        maxUploadBytes: mediaSpec.maxUploadBytes,
-                        currentUrl: String(mediaEntry?.optimized_content ?? ''),
-                        hasOverride: Boolean(mediaEntry?.optimized_content),
-                        uploading: mediaState[mediaSpec.key]?.uploading ?? false,
-                        error: mediaState[mediaSpec.key]?.error ?? null,
-                        onUpload: uploadMandatoryMedia,
-                      } : null}
-                    />
-                  );
-                })}
-                {tableName === 'report_texts' && activeTab === 'makler' ? (
-                  <div style={mediaBottomWrapStyle}>
-                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
-                    <div style={mediaBottomGridStyle}>
-                      {MAKLER_MEDIA_KEYS.map((key) => {
-                        const spec = MANDATORY_MEDIA_SPECS[key];
-                        const mediaEntry = getMediaEntry(key);
-                        return (
-                          <MandatoryMediaUploadCard
-                            key={`${selectedAreaConfig?.area_id}:${key}`}
-                            label={spec.label}
-                            assetKey={spec.key}
-                            maxWidth={spec.maxWidth}
-                            maxHeight={spec.maxHeight}
-                            maxUploadBytes={spec.maxUploadBytes}
-                            currentUrl={String(mediaEntry?.optimized_content ?? '')}
-                            hasOverride={Boolean(mediaEntry?.optimized_content)}
-                            uploading={mediaState[key]?.uploading ?? false}
-                            error={mediaState[key]?.error ?? null}
-                            onUpload={uploadMandatoryMedia}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                {enableApproval ? (
-                  <div style={approvalFooterStyle}>
-                    <button
-                      type="button"
-                      onClick={handleSaveAndApprove}
-                      style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
-                      disabled={publishing || !hasPublishableChanges}
-                    >
-                      {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
-                    </button>
-                    <span style={approvalHintStyle}>
-                      Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      </div>
-
-      {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
-      {publishModalOpen ? (
-        <div style={publishOverlayStyle}>
-          <div style={publishModalStyle}>
-            <h3 style={publishTitleStyle}>Deutsche Freigabe laeuft</h3>
-            <p style={publishTextStyle}>{publishStatus}</p>
-            <p style={publishProgressStyle}>
-              Fortschritt: {publishDone}/{publishTotal}
-            </p>
-            {publishError ? <p style={publishErrorStyle}>{publishError}</p> : null}
-            <div style={publishActionsStyle}>
-              <button
-                type="button"
-                style={publishCloseButtonStyle}
-                onClick={() => setPublishModalOpen(false)}
-                disabled={publishing}
-              >
-                {publishing ? 'Bitte warten …' : 'Schließen'}
-              </button>
-            </div>
+    <ReportTextEditor
+      showTopLlmCard={showTopLlmCard}
+      showGlobalClassActions={showGlobalClassActions}
+      selectedLlmIntegrationId={selectedLlmIntegrationId}
+      llmIntegrations={llmIntegrations}
+      llmOptionsLoading={llmOptionsLoading}
+      llmOptionsLoaded={llmOptionsLoaded}
+      onSelectLlmIntegration={setSelectedLlmIntegrationId}
+      formatProviderLabel={formatProviderLabel}
+      topicSectionAnchorId={topicSectionAnchorId}
+      bulkScope={bulkScope}
+      isOrtslage={isOrtslage}
+      isBulkRewriting={isBulkRewriting}
+      classBulkProgress={classBulkState ? { done: classBulkState.done, total: classBulkState.total } : null}
+      classCards={visibleGlobalClassOrder.map((classKey) => {
+        const meta = GLOBAL_CLASS_META[classKey];
+        const estimate = classEstimateMap[classKey];
+        const active = activeBulkClass === classKey;
+        const running = classBulkState?.classKey === classKey;
+        return {
+          classKey,
+          title: meta.title,
+          description: meta.description,
+          cycle: meta.cycle,
+          defaultPrompt: meta.defaultPrompt,
+          totalTexts: estimate.totalTexts,
+          areaMultiplier: estimate.areaMultiplier,
+          totalTokens: estimate.totalTokens,
+          estimatedCostUsd: formatEstimatedCost(estimate.estimatedCostUsd, 'USD'),
+          estimatedCostEur: formatEstimatedCost(estimate.estimatedCostEur, 'EUR'),
+          prompt: globalPrompts[classKey],
+          active,
+          running,
+          disabled: isBulkRewriting && !running,
+          costInfoOpen: costInfoOpenClass === classKey,
+        };
+      })}
+      globalBulkReport={globalBulkReport}
+      onChangeBulkScope={setBulkScope}
+      onSelectClass={setActiveBulkClass}
+      onToggleCostInfo={(classKey) => setCostInfoOpenClass((prev) => (prev === classKey ? null : classKey))}
+      onChangeGlobalPrompt={(classKey, prompt) => {
+        setGlobalPrompts((prev) => ({
+          ...prev,
+          [classKey]: prompt,
+        }));
+      }}
+      onRunBulkClass={(classKey) => {
+        void runBulkByTextClass(classKey);
+      }}
+      onScrollToTopicSection={scrollToTopicSection}
+      showScopeAreaSidebar={showScopeAreaSidebar}
+      visibleScopeAreaItems={visibleScopeAreaItems}
+      selectedAreaId={String(selectedAreaConfig?.area_id ?? '')}
+      onSelectScopeArea={setSelectedScopeAreaId}
+      visibleTabs={visibleTabs}
+      activeTab={activeTab}
+      onSelectTab={setActiveTab}
+      activeSections={activeSections}
+      renderSection={(section) => {
+        const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+        const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
+        const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
+        const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
+        return (
+          <TextEditorField
+            key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+            label={section.label}
+            sectionKey={section.key}
+            sectionGroup={sectionGroup}
+            type={section.type}
+            rawText={getRawTextFromJSON(section.key, sectionGroup)}
+            dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+            areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+            onSave={saveText}
+            onResetToSystem={resetTextToSystem}
+            onAiRewrite={handleAiRewrite}
+            tableName={tableName as HintTable}
+            enableApproval={enableApproval}
+            isRewriting={rewritingKey === section.key}
+            isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+            mediaUpload={mediaSpec && tableName === 'report_texts' ? {
+              key: mediaSpec.key,
+              label: mediaSpec.label,
+              maxWidth: mediaSpec.maxWidth,
+              maxHeight: mediaSpec.maxHeight,
+              maxUploadBytes: mediaSpec.maxUploadBytes,
+              currentUrl: String(mediaEntry?.optimized_content ?? ''),
+              hasOverride: Boolean(mediaEntry?.optimized_content),
+              uploading: mediaState[mediaSpec.key]?.uploading ?? false,
+              error: mediaState[mediaSpec.key]?.error ?? null,
+              onUpload: uploadMandatoryMedia,
+            } : null}
+          />
+        );
+      }}
+      renderMediaBottom={activeTab === 'makler' ? (
+        <div style={mediaBottomWrapStyle}>
+          <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
+          <div style={mediaBottomGridStyle}>
+            {MAKLER_MEDIA_KEYS.map((key) => {
+              const spec = MANDATORY_MEDIA_SPECS[key];
+              const mediaEntry = getMediaEntry(key);
+              return (
+                <MandatoryMediaUploadCard
+                  key={`${selectedAreaConfig?.area_id}:${key}`}
+                  label={spec.label}
+                  assetKey={spec.key}
+                  maxWidth={spec.maxWidth}
+                  maxHeight={spec.maxHeight}
+                  maxUploadBytes={spec.maxUploadBytes}
+                  currentUrl={String(mediaEntry?.optimized_content ?? '')}
+                  hasOverride={Boolean(mediaEntry?.optimized_content)}
+                  uploading={mediaState[key]?.uploading ?? false}
+                  error={mediaState[key]?.error ?? null}
+                  onUpload={uploadMandatoryMedia}
+                />
+              );
+            })}
           </div>
         </div>
       ) : null}
-    </div>
+      enableApproval={enableApproval}
+      publishing={publishing}
+      hasPublishableChanges={hasPublishableChanges}
+      onSaveAndApprove={handleSaveAndApprove}
+      saving={saving}
+      publishModalOpen={publishModalOpen}
+      publishStatus={publishStatus}
+      publishDone={publishDone}
+      publishTotal={publishTotal}
+      publishError={publishError}
+      onClosePublishModal={() => setPublishModalOpen(false)}
+    />
   );
 }
 
@@ -2417,32 +2275,6 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 
 // --- STYLES (FULL WIDTH) ---
 
-const sectionEditorCardStyle: React.CSSProperties = {
-  ...textWorkflowCardStyle,
-  marginBottom: 0,
-};
-const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 20px 0', border: 'none' };
-const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
-  ...displayTextBadgeStyle(classKey),
-  fontSize: 16,
-  lineHeight: 1,
-  padding: '10px 20px',
-  borderRadius: 999,
-  fontWeight: 700,
-  letterSpacing: '0.01em',
-});
-const textWorkflowEmptyStateStyle: React.CSSProperties = {
-  border: '1px dashed #cbd5e1',
-  borderRadius: 12,
-  padding: '16px 18px',
-  fontSize: 13,
-  color: '#64748b',
-  background: '#f8fafc',
-};
-const localSiteClassGridStyle: React.CSSProperties = {
-  ...textWorkflowClassGridStyle,
-  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-};
 const statePillStyle = (completed: boolean): React.CSSProperties => ({
   fontSize: '10px',
   fontWeight: 700,
@@ -2452,57 +2284,6 @@ const statePillStyle = (completed: boolean): React.CSSProperties => ({
   backgroundColor: completed ? '#dcfce7' : '#fee2e2',
   color: completed ? '#166534' : '#991b1b',
 });
-const approvalFooterStyle: React.CSSProperties = {
-  marginTop: '24px',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-end',
-  gap: '12px',
-};
-const approveAllButtonStyle = (active: boolean): React.CSSProperties => ({
-  width: '300px',
-  height: '54px',
-  borderRadius: '10px',
-  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
-  backgroundColor: active ? '#0f766e' : '#e2e8f0',
-  color: active ? '#fff' : '#64748b',
-  fontSize: '14px',
-  fontWeight: 700,
-  cursor: active ? 'pointer' : 'not-allowed',
-  opacity: active ? 1 : 0.75,
-});
-const approvalHintStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  textAlign: 'right',
-};
-const globalReportStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  backgroundColor: '#ffffff',
-  padding: '10px 12px',
-  marginTop: '4px',
-};
-const globalReportTitleStyle: React.CSSProperties = {
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#0f172a',
-  marginBottom: '6px',
-};
-const globalReportRowStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#334155',
-  marginBottom: '3px',
-};
-const globalReportErrorListStyle: React.CSSProperties = {
-  marginTop: '8px',
-  paddingTop: '8px',
-  borderTop: '1px dashed #e2e8f0',
-  fontSize: '11px',
-  color: '#b91c1c',
-  display: 'grid',
-  gap: '3px',
-};
 const mediaBottomWrapStyle: React.CSSProperties = {
   borderTop: '1px solid #e2e8f0',
   paddingTop: '14px',
@@ -2586,69 +2367,4 @@ const mandatoryMediaErrorStyle: React.CSSProperties = {
   border: '1px solid #fecaca',
   padding: '8px 10px',
   color: '#b91c1c',
-};
-const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };
-
-const publishOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15, 23, 42, 0.48)',
-  zIndex: 1200,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-};
-
-const publishModalStyle: React.CSSProperties = {
-  width: 'min(620px, 96vw)',
-  background: '#ffffff',
-  borderRadius: 14,
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 24px 48px rgba(2, 6, 23, 0.22)',
-  padding: 18,
-  display: 'grid',
-  gap: 12,
-};
-
-const publishTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 18,
-  color: '#0f172a',
-};
-
-const publishTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  color: '#334155',
-  lineHeight: 1.45,
-};
-
-const publishProgressStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  color: '#0f172a',
-  fontWeight: 700,
-};
-
-const publishErrorStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  color: '#b91c1c',
-};
-
-const publishActionsStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-};
-
-const publishCloseButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 8,
-  background: '#fff',
-  color: '#0f172a',
-  padding: '8px 12px',
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
 };
