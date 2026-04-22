@@ -71,6 +71,12 @@ export type OnOfficeEstateMarketingFieldCandidate = {
   permittedValues: OnOfficeFieldOption[];
 };
 
+export type OnOfficeEstateFieldSummary = {
+  key: string;
+  label: string | null;
+  type: string | null;
+};
+
 type OnOfficeSearchCriteriaRecord = Record<string, unknown> & {
   id?: number | string;
   _meta?: Record<string, unknown>;
@@ -104,6 +110,8 @@ export type OnOfficeEstateMarketingFieldConfig = {
 export type OnOfficeEstateFieldDiagnostics = {
   status: OnOfficeEstateStatusFieldConfig;
   marketing: OnOfficeEstateMarketingFieldConfig;
+  fields_count: number;
+  boolean_fields: OnOfficeEstateFieldSummary[];
 };
 
 type OnOfficeResourceSettings = {
@@ -1780,6 +1788,21 @@ function buildOnOfficeEstateStatusFieldConfig(
   };
 }
 
+function buildOnOfficeEstateBooleanFieldSummaries(
+  catalog: OnOfficeEstateFieldCatalog,
+): OnOfficeEstateFieldSummary[] {
+  return catalog.fields
+    .filter((field) => field.type === "boolean")
+    .map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.type,
+    }))
+    .sort((left, right) =>
+      left.key.localeCompare(right.key, "de", { sensitivity: "base" }),
+    );
+}
+
 export async function fetchOnOfficeEstateMarketingFieldConfig(
   integration: PartnerIntegration,
   token: string,
@@ -1807,6 +1830,8 @@ export async function fetchOnOfficeEstateFieldDiagnostics(
   return {
     status: buildOnOfficeEstateStatusFieldConfig(catalog),
     marketing: buildOnOfficeEstateMarketingFieldConfig(catalog),
+    fields_count: catalog.fields.length,
+    boolean_fields: buildOnOfficeEstateBooleanFieldSummaries(catalog),
   };
 }
 

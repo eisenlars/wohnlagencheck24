@@ -85,6 +85,8 @@ export async function GET(
       has_reference_status_candidates: estateStatusConfig.has_reference_status_candidates,
       estate_marketing_field_targets: estateMarketingFieldConfig.target_terms,
       estate_marketing_field_candidates: estateMarketingFieldConfig.candidates,
+      estate_fields_count: estateFieldDiagnostics.fields_count,
+      estate_boolean_fields: estateFieldDiagnostics.boolean_fields,
     });
   } catch (error) {
     if (error instanceof Error) {
