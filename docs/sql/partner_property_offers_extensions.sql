@@ -2,7 +2,8 @@
 
 alter table public.partner_property_offers
   add column if not exists source text,
-  add column if not exists external_id text;
+  add column if not exists external_id text,
+  add column if not exists marketing_flags jsonb not null default '[]'::jsonb;
 
 do $$
 begin

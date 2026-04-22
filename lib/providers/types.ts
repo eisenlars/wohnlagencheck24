@@ -1,3 +1,5 @@
+import type { MarketingBadge } from "@/lib/offer-marketing-flags";
+
 export type ProviderKey = "propstack" | "onoffice" | "openimmo";
 
 export type CrmSyncResource = "offers" | "references" | "requests" | "all";
@@ -85,6 +87,7 @@ export type MappedOffer = {
   image_url: string | null;
   detail_url: string | null;
   is_top: boolean;
+  marketing_flags?: MarketingBadge[] | null;
   updated_at: string | null;
   raw: JsonObject;
   source_payload: JsonObject;

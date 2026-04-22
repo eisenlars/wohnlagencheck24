@@ -112,6 +112,7 @@ type PublicOfferProjectionRow = {
   image_url?: string | null;
   detail_url?: string | null;
   is_top?: boolean | null;
+  marketing_flags?: unknown;
   source_updated_at?: string | null;
   updated_at?: string | null;
   external_id?: string | null;
@@ -154,6 +155,7 @@ function mapProjectionRowToOffer(
     raw: raw ?? null,
     statusBadge,
     marketingBadges: normalizeOfferMarketingBadges({
+      marketingFlags: row.marketing_flags,
       raw,
       isTop: Boolean(row.is_top),
       updatedAt,
@@ -188,6 +190,8 @@ type PublicOfferDetailRow = {
   address?: string | null;
   image_url?: string | null;
   detail_url?: string | null;
+  is_top?: boolean | null;
+  marketing_flags?: unknown;
   source_updated_at?: string | null;
   updated_at?: string | null;
   external_id?: string | null;
@@ -245,6 +249,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     "image_url",
     "detail_url",
     "is_top",
+    "marketing_flags",
     "source_updated_at",
     "updated_at",
   ].join(",");
@@ -386,6 +391,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
           "image_url",
           "detail_url",
           "is_top",
+          "marketing_flags",
           "updated_at",
           "external_id",
           "source",
@@ -423,6 +429,8 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
           "address",
           "image_url",
           "detail_url",
+          "is_top",
+          "marketing_flags",
           "source_updated_at",
           "updated_at",
           "external_id",
@@ -449,6 +457,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
   const raw = (record["raw"] as Record<string, unknown> | null) ?? null;
   const updatedAt = publicRecord?.source_updated_at ?? publicRecord?.updated_at ?? (record["updated_at"] as string | null) ?? null;
   const statusBadge = readOfferStatusBadge(raw);
+  const isTop = Boolean(publicRecord?.is_top ?? record["is_top"]);
   return {
     id: String(record["id"] ?? ""),
     partnerId: String(record["partner_id"] ?? ""),
@@ -463,7 +472,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     address: publicRecord?.address ?? (record["address"] as string | null) ?? null,
     imageUrl: publicRecord?.image_url ?? (record["image_url"] as string | null) ?? null,
     detailUrl: publicRecord?.detail_url ?? (record["detail_url"] as string | null) ?? null,
-    isTop: Boolean(record["is_top"]),
+    isTop,
     updatedAt,
     externalId: publicRecord?.external_id ?? (record["external_id"] as string | null) ?? null,
     source: publicRecord?.source ?? (record["source"] as string | null) ?? null,
@@ -482,8 +491,9 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     imageAltTexts: toStringArray(publicRecord?.image_alt_texts) ?? null,
     statusBadge,
     marketingBadges: normalizeOfferMarketingBadges({
+      marketingFlags: publicRecord?.marketing_flags ?? record["marketing_flags"],
       raw,
-      isTop: Boolean(record["is_top"]),
+      isTop,
       updatedAt,
       statusBadge,
     }),

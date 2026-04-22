@@ -415,6 +415,7 @@ async function upsertOffers(
     image_url: offer.image_url,
     detail_url: offer.detail_url,
     is_top: offer.is_top,
+    marketing_flags: offer.marketing_flags ?? [],
     updated_at: offer.updated_at ?? new Date().toISOString(),
     raw: offer.raw,
   }));

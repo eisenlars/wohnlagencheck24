@@ -1,5 +1,6 @@
 import type { PartnerIntegration, MappedOffer, RawListing } from "@/lib/providers/types";
 import type { OpenImmoListing } from "@/lib/openimmo/types";
+import { normalizeOfferMarketingBadges } from "@/lib/offer-marketing-flags";
 
 function toIsoNow(): string {
   return new Date().toISOString();
@@ -17,6 +18,9 @@ export function mapOpenImmoListingToOffer(
   integration: PartnerIntegration,
   listing: OpenImmoListing,
 ): MappedOffer {
+  const marketingFlags = normalizeOfferMarketingBadges({ raw: listing.raw });
+  const isTop = marketingFlags.some((badge) => badge.key === "top");
+
   return {
     partner_id: partnerId,
     source: "openimmo",
@@ -31,7 +35,8 @@ export function mapOpenImmoListingToOffer(
     address: listing.address,
     image_url: listing.image_url,
     detail_url: buildDetailUrl(integration.detail_url_template, listing),
-    is_top: false,
+    is_top: isTop,
+    marketing_flags: marketingFlags,
     updated_at: listing.updated_at,
     raw: {
       description: listing.description,

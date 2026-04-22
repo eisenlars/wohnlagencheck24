@@ -119,6 +119,12 @@ Gelesene Felder:
 - `vermarktungsart`
 
 Zusaetzliche Vermarktungsflags:
+- `neu`
+- `objekt_neu`
+- `new_listing`
+- `topobjekt`
+- `top_objekt`
+- `top_angebot`
 - `objekt_der_woche`
 - `courtage_frei`
 - `objekt_des_tages`
@@ -135,6 +141,8 @@ Normalisiert in `raw`:
   "vermietet": "0",
   "marketing": {
     "publish": true,
+    "new": false,
+    "top": false,
     "property_of_the_week": false,
     "free_commission": false,
     "property_of_the_day": false

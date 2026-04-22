@@ -1,4 +1,5 @@
 import { readCrmResourceLimits } from "@/lib/integrations/settings";
+import { normalizeOfferMarketingBadges } from "@/lib/offer-marketing-flags";
 import { extractReferenceChallengeCategories } from "@/lib/reference-challenges";
 import type {
   CrmSyncMode,
@@ -1265,6 +1266,8 @@ function normalizeUnitOffer(
   unit: PropstackUnit,
 ): MappedOffer {
   const raw = buildNormalizedListingPayload(integration, unit);
+  const marketingFlags = normalizeOfferMarketingBadges({ raw });
+  const isTop = marketingFlags.some((badge) => badge.key === "top");
 
   return {
     partner_id: partnerId,
@@ -1280,7 +1283,8 @@ function normalizeUnitOffer(
     address: typeof raw.address === "string" ? raw.address : null,
     image_url: typeof raw.image_url === "string" ? raw.image_url : null,
     detail_url: typeof raw.detail_url === "string" ? raw.detail_url : null,
-    is_top: false,
+    is_top: isTop,
+    marketing_flags: marketingFlags,
     updated_at: unit.updated_at ?? null,
     raw,
     source_payload: unit as unknown as Record<string, unknown>,

@@ -50,6 +50,7 @@ type OfferRow = {
   image_url?: string | null;
   detail_url?: string | null;
   is_top?: boolean | null;
+  marketing_flags?: unknown;
   updated_at?: string | null;
   source?: string | null;
   external_id?: string | null;
@@ -738,6 +739,7 @@ export async function rebuildPublicOfferEntriesForPartner(
         "image_url",
         "detail_url",
         "is_top",
+        "marketing_flags",
         "is_live",
         "source_updated_at",
       ],
@@ -747,7 +749,7 @@ export async function rebuildPublicOfferEntriesForPartner(
   const [offersRes, overridesRes, i18nRes] = await Promise.all([
     admin
       .from("partner_property_offers")
-      .select("id, partner_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, updated_at, source, external_id, raw")
+      .select("id, partner_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, marketing_flags, updated_at, source, external_id, raw")
       .eq("partner_id", partnerId),
     admin
       .from("partner_property_overrides")
@@ -858,6 +860,7 @@ export async function rebuildPublicOfferEntriesForPartner(
         image_url: asNullableText(offer.image_url),
         detail_url: asNullableText(offer.detail_url),
         is_top: Boolean(offer.is_top),
+        marketing_flags: asArrayJson(offer.marketing_flags),
         is_live: true,
         source_updated_at: asNullableText(offer.updated_at),
         updated_at: rebuildTimestamp,
@@ -898,6 +901,7 @@ export async function rebuildPublicOfferEntriesForPartner(
           image_url: asNullableText(offer.image_url),
           detail_url: asNullableText(offer.detail_url),
           is_top: Boolean(offer.is_top),
+          marketing_flags: asArrayJson(offer.marketing_flags),
           is_live: true,
           source_updated_at: asNullableText(offer.updated_at),
           updated_at: rebuildTimestamp,
@@ -944,6 +948,7 @@ export async function rebuildPublicOfferEntriesForPartner(
       "image_url",
       "detail_url",
       "is_top",
+      "marketing_flags",
       "is_live",
       "source_updated_at",
     ],

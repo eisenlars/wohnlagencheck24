@@ -14,6 +14,7 @@ import type {
   RawRequest,
   ResourceSyncData,
 } from "@/lib/providers/types";
+import { normalizeOfferMarketingBadges } from "@/lib/offer-marketing-flags";
 import { extractReferenceChallengeCategories } from "@/lib/reference-challenges";
 import { cleanRequestRegionTargetLabel, isRadiusContextSegment } from "@/lib/request-region-targets";
 
@@ -1089,10 +1090,14 @@ function mapEstateToOffer(
   };
   const marketing = {
     publish: normalizeOnOfficeBoolean(elements["veroeffentlichen"]),
+    new: normalizeOnOfficeBoolean(elements["neu"] ?? elements["objekt_neu"] ?? elements["new_listing"]),
+    top: normalizeOnOfficeBoolean(elements["topobjekt"] ?? elements["top_objekt"] ?? elements["top_angebot"]),
     property_of_the_week: normalizeOnOfficeBoolean(elements["objekt_der_woche"]),
     free_commission: normalizeOnOfficeBoolean(elements["courtage_frei"]),
     property_of_the_day: normalizeOnOfficeBoolean(elements["objekt_des_tages"]),
   };
+  const marketingFlags = normalizeOfferMarketingBadges({ raw: { marketing } });
+  const isTop = marketingFlags.some((badge) => badge.key === "top");
   const energyMeta = {
     certificate_year: elements["energiepassJahrgang"] ?? null,
     issue_date: elements["energiepassAusstelldatum"] ?? null,
@@ -1113,7 +1118,8 @@ function mapEstateToOffer(
     address,
     image_url: mediaBundle.image_url ?? gallery[0] ?? null,
     detail_url: buildDetailUrl(integration.detail_url_template, elements),
-    is_top: false,
+    is_top: isTop,
+    marketing_flags: marketingFlags,
     updated_at: sourceUpdatedAt,
     raw: {
       exposee_id: elements["objektnr_extern"] ?? null,
@@ -1827,6 +1833,12 @@ export async function fetchOnOfficeEstates(
     "multiParkingLot",
     "balkon",
     "terrasse",
+    "neu",
+    "objekt_neu",
+    "new_listing",
+    "topobjekt",
+    "top_objekt",
+    "top_angebot",
     "objekt_der_woche",
     "courtage_frei",
     "objekt_des_tages",

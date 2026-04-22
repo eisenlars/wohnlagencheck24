@@ -33,6 +33,7 @@ create table if not exists public.public_offer_entries (
   image_url text,
   detail_url text,
   is_top boolean not null default false,
+  marketing_flags jsonb not null default '[]'::jsonb check (jsonb_typeof(marketing_flags) = 'array'),
   is_live boolean not null default true,
   source_updated_at timestamptz,
   published_at timestamptz not null default now(),
