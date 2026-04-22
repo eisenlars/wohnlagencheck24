@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
-import workspaceStyles from './styles/workspace.module.css';
 
 type OfferRow = {
   id: string;
@@ -151,12 +150,20 @@ type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy'
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
-    : workspaceStyles.workspaceTab;
+    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
+    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
+const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
+const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
+const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm text-break';
+const workspacePreviewLabelClassName = 'small text-secondary text-uppercase fw-bold mb-2';
+const workspacePreviewBodyClassName = 'small text-secondary lh-base text-break';
+const crmCandidateBadgeClassName = (tone: 'info' | 'success' | 'warning') =>
+  tone === 'success'
+    ? 'badge rounded-pill text-success bg-success-subtle border border-success-subtle'
+    : tone === 'warning'
+      ? 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle'
+      : 'badge rounded-pill text-primary bg-primary-subtle border border-primary-subtle';
 type OfferListFilter = 'all' | 'kauf' | 'miete';
-const OFFER_LIST_VISIBLE_ROWS = 8;
-const OFFER_LIST_ROW_HEIGHT = 104;
-const OFFER_LIST_ROW_GAP = 8;
 
 function formatProviderLabel(provider: string): string {
   const p = String(provider ?? '').toLowerCase();
@@ -306,14 +313,6 @@ function classifyOnOfficeCandidate(raw: Record<string, unknown>): {
     tone: 'info',
     detail: 'Die onOffice-Steuerfelder liefern aktuell keine eindeutige Einordnung.',
   };
-}
-
-function getEffectiveOfferObjectType(offer: OfferRow | null | undefined): string {
-  if (!offer) return '';
-  const raw = offer.raw;
-  const rawObjectType = typeof raw?.object_type === 'string' ? raw.object_type.trim().toLowerCase() : '';
-  const columnObjectType = String(offer.object_type || '').trim().toLowerCase();
-  return rawObjectType || columnObjectType;
 }
 
 function getEffectiveOfferType(offer: OfferRow | null | undefined): OfferListFilter | '' {
@@ -927,30 +926,31 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div className={workspaceStyles.workspaceField}>
-        <div className={workspaceStyles.workspaceFieldHeader}>
-          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
+      <div className="bg-white border rounded-4 p-3 d-flex flex-column gap-3">
+        <div className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
             {isCustomized ? (
-              <span style={customizedBadgeStyle}>✓ Individuell angepasst</span>
+              <span className="small fw-bold text-success">✓ Individuell angepasst</span>
             ) : null}
             <button
               type="button"
               onClick={() => resetField(key, rawValue)}
-              style={resetButtonStyle(isCustomized)}
+              className={`btn btn-sm fw-semibold ${isCustomized ? 'btn-outline-secondary' : 'btn-outline-success'}`}
             >
               Original nutzen
             </button>
           </div>
         </div>
-        <div style={editorGridStyle}>
-          <div className={workspaceStyles.workspaceFieldStack}>
+        <div className="row g-3 align-items-start">
+          <div className="col-12 col-xl-7 d-flex flex-column gap-2">
             {options?.multiline ? (
               <textarea
                 value={value}
                 onChange={(e) => updateField(key, e.target.value)}
                 onBlur={() => saveOverride()}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+                className="form-control form-control-sm"
+                rows={5}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             ) : (
@@ -958,16 +958,14 @@ export default function OffersManager(props: Props) {
                 value={value}
                 onChange={(e) => updateField(key, e.target.value)}
                 onBlur={() => saveOverride()}
-                className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+                className="form-control form-control-sm"
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <div className={workspaceStyles.workspaceAiActions}>
+            <div className="d-flex align-items-center flex-wrap gap-2">
               <button
                 type="button"
-                className={`${workspaceStyles.workspaceAiButton} ${
-                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-                }`}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -978,32 +976,35 @@ export default function OffersManager(props: Props) {
                 onClick={() =>
                   setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
                 }
-                className={workspaceStyles.workspacePromptButton}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div className={workspaceStyles.workspacePromptPanel}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
+              <div className="border rounded-3 p-3 bg-light">
+                <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+                <label className="d-flex flex-column gap-1 small fw-semibold text-dark">
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
                     onChange={(e) =>
                       setCustomPromptMap((prev) => ({ ...prev, [keyName]: e.target.value }))
                     }
-                    style={promptInputStyle}
+                    className="form-control form-control-sm"
+                    rows={4}
                     placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                   />
                 </label>
               </div>
             ) : null}
           </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
-            <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+          <div className="col-12 col-xl-5">
+            <div className="bg-light border rounded-3 p-3 h-100">
+              <div className={workspacePreviewLabelClassName}>CRM‑Original (System)</div>
+              <div className={workspacePreviewBodyClassName}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1026,37 +1027,36 @@ export default function OffersManager(props: Props) {
     const customPrompt = customPromptMap[keyName] ?? '';
     const standardPrompt = getStandardPromptText(label, selectedOffer?.address || selectedOffer?.title || 'Objekt');
     return (
-      <div className={workspaceStyles.workspaceField}>
-        <div className={workspaceStyles.workspaceFieldHeader}>
-          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
+      <div className="bg-white border rounded-4 p-3 d-flex flex-column gap-3">
+        <div className="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
+          <div className="d-flex align-items-center gap-2 flex-wrap">
             {isCustomized ? (
-              <span style={customizedBadgeStyle}>✓ Individuell angepasst</span>
+              <span className="small fw-bold text-success">✓ Individuell angepasst</span>
             ) : null}
             <button
               type="button"
               onClick={() => resetField(key, rawValue)}
-              style={resetButtonStyle(isCustomized)}
+              className={`btn btn-sm fw-semibold ${isCustomized ? 'btn-outline-secondary' : 'btn-outline-success'}`}
             >
               Original nutzen
             </button>
           </div>
         </div>
-        <div style={editorGridStyle}>
-          <div className={workspaceStyles.workspaceFieldStack}>
+        <div className="row g-3 align-items-start">
+          <div className="col-12 col-xl-7 d-flex flex-column gap-2">
             <textarea
               value={value}
               onChange={(e) => updateField(key, e.target.value.split('\n').filter(Boolean))}
               onBlur={() => saveOverride()}
-              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+              className="form-control form-control-sm"
+              rows={5}
               placeholder={placeholder}
             />
-            <div className={workspaceStyles.workspaceAiActions}>
+            <div className="d-flex align-items-center flex-wrap gap-2">
               <button
                 type="button"
-                className={`${workspaceStyles.workspaceAiButton} ${
-                  isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-                }`}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
@@ -1067,33 +1067,36 @@ export default function OffersManager(props: Props) {
                 onClick={() =>
                   setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
                 }
-                className={workspaceStyles.workspacePromptButton}
+                className="btn btn-sm btn-outline-secondary fw-semibold"
               >
                 {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
             {showPrompt ? (
-              <div className={workspaceStyles.workspacePromptPanel}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
+              <div className="border rounded-3 p-3 bg-light">
+                <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+                <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+                <label className="d-flex flex-column gap-1 small fw-semibold text-dark">
                   Eigener Prompt (optional)
                   <textarea
                     value={customPrompt}
                     onChange={(e) =>
                       setCustomPromptMap((prev) => ({ ...prev, [keyName]: e.target.value }))
                     }
-                    style={promptInputStyle}
+                    className="form-control form-control-sm"
+                    rows={4}
                     placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                   />
                 </label>
               </div>
             ) : null}
           </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
-            <div style={previewContentStyle}>
-              {rawValue.length > 0 ? rawValue.join('\n') : 'Keine CRM-Vorlage vorhanden.'}
+          <div className="col-12 col-xl-5">
+            <div className="bg-light border rounded-3 p-3 h-100">
+              <div className={workspacePreviewLabelClassName}>CRM‑Original (System)</div>
+              <div className={workspacePreviewBodyClassName}>
+                {rawValue.length > 0 ? rawValue.join('\n') : 'Keine CRM-Vorlage vorhanden.'}
+              </div>
             </div>
           </div>
         </div>
@@ -1104,57 +1107,51 @@ export default function OffersManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Immobilien werden geladen..." />;
 
   return (
-    <div style={{ display: 'grid', gap: '10px' }}>
+    <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
-        <section className={workspaceStyles.workspaceControlShell}>
-          <div className={workspaceStyles.workspaceControlCard}>
-            <div className={workspaceStyles.workspaceControlRow}>
-              <label className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupWide}`}>
-                <span className={workspaceStyles.workspaceControlSelectWrap}>
-                  <select
-                    value={visibilityMode}
-                    onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                    disabled={visibilityBusy}
-                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectWide}`}
-                  >
-                    <option value="partner_wide">Regionale Ausspielung für Angebote partnerweit (zeigt alle Angebote des Partners im Gebiet)</option>
-                    <option value="strict_local">Regionale Ausspielung für Angebote nur lokal (nutzt nur lokal gematchte Angebote)</option>
-                  </select>
-                  <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                </span>
-              </label>
-              <div className={`${workspaceStyles.workspaceControlGroup} ${workspaceStyles.workspaceControlGroupModel}`}>
+        <section className="mb-2">
+          <div className="border border-success-subtle rounded-3 p-3 d-flex flex-column gap-3 mb-2 bg-success-subtle">
+            <div className="row g-3 align-items-center">
+              <div className="col-12 col-xl">
+                <select
+                  value={visibilityMode}
+                  onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                  disabled={visibilityBusy}
+                  className="form-select fw-semibold"
+                >
+                  <option value="partner_wide">Regionale Ausspielung für Angebote partnerweit (zeigt alle Angebote des Partners im Gebiet)</option>
+                  <option value="strict_local">Regionale Ausspielung für Angebote nur lokal (nutzt nur lokal gematchte Angebote)</option>
+                </select>
+              </div>
+              <div className="col-12 col-xl-4 ms-xl-auto">
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                  <span className={workspaceStyles.workspaceControlSelectWrap}>
-                    <select
-                      value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                      onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                      className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.workspaceControlSelectModel}`}
-                      aria-label="KI-Modell auswählen"
-                      disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                    >
-                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                      {llmOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className={workspaceStyles.workspaceControlChevron} aria-hidden="true">▾</span>
-                  </span>
+                  <select
+                    value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+                    onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                    className="form-select fw-semibold"
+                    aria-label="KI-Modell auswählen"
+                    disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+                  >
+                    {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                    {llmOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
-                  <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
+                  <span className="small text-success-emphasis">Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>
             {visibilityMessage ? (
               <div
-                className={`${workspaceStyles.workspaceControlMessage} ${
+                className={`rounded-pill px-3 py-2 small fw-semibold align-self-start ${
                   visibilityTone === 'success'
-                    ? workspaceStyles.workspaceControlMessageSuccess
+                    ? 'bg-success-subtle text-success border border-success-subtle'
                     : visibilityTone === 'error'
-                      ? workspaceStyles.workspaceControlMessageError
-                      : workspaceStyles.workspaceControlMessageInfo
+                      ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                      : 'bg-primary-subtle text-primary border border-primary-subtle'
                 }`}
               >
                 {visibilityMessage}
@@ -1164,13 +1161,14 @@ export default function OffersManager(props: Props) {
         </section>
       ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
-      <section style={panelStyle}>
-        <div className={workspaceStyles.workspaceListHeader}>
-          <h3 className={workspaceStyles.workspaceListTitle}>{offerLoadSummary ?? '0 Angebote geladen'}</h3>
+      <div className="row g-3 g-xl-4 align-items-start">
+      <section className="col-12 col-xl-4">
+        <div className="bg-white border rounded-4 p-3">
+        <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+          <h3 className="m-0 fs-6 fw-bold text-dark">{offerLoadSummary ?? '0 Angebote geladen'}</h3>
           <button
             type="button"
-            className={workspaceStyles.workspaceListInfoButton}
+            className="btn btn-sm btn-light border rounded-circle fw-bold lh-1"
             onClick={() => setOfferDebugOpen(true)}
             disabled={!offerLoadDebug}
             aria-label="Debug-Informationen anzeigen"
@@ -1182,44 +1180,32 @@ export default function OffersManager(props: Props) {
           placeholder="Suchen..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className={workspaceStyles.workspaceSearchInput}
+          className="form-control form-control-sm"
         />
-        <div className={workspaceStyles.workspaceFilterBar}>
+        <div className="d-flex flex-wrap gap-2 mt-2 mb-3">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className={`${workspaceStyles.workspaceFilterButton} ${
-              filterType === 'all' ? workspaceStyles.workspaceFilterButtonActive : ''
-            }`}
+            className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'all' ? 'btn-secondary' : 'btn-outline-secondary'}`}
           >
             Alle
           </button>
           <button
             type="button"
             onClick={() => setFilterType('kauf')}
-            className={`${workspaceStyles.workspaceFilterButton} ${
-              filterType === 'kauf' ? workspaceStyles.workspaceFilterButtonActive : ''
-            }`}
+            className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'kauf' ? 'btn-secondary' : 'btn-outline-secondary'}`}
           >
             Kauf
           </button>
           <button
             type="button"
             onClick={() => setFilterType('miete')}
-            className={`${workspaceStyles.workspaceFilterButton} ${
-              filterType === 'miete' ? workspaceStyles.workspaceFilterButtonActive : ''
-            }`}
+            className={`btn btn-sm rounded-pill flex-fill fw-semibold ${filterType === 'miete' ? 'btn-secondary' : 'btn-outline-secondary'}`}
           >
             Miete
           </button>
         </div>
-        <div
-          className={workspaceStyles.workspaceList}
-          style={{
-            gap: OFFER_LIST_ROW_GAP,
-            maxHeight: OFFER_LIST_VISIBLE_ROWS * OFFER_LIST_ROW_HEIGHT + (OFFER_LIST_VISIBLE_ROWS - 1) * OFFER_LIST_ROW_GAP,
-          }}
-        >
+        <div className="d-flex flex-column gap-2 mt-3 pe-1 overflow-auto">
           {filteredOffers.map((offer) => {
             const normalizedExternalId = (offer.external_id ?? '').trim();
             const normalizedSource = (offer.source ?? '').trim();
@@ -1240,91 +1226,101 @@ export default function OffersManager(props: Props) {
               <button
                 key={offer.id}
                 onClick={() => setSelectedOfferId(offer.id)}
-                className={`${workspaceStyles.workspaceListItem} ${workspaceStyles.workspaceListItemWithMedia} ${
-                  selectedOfferId === offer.id ? workspaceStyles.workspaceListItemActive : ''
-                }`}
+                className={`btn w-100 text-start p-2 pe-4 rounded-3 border position-relative ${selectedOfferId === offer.id ? 'bg-light' : 'bg-white'}`}
               >
-                <span className={workspaceStyles.workspaceListItemMedia}>
-                  {previewImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={previewImageUrl}
-                      alt={offer.title || 'Objektbild'}
-                      className={workspaceStyles.workspaceListItemImage}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span className={workspaceStyles.workspaceListItemImagePlaceholder}>Kein Bild</span>
-                  )}
-                </span>
-                <span className={workspaceStyles.workspaceListItemContent}>
-                  <span className={workspaceStyles.workspaceListItemTitle}>{offer.title || 'Objekt'}</span>
-                  <span className={workspaceStyles.workspaceListItemMeta}>
-                    {`${filterType !== 'all' ? '' : `${offerTypeLabel} · `}${locationLabel}`}
-                  </span>
-                  {hasOverride ? (
-                    <span className={workspaceStyles.workspaceListItemNote}>
-                      Override aktiv
+                <div className="row g-2 align-items-center flex-nowrap">
+                  <div className="col-3">
+                    <div className="ratio ratio-1x1 rounded-2 overflow-hidden border bg-secondary-subtle">
+                      {previewImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={previewImageUrl}
+                          alt={offer.title || 'Objektbild'}
+                          className="w-100 h-100 object-fit-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span className="d-flex align-items-center justify-content-center small text-secondary fw-bold text-uppercase">Kein Bild</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col d-flex flex-column gap-1 overflow-hidden">
+                    <span className="fw-semibold text-dark text-truncate lh-sm">{offer.title || 'Objekt'}</span>
+                    <span className="small text-secondary fw-bold text-uppercase lh-sm text-truncate">
+                      {`${filterType !== 'all' ? '' : `${offerTypeLabel} · `}${locationLabel}`}
                     </span>
-                  ) : null}
-                </span>
+                    {hasOverride ? (
+                      <span className="small text-secondary fw-semibold text-truncate">
+                        Override aktiv
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className={`position-absolute top-0 end-0 mt-2 me-2 badge rounded-pill p-1 ${
+                    hasOverride ? 'bg-success' : 'bg-danger'
+                  }`}
+                />
               </button>
             );
           })}
           {filteredOffers.length === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: '13px' }}>Keine Angebote gefunden.</div>
+            <div className="small text-secondary">Keine Angebote gefunden.</div>
           ) : null}
+        </div>
         </div>
       </section>
 
-      <section style={panelStyle}>
+      <section className="col-12 col-xl-8">
+        <div className="bg-white border rounded-4 p-3">
         {!form ? (
-          <div style={{ color: '#94a3b8' }}>
+          <div className="small text-secondary">
             Kein Objekt ausgewählt.
           </div>
         ) : (
           <>
             {selectedOffer && (!normalizedSelectedExternalId || !normalizedSelectedSource) ? (
-              <div style={warningStyle}>
+              <div className="alert alert-warning small mb-3 py-2 px-3">
                 Hinweis: Dieses Objekt hat keine externe ID/Quelle. Overrides werden lokal mit
                 einer Fallback‑ID gespeichert.
               </div>
             ) : null}
 
             {selectedOffer ? (
-              <div className={workspaceStyles.workspaceOverviewCard}>
-                <div className={workspaceStyles.workspaceOverviewHeader}>
-                  <div className={workspaceStyles.workspaceOverviewTitle}>Überblick</div>
-                  <div className={workspaceStyles.workspaceOverviewActions}>
+              <div className="bg-light border rounded-4 p-3">
+                <div className="d-flex align-items-center justify-content-between gap-3 mb-2 flex-wrap">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>Überblick</div>
+                  <div className="d-inline-flex align-items-center flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => setOfferOverviewInfoOpen(true)}
-                      className={workspaceStyles.workspaceInfoButton}
+                      className="btn btn-sm btn-outline-secondary fw-semibold"
                     >
                       Info
                     </button>
                   </div>
                 </div>
-                <div className={workspaceStyles.workspaceOverviewGrid}>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Objekt-ID</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>{selectedOffer.id}</div>
+                <div className="row g-3">
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Objekt-ID</div>
+                    <div className={workspaceMetaValueClassName}>{selectedOffer.id}</div>
                   </div>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Quelle</div>
+                    <div className={workspaceMetaValueClassName}>
                       {`${selectedOffer.source || '—'} · ${selectedOffer.external_id || selectedOffer.id}`}
                     </div>
                   </div>
-                  <div>
-                    <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
-                    <div className={workspaceStyles.workspaceMetaValue}>{formatDateLabel(selectedOffer.updated_at)}</div>
+                  <div className="col-12 col-md-4">
+                    <div className={workspaceMetaLabelClassName}>Aktualisiert</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedOffer.updated_at)}</div>
                   </div>
                 </div>
               </div>
             ) : null}
-            <div className={workspaceStyles.workspaceTabs}>
+            <div className="d-flex flex-wrap gap-2 my-4">
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('texts')}
@@ -1369,173 +1365,185 @@ export default function OffersManager(props: Props) {
               </button>
             </div>
             {activeWorkspaceTab === 'media' && selectedOffer ? (
-              <div style={mediaCardStyle}>
-                <div style={offerSummaryHeaderStyle}>Medien</div>
-                <div style={mediaSectionStyle}>
-                  <div style={mediaSectionHeadStyle}>
+              <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-3">
+                <div className={workspaceHeadingClassName}>Medien</div>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex align-items-center gap-2 fs-6 fw-bold text-dark">
                     Objektbilder
-                    <span style={mediaCountBadgeStyle}>{photoAssets.length}</span>
+                    <span className="badge rounded-pill text-primary bg-primary-subtle">{photoAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Die Fotostrecke zeigt nur echte Objektfotos in ihrer Reihenfolge.</div>
+                  <div className="small text-secondary lh-base">Die Fotostrecke zeigt nur echte Objektfotos in ihrer Reihenfolge.</div>
                   {activePhotoAsset ? (
-                    <div style={slideshowCardStyle}>
-                      <div style={slideshowStageStyle}>
+                    <div className="d-flex flex-column gap-3">
+                      <div className="row g-2 align-items-stretch">
+                        <div className="col-auto">
                         <button
                           type="button"
                           onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
-                          style={slideshowNavButtonStyle}
+                          className="btn btn-light border h-100 fs-3"
                           aria-label="Vorheriges Objektbild"
                         >
                           ‹
                         </button>
-                        <div style={slideshowImageFrameStyle}>
+                        </div>
+                        <div className="col">
+                        <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             key={activePhotoAsset.url}
                             src={activePhotoAsset.url}
                             alt={activePhotoAsset.title ?? `Objektbild ${activePhotoIndex + 1}`}
-                            style={slideshowImageStyle}
+                            className="w-100 h-100 object-fit-contain"
                             loading="eager"
                             decoding="async"
                           />
                         </div>
+                        </div>
+                        <div className="col-auto">
                         <button
                           type="button"
                           onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
-                          style={slideshowNavButtonStyle}
+                          className="btn btn-light border h-100 fs-3"
                           aria-label="Nächstes Objektbild"
                         >
                           ›
                         </button>
+                        </div>
                       </div>
-                      <div style={slideshowMetaStyle}>
-                        <div style={slideshowCaptionStyle}>
+                      <div className="d-flex align-items-center justify-content-between gap-3 small">
+                        <div className="fw-bold text-dark">
                           {activePhotoAsset.title ?? `Objektbild ${activePhotoIndex + 1}`}
                         </div>
-                        <div style={slideshowCounterStyle}>
+                        <div className="text-secondary text-nowrap">
                           {activePhotoIndex + 1} / {photoAssets.length}
                         </div>
                       </div>
-                      <div style={thumbnailRailStyle}>
+                      <div className="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2">
                         {photoAssets.map((asset, index) => (
-                          <button
-                            key={`${asset.url}-${index}`}
-                            type="button"
-                            onClick={() => setActivePhotoIndex(index)}
-                            style={thumbnailButtonStyle(index === activePhotoIndex)}
-                            aria-label={`Objektbild ${index + 1} anzeigen`}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={asset.url}
-                              alt={asset.title ?? `Objektbild ${index + 1}`}
-                              style={thumbnailImageStyle}
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          </button>
+                          <div key={`${asset.url}-${index}`} className="col">
+                            <button
+                              type="button"
+                              onClick={() => setActivePhotoIndex(index)}
+                              className={`btn w-100 p-0 rounded-3 overflow-hidden border ${index === activePhotoIndex ? 'border-primary border-2' : 'btn-light'}`}
+                              aria-label={`Objektbild ${index + 1} anzeigen`}
+                            >
+                              <span className="ratio ratio-1x1 bg-secondary-subtle">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={asset.url}
+                                  alt={asset.title ?? `Objektbild ${index + 1}`}
+                                  className="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </span>
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <div style={mediaEmptyStyle}>Keine Objektbilder im CRM-Payload gefunden.</div>
+                    <div className="small text-secondary py-2">Keine Objektbilder im CRM-Payload gefunden.</div>
                   )}
                 </div>
-                <div style={mediaSectionStyle}>
-                  <div style={mediaSectionHeadStyle}>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex align-items-center gap-2 fs-6 fw-bold text-dark">
                     Grundrisse
-                    <span style={mediaCountBadgeStyle}>{floorplanAssets.length}</span>
+                    <span className="badge rounded-pill text-primary bg-primary-subtle">{floorplanAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Grundrisse liegen separat unterhalb der Fotostrecke.</div>
+                  <div className="small text-secondary lh-base">Grundrisse liegen separat unterhalb der Fotostrecke.</div>
                   {activeFloorplanAsset ? (
-                    <div style={floorplanCardStyle}>
-                      <div style={floorplanPreviewFrameStyle}>
+                    <div className="d-flex flex-column gap-3">
+                      <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-white">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           key={activeFloorplanAsset.url}
                           src={activeFloorplanAsset.url}
                           alt={activeFloorplanAsset.title ?? `Grundriss ${activeFloorplanIndex + 1}`}
-                          style={floorplanPreviewImageStyle}
+                          className="w-100 h-100 object-fit-contain"
                           loading="lazy"
                           decoding="async"
                         />
                       </div>
-                      <div style={slideshowMetaStyle}>
-                        <div style={slideshowCaptionStyle}>
+                      <div className="d-flex align-items-center justify-content-between gap-3 small">
+                        <div className="fw-bold text-dark">
                           {activeFloorplanAsset.title ?? `Grundriss ${activeFloorplanIndex + 1}`}
                         </div>
-                        <div style={slideshowCounterStyle}>
+                        <div className="text-secondary text-nowrap">
                           {activeFloorplanIndex + 1} / {floorplanAssets.length}
                         </div>
                       </div>
-                      <div style={thumbnailRailStyle}>
+                      <div className="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2">
                         {floorplanAssets.map((asset, index) => (
-                          <button
-                            key={`${asset.url}-${index}`}
-                            type="button"
-                            onClick={() => setActiveFloorplanIndex(index)}
-                            style={thumbnailButtonStyle(index === activeFloorplanIndex)}
-                            aria-label={`Grundriss ${index + 1} anzeigen`}
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={asset.url}
-                              alt={asset.title ?? `Grundriss ${index + 1}`}
-                              style={thumbnailImageStyle}
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          </button>
+                          <div key={`${asset.url}-${index}`} className="col">
+                            <button
+                              type="button"
+                              onClick={() => setActiveFloorplanIndex(index)}
+                              className={`btn w-100 p-0 rounded-3 overflow-hidden border ${index === activeFloorplanIndex ? 'border-primary border-2' : 'btn-light'}`}
+                              aria-label={`Grundriss ${index + 1} anzeigen`}
+                            >
+                              <span className="ratio ratio-1x1 bg-secondary-subtle">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={asset.url}
+                                  alt={asset.title ?? `Grundriss ${index + 1}`}
+                                  className="w-100 h-100 object-fit-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </span>
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <div style={mediaEmptyStyle}>Keine Grundrisse erkannt.</div>
+                    <div className="small text-secondary py-2">Keine Grundrisse erkannt.</div>
                   )}
                 </div>
-                <div style={mediaSectionStyle}>
-                  <div style={mediaSectionHeadStyle}>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex align-items-center gap-2 fs-6 fw-bold text-dark">
                     Lagegrafiken
-                    <span style={mediaCountBadgeStyle}>{locationMapAssets.length}</span>
+                    <span className="badge rounded-pill text-primary bg-primary-subtle">{locationMapAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Standort-, Mikro- und Makrolagen werden separat geführt.</div>
+                  <div className="small text-secondary lh-base">Standort-, Mikro- und Makrolagen werden separat geführt.</div>
                   {locationMapAssets.length > 0 ? (
-                    <div style={mediaCompactListStyle}>
+                    <div className="d-flex flex-column gap-2">
                       {locationMapAssets.map((asset, index) => (
                         <a
                           key={`${asset.url}-${index}`}
                           href={asset.url}
                           target="_blank"
                           rel="noreferrer"
-                          style={mediaLinkCardStyle}
+                          className="border rounded-3 p-3 text-dark text-decoration-none d-flex align-items-center justify-content-between gap-3 bg-white"
                         >
-                          <span style={mediaLinkTitleStyle}>{asset.title ?? `Lagegrafik ${index + 1}`}</span>
-                          <span style={mediaLinkMetaStyle}>Bild extern öffnen</span>
+                          <span className="small fw-bold">{asset.title ?? `Lagegrafik ${index + 1}`}</span>
+                          <span className="small text-primary fw-semibold text-nowrap">Bild extern öffnen</span>
                         </a>
                       ))}
                     </div>
                   ) : (
-                    <div style={mediaEmptyStyle}>Keine Lagegrafiken erkannt.</div>
+                    <div className="small text-secondary py-2">Keine Lagegrafiken erkannt.</div>
                   )}
                 </div>
-                <div style={mediaSectionStyle}>
-                  <div style={mediaSectionHeadStyle}>
+                <div className="d-flex flex-column gap-2">
+                  <div className="d-flex align-items-center gap-2 fs-6 fw-bold text-dark">
                     Unterlagen
-                    <span style={mediaCountBadgeStyle}>{combinedDocumentAssets.length}</span>
+                    <span className="badge rounded-pill text-primary bg-primary-subtle">{combinedDocumentAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>CRM-Unterlagen, Exposés und weitere Dateien werden hier gesammelt.</div>
+                  <div className="small text-secondary lh-base">CRM-Unterlagen, Exposés und weitere Dateien werden hier gesammelt.</div>
                   {combinedDocumentAssets.length > 0 ? (
-                    <div style={mediaCompactListStyle}>
+                    <div className="d-flex flex-column gap-2">
                       {combinedDocumentAssets.map((asset, index) => (
                         <a
                           key={`${asset.url}-${index}`}
                           href={asset.url}
                           target="_blank"
                           rel="noreferrer"
-                          style={mediaLinkCardStyle}
+                          className="border rounded-3 p-3 text-dark text-decoration-none d-flex align-items-center justify-content-between gap-3 bg-white"
                         >
-                          <span style={mediaLinkTitleStyle}>{asset.title ?? asset.name ?? `Unterlage ${index + 1}`}</span>
-                          <span style={mediaLinkMetaStyle}>
+                          <span className="small fw-bold">{asset.title ?? asset.name ?? `Unterlage ${index + 1}`}</span>
+                          <span className="small text-primary fw-semibold text-nowrap">
                             {asset.kind === 'video'
                               ? 'Video extern öffnen'
                               : asset.is_exposee
@@ -1546,73 +1554,73 @@ export default function OffersManager(props: Props) {
                       ))}
                     </div>
                   ) : (
-                    <div style={mediaEmptyStyle}>Keine zusätzlichen Unterlagen erkannt.</div>
+                    <div className="small text-secondary py-2">Keine zusätzlichen Unterlagen erkannt.</div>
                   )}
                 </div>
               </div>
             ) : null}
             {activeWorkspaceTab === 'energy' && selectedOffer ? (
-              <div style={energyCardStyle}>
-                <div style={offerSummaryHeaderStyle}>Energieausweis</div>
-                <div style={energyGridStyle}>
+              <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-3">
+                <div className={workspaceHeadingClassName}>Energieausweis</div>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                   <div>
-                    <div style={offerSummaryLabelStyle}>Ausweisart</div>
-                    <div style={offerSummaryValueStyle}>{energySnapshot?.certificate_type ?? '—'}</div>
+                    <div className={workspaceMetaLabelClassName}>Ausweisart</div>
+                    <div className={workspaceMetaValueClassName}>{energySnapshot?.certificate_type ?? '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Kennwert</div>
-                    <div style={offerSummaryValueStyle}>
+                    <div className={workspaceMetaLabelClassName}>Kennwert</div>
+                    <div className={workspaceMetaValueClassName}>
                       {energySnapshot?.value != null ? `${energySnapshot.value}` : '—'}
                     </div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Bedarf / Verbrauch</div>
-                    <div style={offerSummaryValueStyle}>{energySnapshot?.value_kind ?? '—'}</div>
+                    <div className={workspaceMetaLabelClassName}>Bedarf / Verbrauch</div>
+                    <div className={workspaceMetaValueClassName}>{energySnapshot?.value_kind ?? '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Baujahr</div>
-                    <div style={offerSummaryValueStyle}>
+                    <div className={workspaceMetaLabelClassName}>Baujahr</div>
+                    <div className={workspaceMetaValueClassName}>
                       {energySnapshot?.construction_year ?? energySnapshot?.year ?? '—'}
                     </div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Energieträger</div>
-                    <div style={offerSummaryValueStyle}>{energySnapshot?.heating_energy_source ?? '—'}</div>
+                    <div className={workspaceMetaLabelClassName}>Energieträger</div>
+                    <div className={workspaceMetaValueClassName}>{energySnapshot?.heating_energy_source ?? '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Effizienzklasse</div>
-                    <div style={offerSummaryValueStyle}>{energySnapshot?.efficiency_class ?? '—'}</div>
+                    <div className={workspaceMetaLabelClassName}>Effizienzklasse</div>
+                    <div className={workspaceMetaValueClassName}>{energySnapshot?.efficiency_class ?? '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Ausweis vorhanden</div>
-                    <div style={offerSummaryValueStyle}>{energySnapshot?.certificate_availability ?? '—'}</div>
+                    <div className={workspaceMetaLabelClassName}>Ausweis vorhanden</div>
+                    <div className={workspaceMetaValueClassName}>{energySnapshot?.certificate_availability ?? '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Ausgestellt am</div>
-                    <div style={offerSummaryValueStyle}>{formatDateLabel(energySnapshot?.certificate_start_date)}</div>
+                    <div className={workspaceMetaLabelClassName}>Ausgestellt am</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(energySnapshot?.certificate_start_date)}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Gültig bis</div>
-                    <div style={offerSummaryValueStyle}>{formatDateLabel(energySnapshot?.certificate_end_date)}</div>
+                    <div className={workspaceMetaLabelClassName}>Gültig bis</div>
+                    <div className={workspaceMetaValueClassName}>{formatDateLabel(energySnapshot?.certificate_end_date)}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Warmwasser enthalten</div>
-                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(energySnapshot?.warm_water_included)}</div>
+                    <div className={workspaceMetaLabelClassName}>Warmwasser enthalten</div>
+                    <div className={workspaceMetaValueClassName}>{formatBooleanLabel(energySnapshot?.warm_water_included)}</div>
                   </div>
                 </div>
                 {missingEnergyFields.length > 0 ? (
-                  <div style={energyMissingWrapStyle}>
-                    <div style={energyMissingHeadStyle}>Für eine rechtssichere öffentliche Energieanzeige fehlen aktuell:</div>
-                    <div style={energyMissingListStyle}>{missingEnergyFields.join(' · ')}</div>
+                  <div className="alert alert-warning small mb-0 py-2 px-3">
+                    <div className="fw-bold mb-1">Für eine rechtssichere öffentliche Energieanzeige fehlen aktuell:</div>
+                    <div>{missingEnergyFields.join(' · ')}</div>
                   </div>
                 ) : (
-                  <div style={energyReadyStyle}>Alle zentralen Energieangaben für die Anzeige sind aktuell befüllt.</div>
+                  <div className="alert alert-success small fw-bold mb-0 py-2 px-3">Alle zentralen Energieangaben für die Anzeige sind aktuell befüllt.</div>
                 )}
               </div>
             ) : null}
             {activeWorkspaceTab === 'texts' ? (
-              <>
-                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+              <div className="d-flex flex-column gap-3">
+                <div className="d-flex flex-column gap-3">
                   {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
                   {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
                   {renderTextField('Langtext', 'long_description', rawLongDescription, { multiline: true })}
@@ -1620,146 +1628,159 @@ export default function OffersManager(props: Props) {
                   {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
                 </div>
 
-                <div style={contentPreviewGridStyle}>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Objekt-Titel</div>
-                    <div style={contentPreviewBodyStyle}>
+                <div className="d-flex flex-column gap-2">
+                  <div className={workspaceHeadingClassName}>Angebot-Zusammenfassung vor Speichern</div>
+                  <div className="row g-3 mb-3">
+                  <div className="col-12 col-md-6">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Objekt-Titel</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.seo_h1 || 'Kein Objekt-Titel gepflegt.'}
                     </div>
+                    </div>
                   </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Teaser</div>
-                    <div style={contentPreviewBodyStyle}>
+                  <div className="col-12 col-md-6">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Teaser</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.short_description || 'Kein Teaser gepflegt.'}
                     </div>
+                    </div>
                   </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Langtext</div>
-                    <div style={contentPreviewBodyStyle}>
+                  <div className="col-12 col-md-6">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Langtext</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.long_description || 'Kein Langtext gepflegt.'}
                     </div>
+                    </div>
                   </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Lage</div>
-                    <div style={contentPreviewBodyStyle}>
+                  <div className="col-12 col-md-6">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Lage</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.location_text || 'Kein Lage-Text gepflegt.'}
                     </div>
+                    </div>
                   </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Ausstattung</div>
-                    <div style={contentPreviewBodyStyle}>
+                  <div className="col-12">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Ausstattung</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
                     </div>
+                    </div>
+                  </div>
                   </div>
                 </div>
 
-                <div style={actionButtonRowStyle}>
-                  <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                <div className="d-flex flex-wrap gap-2">
+                  <button onClick={() => saveOverride()} disabled={saving} className="btn btn-dark btn-sm fw-semibold px-3 py-2">
                     {saving ? 'Speichern...' : 'Angebotstexte speichern'}
                   </button>
                   <button
                     type="button"
                     onClick={() => void resetOfferTextOverrides()}
                     disabled={saving}
-                    style={secondaryActionButtonStyle(saving)}
+                    className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2"
                   >
                     Angebotstexte zurücksetzen
                   </button>
                 </div>
-              </>
+              </div>
             ) : null}
 
             {activeWorkspaceTab === 'facts' ? (
-              <div style={offerSummaryCardStyle}>
-                <div style={offerSummaryHeaderStyle}>Objektmerkmale</div>
-                <div style={offerSummaryStackStyle}>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Preis / Miete</div>
-                    <div style={offerSummaryValueStyle}>
+              <div className="bg-light border rounded-4 p-3">
+                <div className={`${workspaceHeadingClassName} mb-3`}>Objektmerkmale</div>
+                <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Preis / Miete</div>
+                    <div className={workspaceMetaValueClassName}>
                       {selectedOffer?.offer_type === 'miete'
                         ? (selectedOffer?.rent ? `${selectedOffer.rent} €` : '—')
                         : (selectedOffer?.price ? `${selectedOffer.price} €` : '—')}
                     </div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Fläche</div>
-                    <div style={offerSummaryValueStyle}>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Fläche</div>
+                    <div className={workspaceMetaValueClassName}>
                       {selectedOffer?.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
                     </div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
-                    <div style={offerSummaryValueStyle}>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Nutzfläche</div>
+                    <div className={workspaceMetaValueClassName}>
                       {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
                     </div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Grundstück</div>
-                    <div style={offerSummaryValueStyle}>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Grundstück</div>
+                    <div className={workspaceMetaValueClassName}>
                       {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
                     </div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Zimmer</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer?.rooms ?? '—'}</div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Zimmer</div>
+                    <div className={workspaceMetaValueClassName}>{selectedOffer?.rooms ?? '—'}</div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Schlafzimmer</div>
+                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.bedrooms ?? '—'}</div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Badezimmer</div>
+                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.bathrooms ?? '—'}</div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Baujahr</div>
-                    <div style={offerSummaryValueStyle}>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Baujahr</div>
+                    <div className={workspaceMetaValueClassName}>
                       {detailsSnapshot?.construction_year
                         ?? energySnapshot?.construction_year
                         ?? energySnapshot?.year
                         ?? '—'}
                     </div>
                   </div>
-                  <div style={offerSummaryStackRowStyle}>
-                    <div style={offerSummaryLabelStyle}>Etage</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
+                  <div>
+                    <div className={workspaceMetaLabelClassName}>Etage</div>
+                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.floor ?? '—'}</div>
                   </div>
                 </div>
               </div>
             ) : null}
 
             {activeWorkspaceTab === 'equipment' ? (
-              <>
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Strukturierte Ausstattung</div>
-                  <div style={offerSummaryStackStyle}>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Zustand</div>
-                      <div style={offerSummaryValueStyle}>{detailsSnapshot?.condition ?? '—'}</div>
+              <div className="d-flex flex-column gap-3">
+                <div className="bg-light border rounded-4 p-3">
+                  <div className={`${workspaceHeadingClassName} mb-3`}>Strukturierte Ausstattung</div>
+                  <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Zustand</div>
+                      <div className={workspaceMetaValueClassName}>{detailsSnapshot?.condition ?? '—'}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Stellplatz</div>
-                      <div style={offerSummaryValueStyle}>{detailsSnapshot?.parking ?? '—'}</div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Stellplatz</div>
+                      <div className={workspaceMetaValueClassName}>{detailsSnapshot?.parking ?? '—'}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Balkon</div>
-                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Balkon</div>
+                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Terrasse</div>
-                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Terrasse</div>
+                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Garten</div>
-                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Garten</div>
+                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Aufzug</div>
-                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Aufzug</div>
+                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
                     </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Adresse im Portal</div>
-                      <div style={offerSummaryValueStyle}>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Adresse im Portal</div>
+                      <div className={workspaceMetaValueClassName}>
                         {detailsSnapshot?.address_hidden === true
                           ? 'verborgen'
                           : detailsSnapshot?.address_hidden === false
@@ -1770,302 +1791,313 @@ export default function OffersManager(props: Props) {
                   </div>
                 </div>
 
-                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                <button onClick={() => saveOverride()} disabled={saving} className="btn btn-dark btn-sm fw-semibold px-3 py-2 align-self-start">
                   {saving ? 'Speichern...' : 'Ausstattung speichern'}
                 </button>
-              </>
+              </div>
             ) : null}
 
             {activeWorkspaceTab === 'seo' ? (
-              <>
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Snippet</div>
-                  <div style={mediaSectionHintStyle}>
+              <div className="d-flex flex-column gap-3">
+                <div className="bg-light border rounded-4 p-3">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>Snippet</div>
+                  <div className="small text-secondary lh-base">
                     Suchmaschinen-Snippet und Social-Vorschau für das Objekt.
                   </div>
                 </div>
-                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                <div className="d-flex flex-column gap-3">
                   {renderTextField('SEO‑Titel', 'seo_title', selectedOffer?.title ?? '', { multiline: false })}
                   {renderTextField('SEO‑Description', 'seo_description', form.answer_summary ?? form.short_description ?? rawDescription, { multiline: true })}
                 </div>
 
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>AEO / GEO</div>
-                  <div style={mediaSectionHintStyle}>
+                <div className="bg-light border rounded-4 p-3">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>AEO / GEO</div>
+                  <div className="small text-secondary lh-base">
                     Kompakte Antwort- und Lagebausteine für Such-, Antwort- und Kartenkontexte.
                   </div>
                 </div>
-                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                <div className="d-flex flex-column gap-3">
                   {renderTextField('Kurzantwort', 'answer_summary', form.short_description ?? rawDescription, { multiline: true })}
                   {renderTextField('Lage in Kürze', 'location_summary', form.location_text ?? rawLocation, { multiline: true })}
                   {renderTextField('Geeignet für', 'target_audience', '', { multiline: false, placeholder: 'z. B. Kapitalanleger, Paar, kleine Familie' })}
                 </div>
 
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Highlights & Bildsprache</div>
-                  <div style={mediaSectionHintStyle}>
+                <div className="bg-light border rounded-4 p-3">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>Highlights & Bildsprache</div>
+                  <div className="small text-secondary lh-base">
                     Strukturierte Punkte für Snippets, Karten-Overlays und Bildkontext.
                   </div>
                 </div>
-                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                <div className="d-flex flex-column gap-3">
                   {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
                   {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', rawImageAltTexts, 'Ein Bildtitel pro Zeile')}
                 </div>
 
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Zusammenfassung</div>
-                  <div style={mediaSectionHintStyle}>
+                <div className="bg-light border rounded-4 p-3">
+                  <div className={`${workspaceHeadingClassName} mb-2`}>Zusammenfassung</div>
+                  <div className="small text-secondary lh-base">
                     Hier sehen Sie, wie die aktuell gepflegten Snippet-, Antwort- und Social-Texte zusammenwirken.
                   </div>
                 </div>
 
-                <div style={previewCardStyle}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                <div className="bg-light border rounded-3 p-3">
+                  <div className={workspacePreviewLabelClassName}>
                     SEO‑Vorschau
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                  <div className="fs-6 fw-bold mt-2">
                     {form.seo_title || form.seo_h1 || selectedOffer?.title || 'SEO‑Titel'}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                  <div className="small text-secondary mt-2">
                     {form.seo_description || form.short_description || form.long_description || 'SEO‑Description'}
                   </div>
-                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                  <div className="small text-secondary mt-2">
                     /immobilienangebote/{form.external_id}_&lt;titel&gt;
                   </div>
                 </div>
 
-                <div style={previewCardStyle}>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                <div className="bg-light border rounded-3 p-3">
+                  <div className={workspacePreviewLabelClassName}>
                     OG / Twitter Vorschau
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', marginTop: '6px' }}>
+                  <div className="fs-6 fw-bold mt-2">
                     {form.seo_title || form.seo_h1 || selectedOffer?.title || 'Titel für Social'}
                   </div>
-                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                  <div className="small text-secondary mt-2">
                     {form.seo_description || form.short_description || form.long_description || 'Beschreibung für Social'}
                   </div>
-                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                  <div className="small text-secondary mt-2">
                     {selectedOffer?.image_url ? `Bild: ${selectedOffer.image_url}` : 'Bild: (kein Bild gesetzt)'}
                   </div>
                 </div>
 
-                <div style={contentPreviewGridStyle}>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Kurzantwort</div>
-                    <div style={contentPreviewBodyStyle}>
+                <div className="row g-3">
+                  <div className="col-12 col-md-4">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Kurzantwort</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.answer_summary || 'Keine Kurzantwort gepflegt.'}
                     </div>
-                  </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Lage in Kürze</div>
-                    <div style={contentPreviewBodyStyle}>
-                      {form.location_summary || 'Keine Lage-Kurzfassung gepflegt.'}
                     </div>
                   </div>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Geeignet für</div>
-                    <div style={contentPreviewBodyStyle}>
+                  <div className="col-12 col-md-4">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Lage in Kürze</div>
+                    <div className={workspacePreviewBodyClassName}>
+                      {form.location_summary || 'Keine Lage-Kurzfassung gepflegt.'}
+                    </div>
+                    </div>
+                  </div>
+                  <div className="col-12 col-md-4">
+                    <div className="bg-light border rounded-3 p-3 h-100">
+                    <div className={workspacePreviewLabelClassName}>Geeignet für</div>
+                    <div className={workspacePreviewBodyClassName}>
                       {form.target_audience || 'Keine Zielgruppe gepflegt.'}
+                    </div>
                     </div>
                   </div>
                 </div>
 
-                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                <button onClick={() => saveOverride()} disabled={saving} className="btn btn-dark btn-sm fw-semibold px-3 py-2 align-self-start">
                   {saving ? 'Speichern...' : 'SEO / GEO speichern'}
                 </button>
-              </>
+              </div>
             ) : null}
           </>
         )}
+        </div>
       </section>
       </div>
       {offerOverviewInfoOpen && selectedOffer ? (
         <div
-          style={workspaceDebugModalOverlayStyle}
+          className="modal d-block bg-dark bg-opacity-50"
+          tabIndex={-1}
           onClick={() => setOfferOverviewInfoOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setOfferOverviewInfoOpen(false);
           }}
         >
           <div
-            style={offerOverviewInfoModalCardStyle}
+            className="modal-dialog modal-dialog-centered modal-lg"
             role="dialog"
             aria-modal="true"
             aria-labelledby="offers-overview-info-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={workspaceDebugModalHeadStyle}>
-              <strong id="offers-overview-info-title" style={workspaceDebugModalTitleStyle}>Angebotsdetails</strong>
-              <button
-                type="button"
-                style={workspaceDebugModalCloseStyle}
-                onClick={() => setOfferOverviewInfoOpen(false)}
-                aria-label="Info-Modal schließen"
-              >
-                ×
-              </button>
-            </div>
-            {onOfficeSnapshot ? (
-              <div style={offerOverviewInfoSectionStyle}>
-                <div style={offerSummaryHeaderRowStyle}>
-                  <div style={offerSummaryHeaderStyle}>CRM-Snapshot</div>
-                  <span style={crmCandidateBadgeStyle(onOfficeSnapshot.candidate.tone)}>
-                    {onOfficeSnapshot.candidate.label}
-                  </span>
-                </div>
-                <div style={mediaSectionHintStyle}>{onOfficeSnapshot.candidate.detail}</div>
-                <div style={offerSummaryGridStyle}>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Datensatz-ID</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.id || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>onOffice-ID</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.external_id || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Quelle</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Exposé / Extern</div>
-                    <div style={offerSummaryValueStyle}>
-                      {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <strong id="offers-overview-info-title" className="modal-title fs-6">Angebotsdetails</strong>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setOfferOverviewInfoOpen(false)}
+                  aria-label="Info-Modal schließen"
+                />
+              </div>
+              <div className="modal-body d-flex flex-column gap-3">
+                {onOfficeSnapshot ? (
+                  <div className="d-flex flex-column gap-3">
+                    <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                      <div className={workspaceHeadingClassName}>CRM-Snapshot</div>
+                      <span className={crmCandidateBadgeClassName(onOfficeSnapshot.candidate.tone)}>
+                        {onOfficeSnapshot.candidate.label}
+                      </span>
+                    </div>
+                    <div className="small text-secondary lh-base">{onOfficeSnapshot.candidate.detail}</div>
+                    <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Datensatz-ID</div>
+                        <div className={workspaceMetaValueClassName}>{selectedOffer.id || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>onOffice-ID</div>
+                        <div className={workspaceMetaValueClassName}>{selectedOffer.external_id || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Quelle</div>
+                        <div className={workspaceMetaValueClassName}>{selectedOffer.source || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Exposé / Extern</div>
+                        <div className={workspaceMetaValueClassName}>
+                          {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Quelltitel</div>
+                        <div className={workspaceMetaValueClassName}>{readTextValue(selectedRaw.source_title) || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Vermarktungsart</div>
+                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.marketingType || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Objektart</div>
+                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.objectType || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>status</div>
+                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.status || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>status2</div>
+                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.status2 || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>verkauft</div>
+                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>vermietet</div>
+                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.rented)}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>reserviert</div>
+                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>veröffentlichen</div>
+                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>Angebot aktualisiert</div>
+                        <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedOffer.updated_at) || '—'}</div>
+                      </div>
+                      <div>
+                        <div className={workspaceMetaLabelClassName}>CRM geändert am</div>
+                        <div className={workspaceMetaValueClassName}>{formatDateLabel(onOfficeSnapshot.sourceUpdatedAt) || '—'}</div>
+                      </div>
+                    </div>
+                    <div className="small text-secondary lh-base bg-light border rounded-3 p-3">
+                      Angebote werden nur beim Angebots- oder Vollsync deaktiviert. Wenn ein Datensatz nach einem reinen Referenz-Sync hier weiter sichtbar ist, ist das meist ein alter Persistenzstand und kein aktueller Provider-Treffer.
                     </div>
                   </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Quelltitel</div>
-                    <div style={offerSummaryValueStyle}>{readTextValue(selectedRaw.source_title) || '—'}</div>
+                ) : null}
+                <div className="d-flex flex-column gap-3">
+                  <div className={workspaceHeadingClassName}>Ausspielungs-Debug</div>
+                  <div className="small text-secondary lh-base">
+                    Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
                   </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Vermarktungsart</div>
-                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.marketingType || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Objektart</div>
-                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.objectType || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>status</div>
-                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>status2</div>
-                    <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status2 || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>verkauft</div>
-                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>vermietet</div>
-                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.rented)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>reserviert</div>
-                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>veröffentlichen</div>
-                    <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Angebot aktualisiert</div>
-                    <div style={offerSummaryValueStyle}>{formatDateLabel(selectedOffer.updated_at) || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>CRM geändert am</div>
-                    <div style={offerSummaryValueStyle}>{formatDateLabel(onOfficeSnapshot.sourceUpdatedAt) || '—'}</div>
-                  </div>
-                </div>
-                <div style={{ ...mediaSectionHintStyle, marginTop: 12 }}>
-                  Angebote werden nur beim Angebots- oder Vollsync deaktiviert. Wenn ein Datensatz nach einem reinen Referenz-Sync hier weiter sichtbar ist, ist das meist ein alter Persistenzstand und kein aktueller Provider-Treffer.
-                </div>
-              </div>
-            ) : null}
-            <div style={offerOverviewInfoSectionStyle}>
-              <div style={offerSummaryHeaderStyle}>Ausspielungs-Debug</div>
-              <div style={mediaSectionHintStyle}>
-                Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
-              </div>
-              <div style={offerSummaryGridStyle}>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Aktuelles Gebiet</div>
-                  <div style={offerSummaryValueStyle}>{visibilityConfig?.areas?.name || '—'}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Lokaler Match</div>
-                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Match-Quelle</div>
-                  <div style={offerSummaryValueStyle}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Confidence</div>
-                  <div style={offerSummaryValueStyle}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Score</div>
-                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>PLZ</div>
-                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Ort</div>
-                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
-                </div>
-                <div>
-                  <div style={offerSummaryLabelStyle}>Region</div>
-                  <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
-                </div>
-              </div>
-              {otherAreaTargets.length > 0 ? (
-                <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
-                  <div style={offerSummaryLabelStyle}>Weitere gematchte Gebiete</div>
-                  {otherAreaTargets.slice(0, 5).map((target) => (
-                    <div key={`${target.offer_id}-${target.area_id}`} style={mediaSectionHintStyle}>
-                      {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
+                  <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Aktuelles Gebiet</div>
+                      <div className={workspaceMetaValueClassName}>{visibilityConfig?.areas?.name || '—'}</div>
                     </div>
-                  ))}
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Lokaler Match</div>
+                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Match-Quelle</div>
+                      <div className={workspaceMetaValueClassName}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Confidence</div>
+                      <div className={workspaceMetaValueClassName}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Score</div>
+                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>PLZ</div>
+                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Ort</div>
+                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
+                    </div>
+                    <div>
+                      <div className={workspaceMetaLabelClassName}>Region</div>
+                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
+                    </div>
+                  </div>
+                  {otherAreaTargets.length > 0 ? (
+                    <div className="d-flex flex-column gap-2">
+                      <div className={workspaceMetaLabelClassName}>Weitere gematchte Gebiete</div>
+                      {otherAreaTargets.slice(0, 5).map((target) => (
+                        <div key={`${target.offer_id}-${target.area_id}`} className="small text-secondary lh-base">
+                          {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </div>
             </div>
           </div>
         </div>
       ) : null}
       {offerDebugOpen && offerLoadDebug ? (
         <div
-          style={workspaceDebugModalOverlayStyle}
+          className="modal d-block bg-dark bg-opacity-50"
+          tabIndex={-1}
           onClick={() => setOfferDebugOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setOfferDebugOpen(false);
           }}
         >
           <div
-            style={workspaceDebugModalCardStyle}
+            className="modal-dialog modal-dialog-centered modal-sm"
             role="dialog"
             aria-modal="true"
             aria-labelledby="offers-workspace-debug-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={workspaceDebugModalHeadStyle}>
-              <strong id="offers-workspace-debug-title" style={workspaceDebugModalTitleStyle}>Angebote Debug</strong>
-              <button
-                type="button"
-                style={workspaceDebugModalCloseStyle}
-                onClick={() => setOfferDebugOpen(false)}
-                aria-label="Debug-Modal schließen"
-              >
-                ×
-              </button>
-            </div>
-            <div style={workspaceDebugModalBodyStyle}>
-              <div>offers={offerLoadDebug.offers}</div>
-              <div>overrides={offerLoadDebug.overrides}</div>
-              <div>areaTargets={offerLoadDebug.areaTargets}</div>
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <strong id="offers-workspace-debug-title" className="modal-title fs-6">Angebote Debug</strong>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setOfferDebugOpen(false)}
+                  aria-label="Debug-Modal schließen"
+                />
+              </div>
+              <div className="modal-body d-flex flex-column gap-2 small text-secondary">
+                <div>offers={offerLoadDebug.offers}</div>
+                <div>overrides={offerLoadDebug.overrides}</div>
+                <div>areaTargets={offerLoadDebug.areaTargets}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -2073,561 +2105,3 @@ export default function OffersManager(props: Props) {
     </div>
   );
 }
-
-const panelStyle: React.CSSProperties = {
-  backgroundColor: '#fff',
-  borderRadius: '16px',
-  padding: '20px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-};
-
-const workspaceDebugModalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15, 23, 42, 0.28)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-  padding: 20,
-};
-
-const workspaceDebugModalCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 340,
-  borderRadius: 14,
-  border: '1px solid #dbe5ea',
-  background: '#ffffff',
-  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-  padding: 16,
-  display: 'grid',
-  gap: 12,
-};
-
-const offerOverviewInfoModalCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 820,
-  borderRadius: 14,
-  border: '1px solid #dbe5ea',
-  background: '#ffffff',
-  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-  padding: 16,
-  display: 'grid',
-  gap: 16,
-};
-
-const offerOverviewInfoSectionStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
-};
-
-const workspaceDebugModalHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-};
-
-const workspaceDebugModalTitleStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: '#0f172a',
-};
-
-const workspaceDebugModalCloseStyle: React.CSSProperties = {
-  border: 'none',
-  background: 'transparent',
-  color: '#64748b',
-  fontSize: 20,
-  lineHeight: 1,
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const workspaceDebugModalBodyStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  fontSize: 13,
-  color: '#334155',
-};
-
-const fieldHeaderActionsStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-};
-
-const customizedBadgeStyle: React.CSSProperties = {
-  color: '#10b981',
-  fontSize: '11px',
-  fontWeight: '700',
-};
-
-const editorGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
-  gap: '18px',
-};
-
-const primaryButtonStyle: React.CSSProperties = {
-  padding: '10px 14px',
-  borderRadius: '10px',
-  border: 'none',
-  backgroundColor: '#0f172a',
-  color: '#fff',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const secondaryActionButtonStyle = (disabled = false): React.CSSProperties => ({
-  padding: '10px 14px',
-  borderRadius: '10px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#334155',
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.65 : 1,
-});
-
-const actionButtonRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
-const previewCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '12px',
-  marginBottom: '16px',
-};
-
-const previewBoxStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  height: 'fit-content',
-};
-
-const previewHeaderStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  fontSize: '9px',
-  fontWeight: 800,
-  color: '#94a3b8',
-  borderBottom: '1px solid #e2e8f0',
-  letterSpacing: '0.05em',
-};
-
-const previewContentStyle: React.CSSProperties = {
-  padding: '12px',
-  fontSize: '12.5px',
-  color: '#64748b',
-  lineHeight: 1.5,
-  fontStyle: 'italic',
-  whiteSpace: 'pre-wrap',
-};
-
-const contentPreviewGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '14px',
-  marginBottom: '16px',
-};
-
-const contentPreviewCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  padding: '14px',
-};
-
-const contentPreviewLabelStyle: React.CSSProperties = {
-  fontSize: '11px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#64748b',
-  fontWeight: 700,
-  marginBottom: '8px',
-};
-
-const contentPreviewBodyStyle: React.CSSProperties = {
-  fontSize: '13px',
-  lineHeight: 1.55,
-  color: '#0f172a',
-  whiteSpace: 'pre-wrap',
-};
-
-const offerSummaryCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '14px 16px',
-  marginBottom: '16px',
-};
-
-const offerSummaryHeaderStyle: React.CSSProperties = {
-  fontSize: '11px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#64748b',
-  fontWeight: 700,
-  marginBottom: '10px',
-};
-
-const offerSummaryHeaderRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '12px',
-  flexWrap: 'wrap',
-  marginBottom: '10px',
-};
-
-const offerSummaryGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: '12px',
-};
-
-const offerSummaryStackStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '12px',
-};
-
-const offerSummaryStackRowStyle: React.CSSProperties = {
-  paddingBottom: '12px',
-  borderBottom: '1px solid #e2e8f0',
-};
-
-const offerSummaryLabelStyle: React.CSSProperties = {
-  fontSize: '10px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  marginBottom: '4px',
-  fontWeight: 700,
-};
-
-const offerSummaryValueStyle: React.CSSProperties = {
-  fontSize: '13px',
-  color: '#0f172a',
-  fontWeight: 600,
-  lineHeight: 1.4,
-};
-
-const crmCandidateBadgeStyle = (tone: 'info' | 'success' | 'warning'): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  borderRadius: '999px',
-  padding: '6px 10px',
-  fontSize: '11px',
-  lineHeight: 1.2,
-  fontWeight: 700,
-  border: tone === 'success'
-    ? '1px solid #86efac'
-    : tone === 'warning'
-      ? '1px solid #fcd34d'
-      : '1px solid #bfdbfe',
-  background: tone === 'success'
-    ? '#f0fdf4'
-    : tone === 'warning'
-      ? '#fffbeb'
-      : '#eff6ff',
-  color: tone === 'success'
-    ? '#166534'
-    : tone === 'warning'
-      ? '#92400e'
-      : '#1d4ed8',
-});
-
-const mediaCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '14px 16px',
-  marginBottom: '16px',
-  display: 'grid',
-  gap: '16px',
-};
-
-const mediaSectionStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
-const mediaSectionHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const mediaSectionHintStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#64748b',
-};
-
-const mediaCountBadgeStyle: React.CSSProperties = {
-  borderRadius: '999px',
-  background: '#e0f2fe',
-  color: '#075985',
-  padding: '2px 8px',
-  fontSize: '11px',
-  fontWeight: 700,
-};
-
-const mediaCompactListStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
-const mediaEmptyStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  padding: '12px 0 4px',
-};
-
-const slideshowCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '12px',
-};
-
-const slideshowStageStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '44px minmax(0, 1fr) 44px',
-  gap: '12px',
-  alignItems: 'stretch',
-};
-
-const slideshowNavButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: '10px',
-  background: '#ffffff',
-  color: '#0f172a',
-  fontSize: '28px',
-  lineHeight: 1,
-  cursor: 'pointer',
-};
-
-const slideshowImageFrameStyle: React.CSSProperties = {
-  minHeight: '340px',
-  border: '1px solid #dbeafe',
-  borderRadius: '12px',
-  background: '#e2e8f0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
-  padding: '10px',
-};
-
-const slideshowImageStyle: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  display: 'block',
-};
-
-const slideshowMetaStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '12px',
-};
-
-const slideshowCaptionStyle: React.CSSProperties = {
-  fontSize: '13px',
-  lineHeight: 1.45,
-  color: '#0f172a',
-  fontWeight: 700,
-};
-
-const slideshowCounterStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#64748b',
-  whiteSpace: 'nowrap',
-};
-
-const thumbnailRailStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))',
-  gap: '10px',
-};
-
-const thumbnailButtonStyle = (active: boolean): React.CSSProperties => ({
-  border: active ? '2px solid #2563eb' : '1px solid #cbd5e1',
-  borderRadius: '10px',
-  background: '#ffffff',
-  padding: '4px',
-  cursor: 'pointer',
-  overflow: 'hidden',
-});
-
-const thumbnailImageStyle: React.CSSProperties = {
-  width: '100%',
-  aspectRatio: '1 / 1',
-  objectFit: 'cover',
-  display: 'block',
-  borderRadius: '6px',
-};
-
-const floorplanCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '12px',
-};
-
-const floorplanPreviewFrameStyle: React.CSSProperties = {
-  minHeight: '260px',
-  border: '1px solid #dbeafe',
-  borderRadius: '12px',
-  background: '#f8fafc',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
-  padding: '12px',
-};
-
-const floorplanPreviewImageStyle: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  display: 'block',
-};
-
-const mediaLinkCardStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '12px',
-  border: '1px solid #dbeafe',
-  borderRadius: '10px',
-  background: '#ffffff',
-  padding: '12px 14px',
-  textDecoration: 'none',
-};
-
-const mediaLinkTitleStyle: React.CSSProperties = {
-  fontSize: '13px',
-  lineHeight: 1.45,
-  fontWeight: 700,
-  color: '#0f172a',
-};
-
-const mediaLinkMetaStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#2563eb',
-  fontWeight: 600,
-  whiteSpace: 'nowrap',
-};
-
-const energyCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '14px 16px',
-  marginBottom: '16px',
-};
-
-const energyGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: '12px',
-};
-
-const energyMissingWrapStyle: React.CSSProperties = {
-  marginTop: '14px',
-  borderRadius: '10px',
-  border: '1px solid #fde68a',
-  background: '#fffbeb',
-  padding: '12px 14px',
-};
-
-const energyMissingHeadStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#92400e',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
-
-const energyMissingListStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.5,
-  color: '#78350f',
-};
-
-const energyReadyStyle: React.CSSProperties = {
-  marginTop: '14px',
-  borderRadius: '10px',
-  border: '1px solid #bbf7d0',
-  background: '#f0fdf4',
-  padding: '12px 14px',
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#166534',
-  fontWeight: 700,
-};
-
-const promptLabelStyle: React.CSSProperties = {
-  fontSize: '10px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
-
-const promptContentStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#475569',
-  marginBottom: '10px',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const promptInputStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: '80px',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-};
-
-const warningStyle: React.CSSProperties = {
-  backgroundColor: '#fff7ed',
-  border: '1px solid #fdba74',
-  color: '#9a3412',
-  borderRadius: '10px',
-  padding: '10px 12px',
-  fontSize: '12px',
-  marginBottom: '12px',
-};
-
-const resetButtonStyle = (hasOverride: boolean): React.CSSProperties => ({
-  backgroundColor: hasOverride ? '#f1f5f9' : '#ecfdf3',
-  color: hasOverride ? '#475569' : '#15803d',
-  border: hasOverride ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
-  padding: '4px 8px',
-  borderRadius: '6px',
-  fontSize: '10px',
-  cursor: 'pointer',
-});
