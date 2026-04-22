@@ -626,7 +626,7 @@ export default function RequestsWorkspaceManager(props: Props) {
         <div className={workspaceStyles.workspaceFieldHeader}>
           <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
         </div>
-        <div className={workspaceStyles.workspaceFieldStack}>
+        <div className="d-flex flex-column gap-2">
           {options?.multiline === false ? (
             <input
               value={value}
@@ -642,7 +642,7 @@ export default function RequestsWorkspaceManager(props: Props) {
               placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
             />
           )}
-          <div className={workspaceStyles.workspaceAiActions}>
+          <div className="d-flex align-items-center flex-wrap gap-2">
             <button
               type="button"
               className={`${workspaceStyles.workspaceAiButton} ${
@@ -1030,36 +1030,36 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div className="d-flex flex-column gap-2 mb-3">
                         <div className={workspaceStyles.workspaceSoftCard}>
                           <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
-                          <div className={workspaceStyles.workspaceMetaGrid}>
-                            <div>
+                          <div className="row g-3">
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Vermarktung</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedMarketingDisplay}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Objektart</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedTypeDisplay}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Objekt-Untertyp</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedSubtypeDisplay}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Budget</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedBudgetLabel}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Fläche</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedAreaLabel}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Zimmer</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedRoomsLabel}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Umkreis</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedRadiusLabel}</div>
                             </div>
-                            <div>
+                            <div className="col-12 col-sm-6 col-xl-3">
                               <div className={workspaceStyles.workspaceMetaLabel}>Zielregionen</div>
                               <div className={workspaceStyles.workspaceMetaValue}>{selectedLocation}</div>
                             </div>
@@ -1070,13 +1070,13 @@ export default function RequestsWorkspaceManager(props: Props) {
 
                     {activeTab === 'texts' || activeTab === 'seo' ? (
                       <div className="d-flex flex-column gap-2 mb-3">
-                        <div className={workspaceStyles.workspaceEditorSplit}>
-                          <div className={workspaceStyles.workspaceEditorColumn}>
-                            <div className={`${workspaceStyles.workspaceSectionHeading} ${workspaceStyles.workspaceHeadingMb1em}`}>
+                        <div className="row g-3 align-items-start">
+                          <div className="col-12 col-xl-7">
+                            <div className={`${workspaceStyles.workspaceSectionHeading} mb-3`}>
                               Online-Gesuch erstellen
                             </div>
                             <div className="d-flex flex-column gap-1 mb-3">
-                              <div className={workspaceStyles.workspaceInlineHeadingRow}>
+                              <div className="d-flex align-items-center gap-2">
                                 <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
                                 <button
                                   type="button"
@@ -1130,81 +1130,84 @@ export default function RequestsWorkspaceManager(props: Props) {
                               </div>
                             ) : null}
                           </div>
-                          <div className={workspaceStyles.workspaceSoftCard}>
-                            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-                              <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
-                              <button type="button" onClick={() => setImageInfoOpen(true)} className={workspaceStyles.workspaceTextButton}>
-                                Info
-                              </button>
-                            </div>
-                            <div className="d-flex flex-column gap-2">
-                              {effectiveRequestImagePreview?.imageUrl ? (
-                                <div className={workspaceStyles.workspaceRequestImageFrame}>
-                                  <img
-                                    src={effectiveRequestImagePreview.imageUrl}
-                                    alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                    className={workspaceStyles.workspaceRequestImage}
-                                  />
-                                </div>
-                              ) : null}
+                          <div className="col-12 col-xl-5">
+                            <div className={workspaceStyles.workspaceSoftCard}>
+                              <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
+                                <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
+                                <button type="button" onClick={() => setImageInfoOpen(true)} className={workspaceStyles.workspaceTextButton}>
+                                  Info
+                                </button>
+                              </div>
                               <div className="d-flex flex-column gap-2">
-                                <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
-                                <div className={workspaceStyles.workspaceImageChoiceGrid}>
-                                  {readyRequestImageChoices.map((item) => {
-                                    const active = pendingRequestImageSelectionId === item.id;
-                                    return (
-                                      <button
-                                        key={item.id}
-                                        type="button"
-                                        className={`${workspaceStyles.workspaceImageChoiceCard} ${
-                                          active ? workspaceStyles.workspaceImageChoiceCardActive : ''
-                                        }`}
-                                        onClick={() => setPendingRequestImageSelectionId(item.id)}
-                                      >
-                                        <img
-                                          src={item.thumbnail_url || item.image_url}
-                                          alt={item.alt_template || item.title}
-                                          className={workspaceStyles.workspaceImageChoiceImage}
-                                        />
-                                        <span className={workspaceStyles.workspaceImageChoiceTitle}>{item.title}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                                <div className="d-flex flex-wrap justify-content-end gap-2">
-                                  <button
-                                    type="button"
-                                    className={workspaceStyles.workspaceImageChoicePrimaryButton}
-                                    disabled={!hasPendingManualImageSelection || saving}
-                                    onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
-                                  >
-                                    Bild wählen
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={workspaceStyles.workspaceImageChoiceResetButton}
-                                    disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
-                                    onClick={() => {
-                                      setPendingRequestImageSelectionId(null);
-                                      void applyRequestImageSelection(null);
-                                    }}
-                                  >
-                                    Automatisches Matching
-                                  </button>
-                                </div>
-                                {imageSelectionStatus ? (
-                                  <div className={workspaceStyles.workspaceImageSelectionStatus}>
-                                    {imageSelectionStatus}
+                                {effectiveRequestImagePreview?.imageUrl ? (
+                                  <div className={workspaceStyles.workspaceRequestImageFrame}>
+                                    <img
+                                      src={effectiveRequestImagePreview.imageUrl}
+                                      alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                      className={workspaceStyles.workspaceRequestImage}
+                                    />
                                   </div>
                                 ) : null}
+                                <div className="d-flex flex-column gap-2">
+                                  <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
+                                  <div className="row row-cols-2 row-cols-md-3 g-2">
+                                    {readyRequestImageChoices.map((item) => {
+                                      const active = pendingRequestImageSelectionId === item.id;
+                                      return (
+                                        <div key={item.id} className="col">
+                                          <button
+                                            type="button"
+                                            className={`w-100 ${workspaceStyles.workspaceImageChoiceCard} ${
+                                              active ? workspaceStyles.workspaceImageChoiceCardActive : ''
+                                            }`}
+                                            onClick={() => setPendingRequestImageSelectionId(item.id)}
+                                          >
+                                            <img
+                                              src={item.thumbnail_url || item.image_url}
+                                              alt={item.alt_template || item.title}
+                                              className={workspaceStyles.workspaceImageChoiceImage}
+                                            />
+                                            <span className={workspaceStyles.workspaceImageChoiceTitle}>{item.title}</span>
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="d-flex flex-wrap justify-content-end gap-2">
+                                    <button
+                                      type="button"
+                                      className={workspaceStyles.workspaceImageChoicePrimaryButton}
+                                      disabled={!hasPendingManualImageSelection || saving}
+                                      onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
+                                    >
+                                      Bild wählen
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={workspaceStyles.workspaceImageChoiceResetButton}
+                                      disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
+                                      onClick={() => {
+                                        setPendingRequestImageSelectionId(null);
+                                        void applyRequestImageSelection(null);
+                                      }}
+                                    >
+                                      Automatisches Matching
+                                    </button>
+                                  </div>
+                                  {imageSelectionStatus ? (
+                                    <div className={workspaceStyles.workspaceImageSelectionStatus}>
+                                      {imageSelectionStatus}
+                                    </div>
+                                  ) : null}
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className="d-flex flex-column gap-2">
                           <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
-                          <div className={workspaceStyles.workspacePreviewSplit}>
-                            <div className="d-flex flex-column gap-3">
+                          <div className="row g-3 mb-3">
+                            <div className="col-12 col-xl-7 d-flex flex-column gap-3">
                               <div className={workspaceStyles.workspaceContentPreviewCard}>
                                 <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
@@ -1214,22 +1217,24 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
                               </div>
                             </div>
-                            <div className={workspaceStyles.workspaceContentPreviewCard}>
-                              <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
-                              {effectiveRequestImagePreview?.imageUrl ? (
-                                <div className="d-flex flex-column gap-2">
-                                  <div className={workspaceStyles.workspaceRequestImageFrame}>
-                                    <img
-                                      src={effectiveRequestImagePreview.imageUrl}
-                                      alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                      className={workspaceStyles.workspaceRequestImage}
-                                    />
+                            <div className="col-12 col-xl-5">
+                              <div className={workspaceStyles.workspaceContentPreviewCard}>
+                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
+                                {effectiveRequestImagePreview?.imageUrl ? (
+                                  <div className="d-flex flex-column gap-2">
+                                    <div className={workspaceStyles.workspaceRequestImageFrame}>
+                                      <img
+                                        src={effectiveRequestImagePreview.imageUrl}
+                                        alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                        className={workspaceStyles.workspaceRequestImage}
+                                      />
+                                    </div>
+                                    <div className={workspaceStyles.workspaceContentPreviewBody}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
                                   </div>
-                                  <div className={workspaceStyles.workspaceContentPreviewBody}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
-                                </div>
-                              ) : (
-                                <div className={workspaceStyles.workspaceContentPreviewBody}>Kein Motiv gewählt.</div>
-                              )}
+                                ) : (
+                                  <div className={workspaceStyles.workspaceContentPreviewBody}>Kein Motiv gewählt.</div>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="d-flex flex-wrap gap-2">

@@ -12,35 +12,6 @@
   gap: 20px;
 }
 
-.workspaceEditorSplit {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-  gap: 14px;
-}
-
-.workspaceEditorColumn {
-  min-width: 0;
-}
-
-.workspacePreviewSplit {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.workspaceMetaGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.workspaceImageChoiceGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
 .workspacePanel {
   border: 1px solid #e2e8f0;
   border-radius: 14px;
@@ -330,9 +301,7 @@
 }
 
 @media (max-width: 960px) {
-  .workspaceMainGrid,
-  .workspaceEditorSplit,
-  .workspacePreviewSplit {
+  .workspaceMainGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -856,16 +825,6 @@
   letter-spacing: 0.08em;
   color: #64748b;
   font-weight: 800;
-}
-
-.workspaceHeadingMb1em {
-  margin-bottom: 1em;
-}
-
-.workspaceInlineHeadingRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .workspaceInlineInfoButton {
