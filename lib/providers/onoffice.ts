@@ -63,6 +63,14 @@ type OnOfficeEstateFieldCatalog = {
   fields: OnOfficeEstateFieldDefinition[];
 };
 
+export type OnOfficeEstateMarketingFieldCandidate = {
+  key: string;
+  label: string | null;
+  type: string | null;
+  matched_targets: string[];
+  permittedValues: OnOfficeFieldOption[];
+};
+
 type OnOfficeSearchCriteriaRecord = Record<string, unknown> & {
   id?: number | string;
   _meta?: Record<string, unknown>;
@@ -86,6 +94,16 @@ export type OnOfficeEstateStatusFieldConfig = {
   field_label: string | null;
   options: OnOfficeFieldOption[];
   has_reference_status_candidates: boolean;
+};
+
+export type OnOfficeEstateMarketingFieldConfig = {
+  target_terms: Record<string, string[]>;
+  candidates: OnOfficeEstateMarketingFieldCandidate[];
+};
+
+export type OnOfficeEstateFieldDiagnostics = {
+  status: OnOfficeEstateStatusFieldConfig;
+  marketing: OnOfficeEstateMarketingFieldConfig;
 };
 
 type OnOfficeResourceSettings = {
@@ -1645,12 +1663,81 @@ function hasReferenceStatusCandidates(options: OnOfficeFieldOption[]): boolean {
   );
 }
 
-export async function fetchOnOfficeEstateStatusFieldConfig(
-  integration: PartnerIntegration,
-  token: string,
-  secret: string,
-): Promise<OnOfficeEstateStatusFieldConfig> {
-  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+const ONOFFICE_MARKETING_FIELD_TARGET_TERMS: Record<string, string[]> = {
+  publish: ["veroeffentlichen", "veroffentlichen", "veroeffentlichung", "veroffentlichung"],
+  exclusive: ["exklusiv", "exclusive"],
+  top_offer: ["top angebot", "topangebot", "top_angebot", "top objekt", "topobjekt", "top_objekt"],
+  new: ["neu", "new"],
+  price_reduction: ["preisreduktion", "preis reduktion", "preisreduziert", "preis reduziert", "price reduction"],
+  reference: ["referenz", "reference"],
+  commission_free: ["courtagefrei", "courtage frei", "courtage_frei", "provisionsfrei", "provision frei"],
+  object_of_day: ["objekt des tages", "objekt_des_tages", "immobilie des tages"],
+  object_of_week: ["objekt der woche", "objekt_der_woche", "immobilie der woche"],
+  secret_sale: ["secret sale", "secret_sale", "secret", "off market", "offmarket"],
+};
+
+function normalizeOnOfficeFieldSearchText(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeOnOfficeFieldSearchVariants(value: unknown): string[] {
+  const normalized = normalizeOnOfficeFieldSearchText(value);
+  const compact = normalized.replace(/\s+/g, "");
+  return Array.from(new Set([normalized, compact].filter(Boolean)));
+}
+
+function fieldMatchesMarketingTarget(
+  field: OnOfficeEstateFieldDefinition,
+  terms: string[],
+): boolean {
+  const haystacks = [
+    ...normalizeOnOfficeFieldSearchVariants(field.key),
+    ...normalizeOnOfficeFieldSearchVariants(field.label),
+  ];
+  const needles = terms.flatMap((term) => normalizeOnOfficeFieldSearchVariants(term));
+  return needles.some((needle) => haystacks.some((haystack) => haystack.includes(needle)));
+}
+
+function buildOnOfficeEstateMarketingFieldConfig(
+  catalog: OnOfficeEstateFieldCatalog,
+): OnOfficeEstateMarketingFieldConfig {
+  const candidates: OnOfficeEstateMarketingFieldCandidate[] = [];
+
+  for (const field of catalog.fields) {
+    const matchedTargets = Object.entries(ONOFFICE_MARKETING_FIELD_TARGET_TERMS)
+      .filter(([, terms]) => fieldMatchesMarketingTarget(field, terms))
+      .map(([target]) => target);
+    if (matchedTargets.length === 0) continue;
+
+    candidates.push({
+      key: field.key,
+      label: field.label,
+      type: field.type,
+      matched_targets: matchedTargets,
+      permittedValues: field.permittedValues,
+    });
+  }
+
+  candidates.sort((left, right) =>
+    left.key.localeCompare(right.key, "de", { sensitivity: "base" }),
+  );
+
+  return {
+    target_terms: ONOFFICE_MARKETING_FIELD_TARGET_TERMS,
+    candidates,
+  };
+}
+
+function buildOnOfficeEstateStatusFieldConfig(
+  catalog: OnOfficeEstateFieldCatalog,
+): OnOfficeEstateStatusFieldConfig {
   const candidates: Array<{ fieldKey: string; fieldLabel: string | null; options: OnOfficeFieldOption[]; priority: number }> = [];
 
   for (const field of catalog.fields) {
@@ -1690,6 +1777,36 @@ export async function fetchOnOfficeEstateStatusFieldConfig(
     field_label: selected.fieldLabel,
     options: selected.options,
     has_reference_status_candidates: hasReferenceStatusCandidates(selected.options),
+  };
+}
+
+export async function fetchOnOfficeEstateMarketingFieldConfig(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeEstateMarketingFieldConfig> {
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+  return buildOnOfficeEstateMarketingFieldConfig(catalog);
+}
+
+export async function fetchOnOfficeEstateStatusFieldConfig(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeEstateStatusFieldConfig> {
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+  return buildOnOfficeEstateStatusFieldConfig(catalog);
+}
+
+export async function fetchOnOfficeEstateFieldDiagnostics(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeEstateFieldDiagnostics> {
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+  return {
+    status: buildOnOfficeEstateStatusFieldConfig(catalog),
+    marketing: buildOnOfficeEstateMarketingFieldConfig(catalog),
   };
 }
 

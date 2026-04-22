@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
-import { fetchOnOfficeEstateStatusFieldConfig } from "@/lib/providers/onoffice";
+import { fetchOnOfficeEstateFieldDiagnostics } from "@/lib/providers/onoffice";
 import type { PartnerIntegration } from "@/lib/providers/types";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
@@ -73,7 +73,9 @@ export async function GET(
       settings: (data.settings ?? null) as Record<string, unknown> | null,
     };
 
-    const estateStatusConfig = await fetchOnOfficeEstateStatusFieldConfig(integration, token, secret);
+    const estateFieldDiagnostics = await fetchOnOfficeEstateFieldDiagnostics(integration, token, secret);
+    const estateStatusConfig = estateFieldDiagnostics.status;
+    const estateMarketingFieldConfig = estateFieldDiagnostics.marketing;
 
     return NextResponse.json({
       ok: true,
@@ -81,6 +83,8 @@ export async function GET(
       estate_status_field_label: estateStatusConfig.field_label,
       estate_status_options: estateStatusConfig.options,
       has_reference_status_candidates: estateStatusConfig.has_reference_status_candidates,
+      estate_marketing_field_targets: estateMarketingFieldConfig.target_terms,
+      estate_marketing_field_candidates: estateMarketingFieldConfig.candidates,
     });
   } catch (error) {
     if (error instanceof Error) {
