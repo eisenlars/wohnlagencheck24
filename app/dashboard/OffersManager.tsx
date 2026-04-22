@@ -147,22 +147,6 @@ type Props = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy';
-
-const workspaceTabClassName = (active: boolean) =>
-  active
-    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
-    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
-const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
-const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
-const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm text-break';
-const workspacePreviewLabelClassName = 'small text-secondary text-uppercase fw-bold mb-2';
-const workspacePreviewBodyClassName = 'small text-secondary lh-base text-break';
-const crmCandidateBadgeClassName = (tone: 'info' | 'success' | 'warning') =>
-  tone === 'success'
-    ? 'badge rounded-pill text-success bg-success-subtle border border-success-subtle'
-    : tone === 'warning'
-      ? 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle'
-      : 'badge rounded-pill text-primary bg-primary-subtle border border-primary-subtle';
 type OfferListFilter = 'all' | 'kauf' | 'miete';
 
 function formatProviderLabel(provider: string): string {
@@ -1002,8 +986,8 @@ export default function OffersManager(props: Props) {
           </div>
           <div className="col-12 col-xl-5">
             <div className="bg-light border rounded-3 p-3 h-100">
-              <div className={workspacePreviewLabelClassName}>CRM‑Original (System)</div>
-              <div className={workspacePreviewBodyClassName}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+              <div className="small text-secondary text-uppercase fw-bold mb-2">CRM‑Original (System)</div>
+              <div className="small text-secondary lh-base text-break">{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
             </div>
           </div>
         </div>
@@ -1093,8 +1077,8 @@ export default function OffersManager(props: Props) {
           </div>
           <div className="col-12 col-xl-5">
             <div className="bg-light border rounded-3 p-3 h-100">
-              <div className={workspacePreviewLabelClassName}>CRM‑Original (System)</div>
-              <div className={workspacePreviewBodyClassName}>
+              <div className="small text-secondary text-uppercase fw-bold mb-2">CRM‑Original (System)</div>
+              <div className="small text-secondary lh-base text-break">
                 {rawValue.length > 0 ? rawValue.join('\n') : 'Keine CRM-Vorlage vorhanden.'}
               </div>
             </div>
@@ -1291,7 +1275,7 @@ export default function OffersManager(props: Props) {
             {selectedOffer ? (
               <div className="bg-light border rounded-4 p-3">
                 <div className="d-flex align-items-center justify-content-between gap-3 mb-2 flex-wrap">
-                  <div className={`${workspaceHeadingClassName} mb-2`}>Überblick</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-2">Überblick</div>
                   <div className="d-inline-flex align-items-center flex-wrap gap-2">
                     <button
                       type="button"
@@ -1304,18 +1288,18 @@ export default function OffersManager(props: Props) {
                 </div>
                 <div className="row g-3">
                   <div className="col-12 col-md-4">
-                    <div className={workspaceMetaLabelClassName}>Objekt-ID</div>
-                    <div className={workspaceMetaValueClassName}>{selectedOffer.id}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Objekt-ID</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{selectedOffer.id}</div>
                   </div>
                   <div className="col-12 col-md-4">
-                    <div className={workspaceMetaLabelClassName}>Quelle</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Quelle</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {`${selectedOffer.source || '—'} · ${selectedOffer.external_id || selectedOffer.id}`}
                     </div>
                   </div>
                   <div className="col-12 col-md-4">
-                    <div className={workspaceMetaLabelClassName}>Aktualisiert</div>
-                    <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedOffer.updated_at)}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Aktualisiert</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{formatDateLabel(selectedOffer.updated_at)}</div>
                   </div>
                 </div>
               </div>
@@ -1324,49 +1308,73 @@ export default function OffersManager(props: Props) {
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('texts')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'texts')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'texts'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 Texte
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('seo')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'seo')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'seo'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 SEO / GEO
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('facts')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'facts')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'facts'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 Objektmerkmale
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('equipment')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'equipment')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'equipment'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 Ausstattung
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('media')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'media')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'media'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 Medien
               </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceTab('energy')}
-                className={workspaceTabClassName(activeWorkspaceTab === 'energy')}
+                className={`btn btn-sm rounded-pill px-3 ${
+                  activeWorkspaceTab === 'energy'
+                    ? 'btn-secondary fw-bold'
+                    : 'btn-outline-secondary fw-semibold'
+                }`}
               >
                 Energieausweis
               </button>
             </div>
             {activeWorkspaceTab === 'media' && selectedOffer ? (
               <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-3">
-                <div className={workspaceHeadingClassName}>Medien</div>
+                <div className="small text-uppercase text-secondary fw-bold">Medien</div>
                 <div className="d-flex flex-column gap-2">
                   <div className="d-flex align-items-center gap-2 fs-6 fw-bold text-dark">
                     Objektbilder
@@ -1561,51 +1569,51 @@ export default function OffersManager(props: Props) {
             ) : null}
             {activeWorkspaceTab === 'energy' && selectedOffer ? (
               <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-3">
-                <div className={workspaceHeadingClassName}>Energieausweis</div>
+                <div className="small text-uppercase text-secondary fw-bold">Energieausweis</div>
                 <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Ausweisart</div>
-                    <div className={workspaceMetaValueClassName}>{energySnapshot?.certificate_type ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Ausweisart</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{energySnapshot?.certificate_type ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Kennwert</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Kennwert</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {energySnapshot?.value != null ? `${energySnapshot.value}` : '—'}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Bedarf / Verbrauch</div>
-                    <div className={workspaceMetaValueClassName}>{energySnapshot?.value_kind ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Bedarf / Verbrauch</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{energySnapshot?.value_kind ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Baujahr</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Baujahr</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {energySnapshot?.construction_year ?? energySnapshot?.year ?? '—'}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Energieträger</div>
-                    <div className={workspaceMetaValueClassName}>{energySnapshot?.heating_energy_source ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Energieträger</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{energySnapshot?.heating_energy_source ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Effizienzklasse</div>
-                    <div className={workspaceMetaValueClassName}>{energySnapshot?.efficiency_class ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Effizienzklasse</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{energySnapshot?.efficiency_class ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Ausweis vorhanden</div>
-                    <div className={workspaceMetaValueClassName}>{energySnapshot?.certificate_availability ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Ausweis vorhanden</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{energySnapshot?.certificate_availability ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Ausgestellt am</div>
-                    <div className={workspaceMetaValueClassName}>{formatDateLabel(energySnapshot?.certificate_start_date)}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Ausgestellt am</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{formatDateLabel(energySnapshot?.certificate_start_date)}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Gültig bis</div>
-                    <div className={workspaceMetaValueClassName}>{formatDateLabel(energySnapshot?.certificate_end_date)}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Gültig bis</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{formatDateLabel(energySnapshot?.certificate_end_date)}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Warmwasser enthalten</div>
-                    <div className={workspaceMetaValueClassName}>{formatBooleanLabel(energySnapshot?.warm_water_included)}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Warmwasser enthalten</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{formatBooleanLabel(energySnapshot?.warm_water_included)}</div>
                   </div>
                 </div>
                 {missingEnergyFields.length > 0 ? (
@@ -1629,44 +1637,44 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <div className="d-flex flex-column gap-2">
-                  <div className={workspaceHeadingClassName}>Angebot-Zusammenfassung vor Speichern</div>
+                  <div className="small text-uppercase text-secondary fw-bold">Angebot-Zusammenfassung vor Speichern</div>
                   <div className="row g-3 mb-3">
                   <div className="col-12 col-md-6">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Objekt-Titel</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Objekt-Titel</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.seo_h1 || 'Kein Objekt-Titel gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Teaser</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Teaser</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.short_description || 'Kein Teaser gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Langtext</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Langtext</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.long_description || 'Kein Langtext gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12 col-md-6">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Lage</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Lage</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.location_text || 'Kein Lage-Text gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Ausstattung</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Ausstattung</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
                     </div>
                     </div>
@@ -1692,49 +1700,49 @@ export default function OffersManager(props: Props) {
 
             {activeWorkspaceTab === 'facts' ? (
               <div className="bg-light border rounded-4 p-3">
-                <div className={`${workspaceHeadingClassName} mb-3`}>Objektmerkmale</div>
+                <div className="small text-uppercase text-secondary fw-bold mb-3">Objektmerkmale</div>
                 <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Preis / Miete</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Preis / Miete</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {selectedOffer?.offer_type === 'miete'
                         ? (selectedOffer?.rent ? `${selectedOffer.rent} €` : '—')
                         : (selectedOffer?.price ? `${selectedOffer.price} €` : '—')}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Fläche</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Fläche</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {selectedOffer?.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Nutzfläche</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Nutzfläche</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Grundstück</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Grundstück</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Zimmer</div>
-                    <div className={workspaceMetaValueClassName}>{selectedOffer?.rooms ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Zimmer</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{selectedOffer?.rooms ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Schlafzimmer</div>
-                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.bedrooms ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Schlafzimmer</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{detailsSnapshot?.bedrooms ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Badezimmer</div>
-                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.bathrooms ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Badezimmer</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{detailsSnapshot?.bathrooms ?? '—'}</div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Baujahr</div>
-                    <div className={workspaceMetaValueClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Baujahr</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">
                       {detailsSnapshot?.construction_year
                         ?? energySnapshot?.construction_year
                         ?? energySnapshot?.year
@@ -1742,8 +1750,8 @@ export default function OffersManager(props: Props) {
                     </div>
                   </div>
                   <div>
-                    <div className={workspaceMetaLabelClassName}>Etage</div>
-                    <div className={workspaceMetaValueClassName}>{detailsSnapshot?.floor ?? '—'}</div>
+                    <div className="small text-secondary text-uppercase fw-bold mb-1">Etage</div>
+                    <div className="small text-dark fw-semibold lh-sm text-break">{detailsSnapshot?.floor ?? '—'}</div>
                   </div>
                 </div>
               </div>
@@ -1752,35 +1760,35 @@ export default function OffersManager(props: Props) {
             {activeWorkspaceTab === 'equipment' ? (
               <div className="d-flex flex-column gap-3">
                 <div className="bg-light border rounded-4 p-3">
-                  <div className={`${workspaceHeadingClassName} mb-3`}>Strukturierte Ausstattung</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-3">Strukturierte Ausstattung</div>
                   <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Zustand</div>
-                      <div className={workspaceMetaValueClassName}>{detailsSnapshot?.condition ?? '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Zustand</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{detailsSnapshot?.condition ?? '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Stellplatz</div>
-                      <div className={workspaceMetaValueClassName}>{detailsSnapshot?.parking ?? '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Stellplatz</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{detailsSnapshot?.parking ?? '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Balkon</div>
-                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Balkon</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Terrasse</div>
-                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Terrasse</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Garten</div>
-                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Garten</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatBooleanLabel(detailsSnapshot?.garden)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Aufzug</div>
-                      <div className={workspaceMetaValueClassName}>{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Aufzug</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Adresse im Portal</div>
-                      <div className={workspaceMetaValueClassName}>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Adresse im Portal</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">
                         {detailsSnapshot?.address_hidden === true
                           ? 'verborgen'
                           : detailsSnapshot?.address_hidden === false
@@ -1800,7 +1808,7 @@ export default function OffersManager(props: Props) {
             {activeWorkspaceTab === 'seo' ? (
               <div className="d-flex flex-column gap-3">
                 <div className="bg-light border rounded-4 p-3">
-                  <div className={`${workspaceHeadingClassName} mb-2`}>Snippet</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-2">Snippet</div>
                   <div className="small text-secondary lh-base">
                     Suchmaschinen-Snippet und Social-Vorschau für das Objekt.
                   </div>
@@ -1811,7 +1819,7 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <div className="bg-light border rounded-4 p-3">
-                  <div className={`${workspaceHeadingClassName} mb-2`}>AEO / GEO</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-2">AEO / GEO</div>
                   <div className="small text-secondary lh-base">
                     Kompakte Antwort- und Lagebausteine für Such-, Antwort- und Kartenkontexte.
                   </div>
@@ -1823,7 +1831,7 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <div className="bg-light border rounded-4 p-3">
-                  <div className={`${workspaceHeadingClassName} mb-2`}>Highlights & Bildsprache</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-2">Highlights & Bildsprache</div>
                   <div className="small text-secondary lh-base">
                     Strukturierte Punkte für Snippets, Karten-Overlays und Bildkontext.
                   </div>
@@ -1834,14 +1842,14 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <div className="bg-light border rounded-4 p-3">
-                  <div className={`${workspaceHeadingClassName} mb-2`}>Zusammenfassung</div>
+                  <div className="small text-uppercase text-secondary fw-bold mb-2">Zusammenfassung</div>
                   <div className="small text-secondary lh-base">
                     Hier sehen Sie, wie die aktuell gepflegten Snippet-, Antwort- und Social-Texte zusammenwirken.
                   </div>
                 </div>
 
                 <div className="bg-light border rounded-3 p-3">
-                  <div className={workspacePreviewLabelClassName}>
+                  <div className="small text-secondary text-uppercase fw-bold mb-2">
                     SEO‑Vorschau
                   </div>
                   <div className="fs-6 fw-bold mt-2">
@@ -1856,7 +1864,7 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <div className="bg-light border rounded-3 p-3">
-                  <div className={workspacePreviewLabelClassName}>
+                  <div className="small text-secondary text-uppercase fw-bold mb-2">
                     OG / Twitter Vorschau
                   </div>
                   <div className="fs-6 fw-bold mt-2">
@@ -1873,24 +1881,24 @@ export default function OffersManager(props: Props) {
                 <div className="row g-3">
                   <div className="col-12 col-md-4">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Kurzantwort</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Kurzantwort</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.answer_summary || 'Keine Kurzantwort gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12 col-md-4">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Lage in Kürze</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Lage in Kürze</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.location_summary || 'Keine Lage-Kurzfassung gepflegt.'}
                     </div>
                     </div>
                   </div>
                   <div className="col-12 col-md-4">
                     <div className="bg-light border rounded-3 p-3 h-100">
-                    <div className={workspacePreviewLabelClassName}>Geeignet für</div>
-                    <div className={workspacePreviewBodyClassName}>
+                    <div className="small text-secondary text-uppercase fw-bold mb-2">Geeignet für</div>
+                    <div className="small text-secondary lh-base text-break">
                       {form.target_audience || 'Keine Zielgruppe gepflegt.'}
                     </div>
                     </div>
@@ -1937,74 +1945,82 @@ export default function OffersManager(props: Props) {
                 {onOfficeSnapshot ? (
                   <div className="d-flex flex-column gap-3">
                     <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-                      <div className={workspaceHeadingClassName}>CRM-Snapshot</div>
-                      <span className={crmCandidateBadgeClassName(onOfficeSnapshot.candidate.tone)}>
+                      <div className="small text-uppercase text-secondary fw-bold">CRM-Snapshot</div>
+                      <span
+                        className={`badge rounded-pill border ${
+                          onOfficeSnapshot.candidate.tone === 'success'
+                            ? 'text-success bg-success-subtle border-success-subtle'
+                            : onOfficeSnapshot.candidate.tone === 'warning'
+                              ? 'text-warning bg-warning-subtle border-warning-subtle'
+                              : 'text-primary bg-primary-subtle border-primary-subtle'
+                        }`}
+                      >
                         {onOfficeSnapshot.candidate.label}
                       </span>
                     </div>
                     <div className="small text-secondary lh-base">{onOfficeSnapshot.candidate.detail}</div>
                     <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Datensatz-ID</div>
-                        <div className={workspaceMetaValueClassName}>{selectedOffer.id || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Datensatz-ID</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{selectedOffer.id || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>onOffice-ID</div>
-                        <div className={workspaceMetaValueClassName}>{selectedOffer.external_id || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">onOffice-ID</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{selectedOffer.external_id || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Quelle</div>
-                        <div className={workspaceMetaValueClassName}>{selectedOffer.source || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Quelle</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{selectedOffer.source || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Exposé / Extern</div>
-                        <div className={workspaceMetaValueClassName}>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Exposé / Extern</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">
                           {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
                         </div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Quelltitel</div>
-                        <div className={workspaceMetaValueClassName}>{readTextValue(selectedRaw.source_title) || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Quelltitel</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{readTextValue(selectedRaw.source_title) || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Vermarktungsart</div>
-                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.marketingType || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Vermarktungsart</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{onOfficeSnapshot.marketingType || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Objektart</div>
-                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.objectType || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Objektart</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{onOfficeSnapshot.objectType || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>status</div>
-                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.status || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">status</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{onOfficeSnapshot.status || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>status2</div>
-                        <div className={workspaceMetaValueClassName}>{onOfficeSnapshot.status2 || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">status2</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{onOfficeSnapshot.status2 || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>verkauft</div>
-                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">verkauft</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>vermietet</div>
-                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.rented)}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">vermietet</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatOnOfficeFlagLabel(onOfficeSnapshot.rented)}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>reserviert</div>
-                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">reserviert</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>veröffentlichen</div>
-                        <div className={workspaceMetaValueClassName}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">veröffentlichen</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>Angebot aktualisiert</div>
-                        <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedOffer.updated_at) || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">Angebot aktualisiert</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatDateLabel(selectedOffer.updated_at) || '—'}</div>
                       </div>
                       <div>
-                        <div className={workspaceMetaLabelClassName}>CRM geändert am</div>
-                        <div className={workspaceMetaValueClassName}>{formatDateLabel(onOfficeSnapshot.sourceUpdatedAt) || '—'}</div>
+                        <div className="small text-secondary text-uppercase fw-bold mb-1">CRM geändert am</div>
+                        <div className="small text-dark fw-semibold lh-sm text-break">{formatDateLabel(onOfficeSnapshot.sourceUpdatedAt) || '—'}</div>
                       </div>
                     </div>
                     <div className="small text-secondary lh-base bg-light border rounded-3 p-3">
@@ -2013,47 +2029,47 @@ export default function OffersManager(props: Props) {
                   </div>
                 ) : null}
                 <div className="d-flex flex-column gap-3">
-                  <div className={workspaceHeadingClassName}>Ausspielungs-Debug</div>
+                  <div className="small text-uppercase text-secondary fw-bold">Ausspielungs-Debug</div>
                   <div className="small text-secondary lh-base">
                     Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
                   </div>
                   <div className="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Aktuelles Gebiet</div>
-                      <div className={workspaceMetaValueClassName}>{visibilityConfig?.areas?.name || '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Aktuelles Gebiet</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{visibilityConfig?.areas?.name || '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Lokaler Match</div>
-                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Lokaler Match</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Match-Quelle</div>
-                      <div className={workspaceMetaValueClassName}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Match-Quelle</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Confidence</div>
-                      <div className={workspaceMetaValueClassName}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Confidence</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Score</div>
-                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Score</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{selectedVisibilityAreaTarget?.score ?? '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>PLZ</div>
-                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">PLZ</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Ort</div>
-                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Ort</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
                     </div>
                     <div>
-                      <div className={workspaceMetaLabelClassName}>Region</div>
-                      <div className={workspaceMetaValueClassName}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Region</div>
+                      <div className="small text-dark fw-semibold lh-sm text-break">{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
                     </div>
                   </div>
                   {otherAreaTargets.length > 0 ? (
                     <div className="d-flex flex-column gap-2">
-                      <div className={workspaceMetaLabelClassName}>Weitere gematchte Gebiete</div>
+                      <div className="small text-secondary text-uppercase fw-bold mb-1">Weitere gematchte Gebiete</div>
                       {otherAreaTargets.slice(0, 5).map((target) => (
                         <div key={`${target.offer_id}-${target.area_id}`} className="small text-secondary lh-base">
                           {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
