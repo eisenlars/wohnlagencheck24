@@ -46,6 +46,12 @@ type PropstackDocument = {
   on_landing_page?: boolean | null;
 };
 
+type PropstackPropertyGroup = {
+  id?: number | string | null;
+  name?: string | null;
+  super_group_id?: number | string | null;
+};
+
 type PropstackUnit = {
   id: number | string;
   exposee_id?: string | null;
@@ -144,6 +150,8 @@ type PropstackUnit = {
   updated_at?: string | null;
   images?: PropstackImage[] | null;
   documents?: PropstackDocument[] | null;
+  property_groups?: PropstackPropertyGroup[] | null;
+  groups?: PropstackPropertyGroup[] | null;
   status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
   property_status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
   sub_status?: string | null;
@@ -978,11 +986,82 @@ function normalizeStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function normalizePropstackMarketingKey(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function readPropstackCustomFieldBoolean(customFields: Record<string, unknown>, keys: string[]): boolean | null {
+  const wanted = new Set(keys.map(normalizePropstackMarketingKey));
+  for (const [key, value] of Object.entries(customFields)) {
+    if (!wanted.has(normalizePropstackMarketingKey(key))) continue;
+    return normalizeSearchProfileBoolean(value) === true;
+  }
+  return null;
+}
+
+function normalizePropstackPropertyGroups(unit: PropstackUnit): PropstackPropertyGroup[] {
+  const groups = Array.isArray(unit.property_groups)
+    ? unit.property_groups
+    : Array.isArray(unit.groups)
+      ? unit.groups
+      : [];
+  return groups
+    .filter((group): group is PropstackPropertyGroup => Boolean(group) && typeof group === "object")
+    .map((group) => ({
+      id: group.id ?? null,
+      name: typeof group.name === "string" ? group.name : null,
+      super_group_id: group.super_group_id ?? null,
+    }));
+}
+
+function hasPropstackPropertyGroup(groups: PropstackPropertyGroup[], keys: string[]): boolean {
+  const wanted = new Set(keys.map(normalizePropstackMarketingKey));
+  return groups.some((group) => wanted.has(normalizePropstackMarketingKey(group.name ?? group.id)));
+}
+
+function buildPropstackMarketingSnapshot(unit: PropstackUnit): Record<string, boolean | null> {
+  const customFields = asObject(unit.custom_fields);
+  const groups = normalizePropstackPropertyGroups(unit);
+  const read = (keys: string[]) =>
+    readPropstackCustomFieldBoolean(customFields, keys)
+      ?? (hasPropstackPropertyGroup(groups, keys) ? true : null);
+
+  return {
+    new: read(["new", "neu", "new_listing", "objekt_neu"]),
+    top: read(["top", "top_offer", "top_angebot", "top_object", "topobjekt"]),
+    featured: read(["featured", "highlight", "highlighted", "is_featured"]),
+    exclusive: read(["exclusive", "exklusiv"]),
+    price_reduction: read(["price_reduction", "preisreduktion", "preisreduziert", "preis_reduziert"]),
+    free_commission: read(["free_commission", "courtage_frei", "courtagefrei", "commission_free", "provisionsfrei"]),
+    property_of_the_day: read(["property_of_the_day", "object_of_day", "objekt_des_tages"]),
+    property_of_the_week: read(["property_of_the_week", "object_of_week", "objekt_der_woche"]),
+  };
+}
+
 function normalizeSearchProfileBoolean(value: unknown): boolean | null {
   if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1 ? true : value === 0 ? false : null;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return null;
+    return value.some((entry) => normalizeSearchProfileBoolean(entry) === true);
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return normalizeSearchProfileBoolean(record.value)
+      ?? normalizeSearchProfileBoolean(record.pretty_value)
+      ?? normalizeSearchProfileBoolean(record.label)
+      ?? normalizeSearchProfileBoolean(record.name);
+  }
   const text = String(value ?? "").trim().toLowerCase();
   if (!text) return null;
-  if (["true", "1", "yes", "ja"].includes(text)) return true;
+  if (["true", "1", "yes", "ja", "neu", "new", "top", "exklusiv", "exclusive"].includes(text)) return true;
   if (["false", "0", "no", "nein"].includes(text)) return false;
   return null;
 }
@@ -1172,6 +1251,8 @@ function buildNormalizedListingPayload(
   const detailsExtra = buildDetailsExtraSnapshot(unit);
   const equipment = buildEquipmentSnapshot(unit);
   const related = buildRelatedSnapshot(unit);
+  const propertyGroups = normalizePropstackPropertyGroups(unit);
+  const marketing = buildPropstackMarketingSnapshot(unit);
   const address = buildAddress(unit);
   const district = buildDistrict(unit);
   const status = getEffectivePropstackStatus(unit);
@@ -1225,6 +1306,7 @@ function buildNormalizedListingPayload(
     energy,
     pricing,
     equipment,
+    marketing,
     gallery,
     gallery_urls: gallery,
     gallery_assets: galleryAssets,
@@ -1232,6 +1314,7 @@ function buildNormalizedListingPayload(
     lat: unit.lat ?? null,
     lng: unit.lng ?? null,
     custom_fields: unit.custom_fields ?? null,
+    property_groups: propertyGroups,
     related,
     notes: {
       description: normalizePropstackText(unit.description_note),
@@ -1520,6 +1603,7 @@ async function fetchPropstackUnitsDetailed(
     const url = new URL(`${base.replace(/\/+$/, "")}${endpointPath.startsWith("/") ? endpointPath : `/${endpointPath}`}`);
     url.searchParams.set("with_meta", "1");
     url.searchParams.set("expand", "1");
+    url.searchParams.set("new", "1");
     url.searchParams.set("page", String(page));
     url.searchParams.set("per_page", String(perPage));
     if (options?.archived !== null && options?.archived !== undefined) {

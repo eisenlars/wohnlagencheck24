@@ -1116,8 +1116,13 @@ function mapEstateToOffer(
   };
   const marketing = {
     publish: normalizeOnOfficeBoolean(elements["veroeffentlichen"]),
+    publish_website: normalizeOnOfficeBoolean(elements["schaufensterTv_veroeffentlichen"]),
     new: normalizeOnOfficeBoolean(elements["neu"] ?? elements["objekt_neu"] ?? elements["new_listing"]),
     top: normalizeOnOfficeBoolean(elements["topobjekt"] ?? elements["top_objekt"] ?? elements["top_angebot"]),
+    exclusive: normalizeOnOfficeBoolean(elements["exclusive"]),
+    price_reduction: normalizeOnOfficeBoolean(elements["preisreduktion"]),
+    reference: normalizeOnOfficeBoolean(elements["referenz"]),
+    show_google_map: normalizeOnOfficeBoolean(elements["showGoogleMap"]),
     property_of_the_week: normalizeOnOfficeBoolean(elements["objekt_der_woche"]),
     free_commission: normalizeOnOfficeBoolean(elements["courtage_frei"]),
     property_of_the_day: normalizeOnOfficeBoolean(elements["objekt_des_tages"]),
@@ -1978,12 +1983,17 @@ export async function fetchOnOfficeEstates(
     "neu",
     "objekt_neu",
     "new_listing",
+    "exclusive",
+    "preisreduktion",
+    "referenz",
+    "showGoogleMap",
     "topobjekt",
     "top_objekt",
     "top_angebot",
     "objekt_der_woche",
     "courtage_frei",
     "objekt_des_tages",
+    "schaufensterTv_veroeffentlichen",
   ], catalog);
   const deltaWindow = resolveOnOfficeDeltaWindow(
     integration,

@@ -14,6 +14,8 @@ const BADGE_DEFINITIONS: Record<string, MarketingBadge> = {
   object_of_week: { key: "object_of_week", label: "Objekt der Woche", tone: "info" },
   object_of_day: { key: "object_of_day", label: "Objekt des Tages", tone: "info" },
   featured: { key: "featured", label: "Highlight", tone: "dark" },
+  exclusive: { key: "exclusive", label: "Exklusiv", tone: "dark" },
+  price_reduction: { key: "price_reduction", label: "Preis reduziert", tone: "warning" },
   commission_free: { key: "commission_free", label: "Courtagefrei", tone: "success" },
 };
 
@@ -28,8 +30,15 @@ function normalizeText(value: unknown): string {
 function readBoolean(value: unknown): boolean {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value === 1;
+  if (Array.isArray(value)) return value.some((entry) => readBoolean(entry));
+  if (isRecord(value)) {
+    return readBoolean(value.value)
+      || readBoolean(value.pretty_value)
+      || readBoolean(value.label)
+      || readBoolean(value.name);
+  }
   const normalized = normalizeText(value);
-  return ["1", "true", "ja", "j", "yes", "y", "neu", "new"].includes(normalized);
+  return ["1", "true", "ja", "j", "yes", "y", "neu", "new", "top", "exklusiv", "exclusive"].includes(normalized);
 }
 
 function normalizeBadgeKey(value: unknown): string {
@@ -49,8 +58,14 @@ function readAnyFlag(raw: Record<string, unknown> | null | undefined, keys: stri
   if (!raw) return false;
   const marketing = isRecord(raw.marketing) ? raw.marketing : {};
   const customFields = isRecord(raw.custom_fields) ? raw.custom_fields : {};
+  const propertyGroups = Array.isArray(raw.property_groups) ? raw.property_groups : [];
   for (const key of keys) {
     if (readBoolean(raw[key]) || readBoolean(marketing[key]) || readBoolean(customFields[key])) return true;
+  }
+  const normalizedKeys = new Set(keys.map(normalizeBadgeKey));
+  for (const group of propertyGroups) {
+    const groupKey = isRecord(group) ? normalizeBadgeKey(group.name ?? group.key ?? group.id) : normalizeBadgeKey(group);
+    if (normalizedKeys.has(groupKey)) return true;
   }
   return false;
 }
@@ -125,6 +140,14 @@ export function normalizeOfferMarketingBadges(args: {
 
   if (readAnyFlag(raw, ["property_of_the_day", "object_of_day", "objekt_des_tages", "immobilie_des_tages", "property_of_day"])) {
     addBadge(badges, BADGE_DEFINITIONS.object_of_day);
+  }
+
+  if (readAnyFlag(raw, ["exclusive", "exklusiv"])) {
+    addBadge(badges, BADGE_DEFINITIONS.exclusive);
+  }
+
+  if (readAnyFlag(raw, ["price_reduction", "preisreduktion", "preisreduziert"])) {
+    addBadge(badges, BADGE_DEFINITIONS.price_reduction);
   }
 
   if (readAnyFlag(raw, ["featured", "highlight", "highlighted", "is_featured"])) {

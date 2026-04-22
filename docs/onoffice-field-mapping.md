@@ -119,9 +119,15 @@ Gelesene Felder:
 - `vermarktungsart`
 
 Zusaetzliche Vermarktungsflags:
+- `veroeffentlichen`
+- `schaufensterTv_veroeffentlichen`
 - `neu`
 - `objekt_neu`
 - `new_listing`
+- `exclusive`
+- `preisreduktion`
+- `referenz`
+- `showGoogleMap`
 - `topobjekt`
 - `top_objekt`
 - `top_angebot`
@@ -141,8 +147,13 @@ Normalisiert in `raw`:
   "vermietet": "0",
   "marketing": {
     "publish": true,
+    "publish_website": false,
     "new": false,
     "top": false,
+    "exclusive": false,
+    "price_reduction": false,
+    "reference": false,
+    "show_google_map": false,
     "property_of_the_week": false,
     "free_commission": false,
     "property_of_the_day": false
