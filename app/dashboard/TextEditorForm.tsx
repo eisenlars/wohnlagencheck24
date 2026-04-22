@@ -21,6 +21,7 @@ import {
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import MarketingTextEditor from './MarketingTextEditor';
 import {
   workflowActionButtonStyle,
   workflowAreaContentStackStyle,
@@ -1620,169 +1621,58 @@ export default function TextEditorForm({
 
   if (isMarketing) {
     return (
-      <div className="w-100">
-        {showTopLlmCard ? (
-          <section className="border border-success-subtle rounded-3 p-3 mb-3 bg-success-subtle">
-            <div className="row g-3 align-items-center">
-              <div className="col-12 col-xl-4 ms-xl-auto">
-                <select
-                  value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
-                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                  className="form-select fw-semibold"
-                  aria-label="KI-Modell auswählen"
-                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
-                >
-                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                  {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                  {llmIntegrations.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </section>
-        ) : null}
-
-        <section className="bg-white border rounded-4 p-3 p-xl-4">
-          <div id={topicSectionAnchorId} className="mb-4">
-            <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
-          </div>
-
-          <div className="row g-3 g-xl-4 align-items-start">
-            {showScopeAreaSidebar ? (
-              <aside className="col-12 col-xl-4">
-                <div className="bg-light border rounded-4 p-3">
-                  <div className="d-flex flex-column gap-2">
-                    {visibleScopeAreaItems.map((item) => {
-                      const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
-                      const active = item.area_id === selectedAreaConfig?.area_id;
-                      return (
-                        <button
-                          key={item.area_id}
-                          type="button"
-                          className={`btn w-100 text-start rounded-3 border p-3 ${
-                            active ? 'btn-secondary' : 'btn-light'
-                          }`}
-                          onClick={() => setSelectedScopeAreaId(item.area_id)}
-                        >
-                          <span className="d-flex align-items-center justify-content-between gap-2">
-                            <strong className="small">{item.areas?.name || item.area_id}</strong>
-                            <span className={`badge rounded-pill ${active ? 'text-bg-light' : 'text-bg-secondary'}`}>
-                              {itemIsOrtslage ? 'Ortslage' : 'Kreis'}
-                            </span>
-                          </span>
-                          <span className={`d-block small mt-1 ${active ? 'text-white-50' : 'text-secondary'}`}>
-                            {item.area_id}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </aside>
-            ) : null}
-
-            <div className={showScopeAreaSidebar ? 'col-12 col-xl-8' : 'col-12'}>
-              <div className="d-flex flex-column gap-4">
-                <div className="d-flex flex-wrap gap-2 my-4">
-                  {visibleTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`btn btn-sm rounded-pill px-3 ${
-                        activeTab === tab.id ? 'btn-secondary fw-bold' : 'btn-outline-secondary fw-semibold'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="d-flex flex-column gap-4">
-                  {activeSections.length === 0 ? (
-                    <div className="border border-secondary-subtle rounded-3 p-3 small text-secondary bg-light">
-                      Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
-                    </div>
-                  ) : activeSections.map((section) => {
-                    const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
-                    return (
-                      <TextEditorField
-                        key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
-                        label={section.label}
-                        sectionKey={section.key}
-                        sectionGroup={sectionGroup}
-                        type={section.type}
-                        rawText={getRawTextFromJSON(section.key, sectionGroup)}
-                        dbEntry={dbTexts.find((t) => t.section_key === section.key)}
-                        areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
-                        onSave={saveText}
-                        onResetToSystem={resetTextToSystem}
-                        onAiRewrite={handleAiRewrite}
-                        tableName={tableName as HintTable}
-                        enableApproval={enableApproval}
-                        isRewriting={rewritingKey === section.key}
-                        isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
-                        mediaUpload={null}
-                      />
-                    );
-                  })}
-
-                  {enableApproval ? (
-                    <div className="d-flex flex-column align-items-end gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={handleSaveAndApprove}
-                        className={`btn fw-bold px-4 py-3 ${!publishing && hasPublishableChanges ? 'btn-success' : 'btn-secondary disabled'}`}
-                        disabled={publishing || !hasPublishableChanges}
-                      >
-                        {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
-                      </button>
-                      <span className="small text-secondary text-end">
-                        Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {saving ? (
-          <div className="position-fixed bottom-0 end-0 m-4 bg-dark text-white rounded-3 px-4 py-3 shadow small">
-            Speichere Änderungen...
-          </div>
-        ) : null}
-        {publishModalOpen ? (
-          <div className="modal d-block bg-dark bg-opacity-50" tabIndex={-1}>
-            <div className="modal-dialog modal-dialog-centered" role="dialog" aria-modal="true">
-              <div className="modal-content rounded-4 border-0 shadow">
-                <div className="modal-header">
-                  <h3 className="modal-title fs-5">Deutsche Freigabe laeuft</h3>
-                </div>
-                <div className="modal-body d-flex flex-column gap-2">
-                  <p className="m-0 small text-secondary">{publishStatus}</p>
-                  <p className="m-0 small fw-bold text-dark">Fortschritt: {publishDone}/{publishTotal}</p>
-                  {publishError ? <p className="m-0 small text-danger">{publishError}</p> : null}
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary fw-semibold"
-                    onClick={() => setPublishModalOpen(false)}
-                    disabled={publishing}
-                  >
-                    {publishing ? 'Bitte warten …' : 'Schließen'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      <MarketingTextEditor
+        showTopLlmCard={showTopLlmCard}
+        selectedLlmIntegrationId={selectedLlmIntegrationId}
+        llmIntegrations={llmIntegrations}
+        llmOptionsLoading={llmOptionsLoading}
+        llmOptionsLoaded={llmOptionsLoaded}
+        onSelectLlmIntegration={setSelectedLlmIntegrationId}
+        formatProviderLabel={formatProviderLabel}
+        topicSectionAnchorId={topicSectionAnchorId}
+        showScopeAreaSidebar={showScopeAreaSidebar}
+        visibleScopeAreaItems={visibleScopeAreaItems}
+        selectedAreaId={String(selectedAreaConfig?.area_id ?? '')}
+        onSelectScopeArea={setSelectedScopeAreaId}
+        visibleTabs={visibleTabs}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        activeSections={activeSections}
+        renderSection={(section) => {
+          const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+          return (
+            <TextEditorField
+              key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+              label={section.label}
+              sectionKey={section.key}
+              sectionGroup={sectionGroup}
+              type={section.type}
+              rawText={getRawTextFromJSON(section.key, sectionGroup)}
+              dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+              areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+              onSave={saveText}
+              onResetToSystem={resetTextToSystem}
+              onAiRewrite={handleAiRewrite}
+              tableName={tableName as HintTable}
+              enableApproval={enableApproval}
+              isRewriting={rewritingKey === section.key}
+              isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+              mediaUpload={null}
+            />
+          );
+        }}
+        enableApproval={enableApproval}
+        publishing={publishing}
+        hasPublishableChanges={hasPublishableChanges}
+        onSaveAndApprove={handleSaveAndApprove}
+        saving={saving}
+        publishModalOpen={publishModalOpen}
+        publishStatus={publishStatus}
+        publishDone={publishDone}
+        publishTotal={publishTotal}
+        publishError={publishError}
+        onClosePublishModal={() => setPublishModalOpen(false)}
+      />
     );
   }
 
