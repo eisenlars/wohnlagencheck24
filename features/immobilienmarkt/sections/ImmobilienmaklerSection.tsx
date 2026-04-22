@@ -189,16 +189,15 @@ export function ImmobilienmaklerSection({
                     <Image
                       src={imageSrc}
                       alt={`Maklerempfehlung ${kreisName}`}
-                      width={180}
-                      height={180}
+                      width={220}
+                      height={220}
                       className="rounded-circle object-fit-cover bg-light"
                     />
                   </div>
                 </div>
               </div>
               <div className="col">
-                <h2 className="mb-1">Profil</h2>
-                <p className="fw-semibold mb-2">{name}</p>
+                <h2 className="mb-2">{name}</h2>
                 <p className="text-body-secondary mb-0">{beschreibung}</p>
               </div>
             </div>
@@ -254,7 +253,7 @@ export function ImmobilienmaklerSection({
         {benefits.length ? (
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-3 p-lg-4">
+              <div className="card-body p-4 p-lg-5">
                 <h2>Leistungen & Vorteile</h2>
                 <ul className="text-body-secondary mb-0 ps-3">
                   {benefits.map((item) => (
@@ -271,7 +270,7 @@ export function ImmobilienmaklerSection({
             <div className="card-body p-4 p-lg-5">
               <h2>Makler anfragen</h2>
               <p className="text-body-secondary">
-                Teilen Sie uns Ihre Eckdaten mit. Wir melden uns mit einer konkreten Empfehlung.
+                Teilen Sie uns hier Ihre Eckdaten mit. Wir finden eine maßgeschneiderte Lösung für Ihr Anliegen.
               </p>
               <KontaktForm
                 targetEmail={emailTarget}
