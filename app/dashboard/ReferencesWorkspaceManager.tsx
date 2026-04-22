@@ -1125,9 +1125,9 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                     onClick={() => setSelectedId(row.id)}
                     className={`btn w-100 text-start p-2 pe-4 rounded-3 border position-relative ${selectedId === row.id ? 'bg-light' : 'bg-white'}`}
                   >
-                    <span className="row g-2 align-items-center flex-nowrap">
-                      <span className="col-2">
-                        <span className="ratio ratio-1x1 rounded-2 overflow-hidden border bg-secondary-subtle">
+                    <div className="row g-2 align-items-center flex-nowrap">
+                      <div className="col-3">
+                        <div className="ratio ratio-1x1 rounded-2 overflow-hidden border bg-secondary-subtle">
                           {previewImageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -1140,15 +1140,15 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                           ) : (
                             <span className="d-flex align-items-center justify-content-center small text-secondary fw-bold text-uppercase">Kein Bild</span>
                           )}
-                        </span>
-                      </span>
-                      <span className="col d-flex flex-column gap-1 overflow-hidden">
+                        </div>
+                      </div>
+                      <div className="col d-flex flex-column gap-1 overflow-hidden">
                         <span className="fw-semibold text-dark text-truncate lh-sm">{sourceTitle}</span>
                         <span className="small text-secondary fw-bold text-uppercase lh-sm text-truncate">
                           {`${marketingType} · ${objectType} · ${location}`}
                         </span>
-                      </span>
-                    </span>
+                      </div>
+                    </div>
                     <span
                       aria-hidden="true"
                       className={`position-absolute top-0 end-0 mt-2 me-2 badge rounded-pill p-1 ${isReady ? 'bg-success' : 'bg-danger'}`}
