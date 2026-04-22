@@ -23,6 +23,7 @@ import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import LocalSiteTextEditor from './LocalSiteTextEditor';
 import MarketingTextEditor from './MarketingTextEditor';
 import ReportTextEditor from './ReportTextEditor';
+import workspaceStyles from './styles/workspace.module.css';
 
 const SINGLE_LINE_TEXT_KEYS = new Set([
   'berater_name',
@@ -1829,9 +1830,9 @@ export default function TextEditorForm({
         );
       }}
       renderMediaBottom={activeTab === 'makler' ? (
-        <div style={mediaBottomWrapStyle}>
-          <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
-          <div style={mediaBottomGridStyle}>
+        <div className={`${workspaceStyles.mandatoryMediaBottomWrap} d-grid gap-3`}>
+          <h4 className={workspaceStyles.mandatoryMediaBottomTitle}>Makler-Bilder (Pflicht)</h4>
+          <div className={workspaceStyles.mandatoryMediaBottomGrid}>
             {MAKLER_MEDIA_KEYS.map((key) => {
               const spec = MANDATORY_MEDIA_SPECS[key];
               const mediaEntry = getMediaEntry(key);
@@ -2235,30 +2236,30 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
   const maxKb = Math.round(maxUploadBytes / 1024);
 
   return (
-    <div style={mandatoryMediaCardStyle}>
-      <div style={mandatoryMediaCardHeaderStyle}>
-        <div style={mandatoryMediaCardTitleStyle}>{label}</div>
-        <span style={statePillStyle(hasOverride)}>
+    <div className={workspaceStyles.mandatoryMediaCard}>
+      <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
+        <div className={workspaceStyles.mandatoryMediaCardTitle}>{label}</div>
+        <span className={`${workspaceStyles.mandatoryMediaStatePill} ${hasOverride ? workspaceStyles.mandatoryMediaStatePillDone : workspaceStyles.mandatoryMediaStatePillOpen}`}>
           {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
         </span>
       </div>
       {currentUrl ? (
-        <NextImage src={currentUrl} alt={label} width={maxWidth} height={maxHeight} unoptimized style={mandatoryMediaPreviewStyle} />
+        <NextImage src={currentUrl} alt={label} width={maxWidth} height={maxHeight} unoptimized className={workspaceStyles.mandatoryMediaPreview} />
       ) : (
-        <div style={mandatoryMediaEmptyStyle}>Noch kein Upload vorhanden.</div>
+        <div className={workspaceStyles.mandatoryMediaEmpty}>Noch kein Upload vorhanden.</div>
       )}
-      <div style={mandatoryMediaMetaStyle}>
+      <div className={workspaceStyles.mandatoryMediaMeta}>
         Ziel: {maxWidth} × {maxHeight} px
       </div>
-      <div style={mandatoryMediaMetaStyle}>Format: WebP · max. {maxKb} KB</div>
-      <label htmlFor={inputId} style={mandatoryMediaUploadButtonStyle(uploading)}>
+      <div className={workspaceStyles.mandatoryMediaMeta}>Format: WebP · max. {maxKb} KB</div>
+      <label htmlFor={inputId} className={`${workspaceStyles.mandatoryMediaUploadButton} ${uploading ? workspaceStyles.mandatoryMediaUploadButtonDisabled : ''}`}>
         {uploading ? 'Upload läuft...' : 'Bild auswählen'}
         <input
           id={inputId}
           type="file"
           accept="image/*"
           disabled={uploading}
-          style={mandatoryMediaInputHiddenStyle}
+          className="d-none"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -2267,104 +2268,8 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
           }}
         />
       </label>
-      {!uploading ? <div style={mandatoryMediaHintStyle}>Datei wird automatisch skaliert und komprimiert.</div> : null}
-      {error ? <div style={mandatoryMediaErrorStyle}>{error}</div> : null}
+      {!uploading ? <div className={workspaceStyles.mandatoryMediaHint}>Datei wird automatisch skaliert und komprimiert.</div> : null}
+      {error ? <div className={workspaceStyles.mandatoryMediaError}>{error}</div> : null}
     </div>
   );
 }
-
-// --- STYLES (FULL WIDTH) ---
-
-const statePillStyle = (completed: boolean): React.CSSProperties => ({
-  fontSize: '10px',
-  fontWeight: 700,
-  borderRadius: '999px',
-  padding: '4px 9px',
-  border: completed ? '1px solid #86efac' : '1px solid #fca5a5',
-  backgroundColor: completed ? '#dcfce7' : '#fee2e2',
-  color: completed ? '#166534' : '#991b1b',
-});
-const mediaBottomWrapStyle: React.CSSProperties = {
-  borderTop: '1px solid #e2e8f0',
-  paddingTop: '14px',
-  marginTop: '14px',
-  display: 'grid',
-  gap: '12px',
-};
-const mediaBottomGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: '16px',
-};
-const mandatoryMediaCardStyle: React.CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  height: 'fit-content',
-  padding: '12px',
-};
-const mandatoryMediaCardHeaderStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: '10px',
-  gap: '8px',
-};
-const mandatoryMediaCardTitleStyle: React.CSSProperties = {
-  fontSize: '13px',
-  fontWeight: 700,
-  color: '#1e293b',
-};
-const mandatoryMediaPreviewStyle: React.CSSProperties = {
-  width: '100%',
-  maxHeight: '210px',
-  objectFit: 'cover',
-  borderRadius: '10px',
-  marginBottom: '10px',
-  border: '1px solid #e2e8f0',
-};
-const mandatoryMediaEmptyStyle: React.CSSProperties = {
-  padding: '16px',
-  borderRadius: '10px',
-  border: '1px dashed #cbd5e1',
-  color: '#64748b',
-  fontSize: '12px',
-  marginBottom: '10px',
-  backgroundColor: '#fff',
-};
-const mandatoryMediaMetaStyle: React.CSSProperties = {
-  fontSize: '11px',
-  color: '#64748b',
-  marginBottom: '4px',
-};
-const mandatoryMediaUploadButtonStyle = (disabled: boolean): React.CSSProperties => ({
-  marginTop: '10px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '10px 12px',
-  borderRadius: '10px',
-  border: disabled ? '1px solid #cbd5e1' : '1px solid #93c5fd',
-  backgroundColor: disabled ? '#e2e8f0' : '#dbeafe',
-  color: disabled ? '#64748b' : '#1e40af',
-  fontWeight: 700,
-  fontSize: '12px',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-});
-const mandatoryMediaInputHiddenStyle: React.CSSProperties = {
-  display: 'none',
-};
-const mandatoryMediaHintStyle: React.CSSProperties = {
-  marginTop: '8px',
-  fontSize: '11px',
-  color: '#475569',
-};
-const mandatoryMediaErrorStyle: React.CSSProperties = {
-  marginTop: '8px',
-  fontSize: '11px',
-  borderRadius: '8px',
-  backgroundColor: '#fef2f2',
-  border: '1px solid #fecaca',
-  padding: '8px 10px',
-  color: '#b91c1c',
-};

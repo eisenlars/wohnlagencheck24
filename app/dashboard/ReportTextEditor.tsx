@@ -1,51 +1,7 @@
 'use client';
 
-import type { CSSProperties, ReactNode } from 'react';
-import { displayTextBadgeStyle } from '@/lib/text-display-class';
-import {
-  workflowActionButtonStyle,
-  workflowAreaContentStackStyle,
-  workflowAreaContentWrapStyle as textAreaEditorWrapStyle,
-  workflowAreaGridStyle as textEditorGridStyle,
-  workflowAreaHeadlineStyle as textAreaListHeadlineStyle,
-  workflowAreaListCardStyle as textAreaListCardStyle,
-  workflowAreaListRowStyle as textAreaListRowStyle,
-  workflowAreaListRowTopStyle as textAreaListRowTopStyle,
-  workflowAreaListWrapStyle as textAreaListWrapStyle,
-  workflowAreaMetaLineStyle as textAreaListMetaLineStyle,
-  workflowAreaTypeBadgeStyle as textAreaTypeBadgeStyle,
-  workflowAnchorLinkStyle,
-  workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
-  workflowClassCardStyle as textWorkflowClassCardStyle,
-  workflowClassCostStyle as textWorkflowClassCostStyle,
-  workflowCostInfoPopoverStyle,
-  workflowCostInfoTriggerStyle,
-  workflowCostInfoWrapStyle,
-  workflowClassCycleStyle as textWorkflowClassCycleStyle,
-  workflowClassGridStyle as textWorkflowClassGridStyle,
-  workflowClassStatLineStyle as textWorkflowClassStatLineStyle,
-  workflowClassStatsStyle as textWorkflowClassStatsStyle,
-  workflowClassTextStyle as textWorkflowClassTextStyle,
-  workflowClassTopStyle as textWorkflowClassTopStyle,
-  workflowHeaderInlineStyle as textWorkflowHeaderInlineStyle,
-  workflowHeaderStyle as textWorkflowHeaderStyle,
-  workflowAnchorTargetStyle,
-  workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
-  workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
-  workflowTopCardStyle as textWorkflowTopCardStyle,
-  workflowTopControlsStyle as textWorkflowTopControlsStyle,
-  workflowTopFieldStyle as textWorkflowTopFieldStyle,
-  workflowTopSelectStyle as textWorkflowTopSelectStyle,
-  workflowCardStackStyle,
-  workflowPanelCardStyle as textWorkflowCardStyle,
-  workflowPromptLabelStyle as textWorkflowPromptLabelStyle,
-  workflowPromptTextareaStyle as textWorkflowPromptTextareaStyle,
-  workflowSectionIntroStyle as sectionTabsIntroStyle,
-  workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
-  workflowTabButtonStyle as tabButtonStyle,
-  workflowTabContainerStyle as tabContainerStyle,
-  workflowTabLabelStyle as tabLabelStyle,
-} from '@/app/dashboard/workflow-ui';
+import type { ReactNode } from 'react';
+import workspaceStyles from './styles/workspace.module.css';
 
 type ReportAreaConfig = {
   area_id: string;
@@ -189,16 +145,16 @@ export default function ReportTextEditor({
   onClosePublishModal,
 }: ReportTextEditorProps) {
   return (
-    <div style={{ width: '100%' }}>
-      <div style={showTopLlmCard || showGlobalClassActions ? workflowCardStackStyle : undefined}>
+    <div className="w-100">
+      <div className={showTopLlmCard || showGlobalClassActions ? 'd-grid gap-3' : undefined}>
         {showTopLlmCard ? (
-          <div style={textWorkflowTopCardStyle}>
-            <div style={textWorkflowTopControlsStyle}>
-              <label style={textWorkflowTopFieldStyle}>
+          <div className={workspaceStyles.reportWorkflowTopCard}>
+            <div className="d-flex justify-content-end align-items-end flex-wrap gap-3 w-100">
+              <label className={workspaceStyles.reportWorkflowTopField}>
                 <select
                   value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
                   onChange={(e) => onSelectLlmIntegration(e.target.value)}
-                  style={textWorkflowTopSelectStyle}
+                  className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportWorkflowTopSelect}`}
                   aria-label="KI-Modell auswählen"
                   disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
                 >
@@ -216,15 +172,15 @@ export default function ReportTextEditor({
         ) : null}
 
         {showGlobalClassActions ? (
-          <div style={{ ...textWorkflowCardStyle, marginBottom: 0 }}>
-            <div style={textWorkflowHeaderStyle}>
-              <div style={textWorkflowHeaderInlineStyle}>
-                <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
-                <label style={textWorkflowInlineFieldStyle}>
+          <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
+            <div className="d-grid gap-2">
+              <div className="d-flex align-items-center gap-3 flex-wrap">
+                <h3 className={workspaceStyles.reportSectionTitle}>Bereich wählen -&gt;</h3>
+                <label className={workspaceStyles.reportInlineField}>
                   <select
                     value={bulkScope}
                     onChange={(e) => onChangeBulkScope(e.target.value as BulkScope)}
-                    style={textWorkflowInlineSelectStyle}
+                    className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportInlineSelect}`}
                     disabled={isBulkRewriting || isOrtslage}
                   >
                     <option value="kreis">Nur Kreis</option>
@@ -234,30 +190,30 @@ export default function ReportTextEditor({
               </div>
             </div>
 
-            <div style={textWorkflowClassGridStyle}>
+            <div className={workspaceStyles.reportClassGrid}>
               {classCards.map((card) => (
                 <div
                   key={card.classKey}
-                  style={textWorkflowClassCardStyle(card.active)}
+                  className={`${workspaceStyles.reportClassCard} ${card.active ? workspaceStyles.reportClassCardActive : ''}`}
                   onClick={() => onSelectClass(card.classKey)}
                 >
-                  <div style={textWorkflowClassTopStyle}>
-                    <span style={textWorkflowClassBadgeStyle(card.classKey)}>{card.title}</span>
+                  <div className="d-flex align-items-center justify-content-between gap-3">
+                    <span className={`${workspaceStyles.reportClassBadge} ${reportClassBadgeClass(card.classKey)}`}>{card.title}</span>
                   </div>
-                  <p style={textWorkflowClassTextStyle}>Texttyp: {card.description}</p>
-                  <p style={textWorkflowClassCycleStyle}>Zyklus: {card.cycle}</p>
-                  <div style={textWorkflowClassStatsStyle}>
-                    <span style={textWorkflowClassStatLineStyle}>
+                  <p className={workspaceStyles.reportClassText}>Texttyp: {card.description}</p>
+                  <p className={workspaceStyles.reportClassCycle}>Zyklus: {card.cycle}</p>
+                  <div className={workspaceStyles.reportClassStats}>
+                    <span className={workspaceStyles.reportClassStatLine}>
                       Gebiete: {card.areaMultiplier} Texte: {card.totalTexts} Tokens ca.: {card.totalTokens.toLocaleString('de-DE')}
                     </span>
                   </div>
-                  <div style={textWorkflowClassCostStyle}>
-                    <span style={textWorkflowClassStatLineStyle}>USD ca.: {card.estimatedCostUsd}</span>
-                    <span style={textWorkflowClassStatLineStyle}>EUR ca.: {card.estimatedCostEur}</span>
-                    <span style={workflowCostInfoWrapStyle}>
+                  <div className={workspaceStyles.reportClassCost}>
+                    <span className={workspaceStyles.reportClassStatLine}>USD ca.: {card.estimatedCostUsd}</span>
+                    <span className={workspaceStyles.reportClassStatLine}>EUR ca.: {card.estimatedCostEur}</span>
+                    <span className="position-relative d-inline-flex align-items-center gap-1">
                       <button
                         type="button"
-                        style={workflowCostInfoTriggerStyle}
+                        className={workspaceStyles.reportCostInfoTrigger}
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleCostInfo(card.classKey);
@@ -267,29 +223,29 @@ export default function ReportTextEditor({
                         i
                       </button>
                       {card.costInfoOpen ? (
-                        <span style={workflowCostInfoPopoverStyle}>
+                        <span className={workspaceStyles.reportCostInfoPopover}>
                           Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
                         </span>
                       ) : null}
                     </span>
                   </div>
-                  <label style={textWorkflowPromptLabelStyle}>
+                  <label className={workspaceStyles.reportPromptLabel}>
                     Standardprompt (anpassbar)
                     <textarea
                       value={card.prompt}
                       onChange={(e) => onChangeGlobalPrompt(card.classKey, e.target.value)}
-                      style={textWorkflowPromptTextareaStyle}
+                      className={workspaceStyles.reportPromptTextarea}
                       placeholder={card.defaultPrompt}
                     />
                   </label>
-                  <div style={textWorkflowClassActionRowStyle}>
+                  <div className="d-flex justify-content-between align-items-center gap-2">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onScrollToTopicSection();
                       }}
-                      style={workflowAnchorLinkStyle(String(displayTextBadgeStyle(card.classKey).color ?? '#486b7a'))}
+                      className={`${workspaceStyles.reportAnchorLink} ${reportClassLinkClass(card.classKey)}`}
                     >
                       Einzeltexte
                     </button>
@@ -304,12 +260,7 @@ export default function ReportTextEditor({
                         onRunBulkClass(card.classKey);
                       }}
                       disabled={card.disabled}
-                      style={workflowActionButtonStyle({
-                        borderColor: String((displayTextBadgeStyle(card.classKey) as Record<string, unknown>).borderColor ?? '#cbd5e1'),
-                        background: String(displayTextBadgeStyle(card.classKey).background ?? '#f8fafc'),
-                        color: String(displayTextBadgeStyle(card.classKey).color ?? '#475569'),
-                        disabled: card.disabled,
-                      })}
+                      className={`${workspaceStyles.reportClassActionButton} ${reportClassActionClass(card.classKey)}`}
                     >
                       {card.running
                         ? `${card.title} wird optimiert (${classBulkProgress?.done ?? 0}/${classBulkProgress?.total ?? 0})`
@@ -321,19 +272,19 @@ export default function ReportTextEditor({
             </div>
 
             {globalBulkReport ? (
-              <div style={globalReportStyle}>
-                <div style={globalReportTitleStyle}>Laufbericht</div>
-                <div style={globalReportRowStyle}>
+              <div className={workspaceStyles.reportRunReport}>
+                <div className={workspaceStyles.reportRunReportTitle}>Laufbericht</div>
+                <div className={workspaceStyles.reportRunReportRow}>
                   <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
                 </div>
-                <div style={globalReportRowStyle}>
+                <div className={workspaceStyles.reportRunReportRow}>
                   <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
                 </div>
-                <div style={globalReportRowStyle}>
+                <div className={workspaceStyles.reportRunReportRow}>
                   <strong>Fehler:</strong> {globalBulkReport.failed.length}
                 </div>
                 {globalBulkReport.failed.length > 0 ? (
-                  <div style={globalReportErrorListStyle}>
+                  <div className={workspaceStyles.reportRunReportErrors}>
                     {globalBulkReport.failed.slice(0, 8).map((item) => (
                       <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
                     ))}
@@ -345,15 +296,15 @@ export default function ReportTextEditor({
         ) : null}
       </div>
 
-      <div style={sectionEditorCardStyle}>
-        <div id={topicSectionAnchorId} style={{ ...sectionTabsIntroStyle, ...workflowAnchorTargetStyle }}>
-          <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
+      <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
+        <div id={topicSectionAnchorId} className={`${workspaceStyles.reportSectionIntro} ${workspaceStyles.reportAnchorTarget}`}>
+          <h3 className={workspaceStyles.reportSectionTitle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
 
-        <div style={showScopeAreaSidebar ? textEditorGridStyle : undefined}>
+        <div className={showScopeAreaSidebar ? workspaceStyles.reportAreaGrid : undefined}>
           {showScopeAreaSidebar ? (
-            <aside style={textAreaListCardStyle}>
-              <div style={textAreaListWrapStyle}>
+            <aside className={workspaceStyles.reportAreaListCard}>
+              <div className="d-grid gap-2">
                 {visibleScopeAreaItems.map((item) => {
                   const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
                   const active = item.area_id === selectedAreaId;
@@ -361,14 +312,14 @@ export default function ReportTextEditor({
                     <button
                       key={item.area_id}
                       type="button"
-                      style={textAreaListRowStyle(active)}
+                      className={`${workspaceStyles.reportAreaListRow} ${active ? workspaceStyles.reportAreaListRowActive : ''}`}
                       onClick={() => onSelectScopeArea(item.area_id)}
                     >
-                      <div style={textAreaListRowTopStyle}>
-                        <strong style={textAreaListHeadlineStyle}>{item.areas?.name || item.area_id}</strong>
-                        <span style={textAreaTypeBadgeStyle(itemIsOrtslage)}>{itemIsOrtslage ? 'Ortslage' : 'Kreis'}</span>
+                      <div className="d-flex align-items-center justify-content-between gap-2">
+                        <strong className={workspaceStyles.reportAreaHeadline}>{item.areas?.name || item.area_id}</strong>
+                        <span className={`${workspaceStyles.reportAreaTypeBadge} ${itemIsOrtslage ? workspaceStyles.reportAreaTypeBadgeChild : ''}`}>{itemIsOrtslage ? 'Ortslage' : 'Kreis'}</span>
                       </div>
-                      <div style={textAreaListMetaLineStyle}>{item.area_id}</div>
+                      <div className={workspaceStyles.reportAreaMetaLine}>{item.area_id}</div>
                     </button>
                   );
                 })}
@@ -376,38 +327,38 @@ export default function ReportTextEditor({
             </aside>
           ) : null}
 
-          <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
-            <div style={workflowAreaContentStackStyle}>
-              <div style={tabContainerStyle}>
+          <div className={showScopeAreaSidebar ? workspaceStyles.reportAreaContentWrap : undefined}>
+            <div className={`${workspaceStyles.reportAreaContentWrap} d-grid`}>
+              <div className={workspaceStyles.reportTabs}>
                 {visibleTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => onSelectTab(tab.id)}
-                    style={tabButtonStyle(activeTab === tab.id)}
+                    className={`${workspaceStyles.reportTabButton} ${activeTab === tab.id ? workspaceStyles.reportTabButtonActive : ''}`}
                   >
-                    <span style={tabLabelStyle}>{tab.label}</span>
+                    <span className={workspaceStyles.reportTabLabel}>{tab.label}</span>
                   </button>
                 ))}
               </div>
-              <div style={contentWrapperStyle}>
+              <div className={workspaceStyles.reportContentWrapper}>
                 {activeSections.length === 0 ? (
-                  <div style={textWorkflowEmptyStateStyle}>
+                  <div className={workspaceStyles.reportEmptyState}>
                     Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
                   </div>
                 ) : activeSections.map((section) => renderSection(section))}
                 {renderMediaBottom}
 
                 {enableApproval ? (
-                  <div style={approvalFooterStyle}>
+                  <div className="d-flex flex-column align-items-end gap-3 mt-4">
                     <button
                       type="button"
                       onClick={onSaveAndApprove}
-                      style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
+                      className={`${workspaceStyles.reportApproveButton} ${!publishing && hasPublishableChanges ? workspaceStyles.reportApproveButtonActive : ''}`}
                       disabled={publishing || !hasPublishableChanges}
                     >
                       {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
                     </button>
-                    <span style={approvalHintStyle}>
+                    <span className={workspaceStyles.reportApprovalHint}>
                       Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
                     </span>
                   </div>
@@ -418,20 +369,20 @@ export default function ReportTextEditor({
         </div>
       </div>
 
-      {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
+      {saving && <div className={workspaceStyles.reportSaveIndicator}>Speichere Änderungen...</div>}
       {publishModalOpen ? (
-        <div style={publishOverlayStyle}>
-          <div style={publishModalStyle}>
-            <h3 style={publishTitleStyle}>Deutsche Freigabe laeuft</h3>
-            <p style={publishTextStyle}>{publishStatus}</p>
-            <p style={publishProgressStyle}>
+        <div className={`${workspaceStyles.reportPublishOverlay} d-flex align-items-center justify-content-center p-3`}>
+          <div className={`${workspaceStyles.reportPublishModal} d-grid gap-3`}>
+            <h3 className={workspaceStyles.reportPublishTitle}>Deutsche Freigabe laeuft</h3>
+            <p className={workspaceStyles.reportPublishText}>{publishStatus}</p>
+            <p className={workspaceStyles.reportPublishProgress}>
               Fortschritt: {publishDone}/{publishTotal}
             </p>
-            {publishError ? <p style={publishErrorStyle}>{publishError}</p> : null}
-            <div style={publishActionsStyle}>
+            {publishError ? <p className={workspaceStyles.reportPublishError}>{publishError}</p> : null}
+            <div className="d-flex justify-content-end">
               <button
                 type="button"
-                style={publishCloseButtonStyle}
+                className={workspaceStyles.reportPublishCloseButton}
                 onClick={onClosePublishModal}
                 disabled={publishing}
               >
@@ -445,144 +396,23 @@ export default function ReportTextEditor({
   );
 }
 
-const sectionEditorCardStyle: CSSProperties = {
-  ...textWorkflowCardStyle,
-  marginBottom: 0,
+const reportClassBadgeClass = (classKey: ReportClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassBadgeDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassBadgeMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassBadgeProfile;
+  return workspaceStyles.reportClassBadgeGeneral;
 };
-const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 20px 0', border: 'none' };
-const textWorkflowClassBadgeStyle = (classKey: ReportClassKey): CSSProperties => ({
-  ...displayTextBadgeStyle(classKey),
-  fontSize: 16,
-  lineHeight: 1,
-  padding: '10px 20px',
-  borderRadius: 999,
-  fontWeight: 700,
-  letterSpacing: '0.01em',
-});
-const textWorkflowEmptyStateStyle: CSSProperties = {
-  border: '1px dashed #cbd5e1',
-  borderRadius: 12,
-  padding: '16px 18px',
-  fontSize: 13,
-  color: '#64748b',
-  background: '#f8fafc',
+
+const reportClassLinkClass = (classKey: ReportClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassLinkDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassLinkMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassLinkProfile;
+  return workspaceStyles.reportClassLinkGeneral;
 };
-const approvalFooterStyle: CSSProperties = {
-  marginTop: '24px',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-end',
-  gap: '12px',
-};
-const approveAllButtonStyle = (active: boolean): CSSProperties => ({
-  width: '300px',
-  height: '54px',
-  borderRadius: '10px',
-  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
-  backgroundColor: active ? '#0f766e' : '#e2e8f0',
-  color: active ? '#fff' : '#64748b',
-  fontSize: '14px',
-  fontWeight: 700,
-  cursor: active ? 'pointer' : 'not-allowed',
-  opacity: active ? 1 : 0.75,
-});
-const approvalHintStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  textAlign: 'right',
-};
-const globalReportStyle: CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  backgroundColor: '#ffffff',
-  padding: '10px 12px',
-  marginTop: '4px',
-};
-const globalReportTitleStyle: CSSProperties = {
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#0f172a',
-  marginBottom: '6px',
-};
-const globalReportRowStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#334155',
-  marginBottom: '3px',
-};
-const globalReportErrorListStyle: CSSProperties = {
-  marginTop: '8px',
-  paddingTop: '8px',
-  borderTop: '1px dashed #e2e8f0',
-  fontSize: '11px',
-  color: '#b91c1c',
-  display: 'grid',
-  gap: '3px',
-};
-const saveIndicatorStyle: CSSProperties = {
-  position: 'fixed',
-  bottom: '30px',
-  right: '30px',
-  backgroundColor: '#0f172a',
-  color: '#fff',
-  padding: '12px 24px',
-  borderRadius: '12px',
-  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
-  zIndex: 100,
-  fontSize: '13px',
-};
-const publishOverlayStyle: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15, 23, 42, 0.48)',
-  zIndex: 1200,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 20,
-};
-const publishModalStyle: CSSProperties = {
-  width: 'min(620px, 96vw)',
-  background: '#ffffff',
-  borderRadius: 14,
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 24px 48px rgba(2, 6, 23, 0.22)',
-  padding: 18,
-  display: 'grid',
-  gap: 12,
-};
-const publishTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 18,
-  color: '#0f172a',
-};
-const publishTextStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  color: '#334155',
-  lineHeight: 1.45,
-};
-const publishProgressStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  color: '#0f172a',
-  fontWeight: 700,
-};
-const publishErrorStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  color: '#b91c1c',
-};
-const publishActionsStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-};
-const publishCloseButtonStyle: CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 8,
-  background: '#fff',
-  color: '#0f172a',
-  padding: '8px 12px',
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
+
+const reportClassActionClass = (classKey: ReportClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassActionDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassActionMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassActionProfile;
+  return workspaceStyles.reportClassActionGeneral;
 };
