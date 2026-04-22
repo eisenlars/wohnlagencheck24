@@ -9,6 +9,7 @@ import type { RegionalReference } from "@/lib/referenzen";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import type { Offer } from "@/lib/angebote";
 import type { RegionalRequest } from "@/lib/gesuche";
+import { buildNewMarketingBadge, type MarketingBadge } from "@/lib/offer-marketing-flags";
 import { slugifyOfferTitle, slugifyRequestTitle } from "@/utils/slug";
 
 type ImmobilienmaklerSectionProps = {
@@ -83,6 +84,28 @@ function buildRequestListHref(basePath: string, requestType: "kauf" | "miete"): 
   return `${basePath}/${requestType === "miete" ? "mietgesuche" : "immobiliengesuche"}`;
 }
 
+function marketingBadgeClassName(badge: MarketingBadge): string {
+  if (badge.tone === "dark") return "badge rounded-pill text-bg-dark";
+  if (badge.tone === "success") return "badge rounded-pill text-bg-success";
+  if (badge.tone === "warning") return "badge rounded-pill text-bg-warning";
+  if (badge.tone === "info") return "badge rounded-pill text-bg-info";
+  return "badge rounded-pill text-bg-light border";
+}
+
+function MarketingBadgeRow(props: { badges: MarketingBadge[] }) {
+  const { badges } = props;
+  if (badges.length === 0) return null;
+  return (
+    <div className="d-flex flex-wrap gap-2 mb-2">
+      {badges.map((badge) => (
+        <span key={badge.key} className={marketingBadgeClassName(badge)}>
+          {badge.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function MarketOfferCard(props: {
   offer: Offer;
   detailHref: string;
@@ -92,6 +115,7 @@ function MarketOfferCard(props: {
 }) {
   const { offer, detailHref, listHref, detailLabel, listLabel } = props;
   const imageSrc = sanitizeImageUrl(offer.imageUrl);
+  const marketingBadges = offer.marketingBadges ?? [];
 
   return (
     <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
@@ -113,6 +137,7 @@ function MarketOfferCard(props: {
             {offer.offerType === "miete" ? "Mietangebot" : "Kaufangebot"}
           </span>
         </div>
+        <MarketingBadgeRow badges={marketingBadges} />
         <h3 className="h6 mb-2">
           <a href={detailHref} className="link-dark text-decoration-none">
             {offer.title}
@@ -145,6 +170,8 @@ function MarketRequestCard(props: {
 }) {
   const { request, detailHref, listHref, detailLabel, listLabel } = props;
   const imageSrc = request.imageUrl;
+  const newBadge = buildNewMarketingBadge(request.updatedAt);
+  const marketingBadges = newBadge ? [newBadge] : [];
 
   return (
     <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
@@ -166,6 +193,7 @@ function MarketRequestCard(props: {
             {request.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch"}
           </span>
         </div>
+        <MarketingBadgeRow badges={marketingBadges} />
         <h3 className="h6 mb-2">
           <a href={detailHref} className="link-dark text-decoration-none">
             {request.title}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 import type { Offer, OfferMode, OfferObjectType } from "@/lib/angebote";
+import type { MarketingBadge } from "@/lib/offer-marketing-flags";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
@@ -87,6 +88,22 @@ function getCompactOfferLocation(offer: Offer | null | undefined): string | null
   const match = address.match(/(\d{5})\s+(.+)$/);
   if (!match) return address;
   return `${match[1]} ${match[2].trim()}`;
+}
+
+function getInlineMarketingBadges(offer: Offer, excludeTop = true): MarketingBadge[] {
+  const statusLabel = String(offer.statusBadge ?? "").trim();
+  return (offer.marketingBadges ?? []).filter((badge) => {
+    if (excludeTop && badge.key === "top") return false;
+    if (statusLabel && badge.label.toLowerCase() === statusLabel.toLowerCase()) return false;
+    return true;
+  });
+}
+
+function offerMarketingPillClassName(badge: MarketingBadge): string {
+  if (badge.tone === "dark") return "angebote-pill angebote-pill--dark";
+  if (badge.tone === "warning") return "angebote-pill text-bg-warning";
+  if (badge.tone === "success") return "angebote-pill text-bg-success";
+  return "angebote-pill";
 }
 
 export function AngebotePage(props: AngebotePageProps) {
@@ -272,6 +289,11 @@ export function AngebotePage(props: AngebotePageProps) {
             <div className="angebote-top-body">
               <div className="angebote-pill-row">
                 <span className="angebote-pill">{formatObjectType(activeTopOffer.objectType)}</span>
+                {getInlineMarketingBadges(activeTopOffer).map((badge) => (
+                  <span key={badge.key} className={offerMarketingPillClassName(badge)}>
+                    {badge.label}
+                  </span>
+                ))}
               </div>
               <h3 className="h5 mb-2">{activeTopOffer.title || texts.object_generic}</h3>
               {activeTopLocation ? (
@@ -424,6 +446,11 @@ export function AngebotePage(props: AngebotePageProps) {
                   <div className="angebote-card-body list-card__body">
                     <div className="angebote-card-meta list-card__meta">
                       <span className="angebote-pill">{formatObjectType(offer.objectType)}</span>
+                      {getInlineMarketingBadges(offer).map((badge) => (
+                        <span key={badge.key} className={offerMarketingPillClassName(badge)}>
+                          {badge.label}
+                        </span>
+                      ))}
                       <span className="angebote-price">
                         {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
                         {priceSuffix ? <span className="angebote-price-suffix">{priceSuffix}</span> : null}

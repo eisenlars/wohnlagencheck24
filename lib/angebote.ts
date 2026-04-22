@@ -2,6 +2,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { normalizeOfferMarketingBadges, type MarketingBadge } from "@/lib/offer-marketing-flags";
 
 export type OfferMode = "kauf" | "miete";
 export type OfferObjectType = "haus" | "wohnung";
@@ -38,6 +39,7 @@ export type Offer = {
   highlights?: string[] | null;
   imageAltTexts?: string[] | null;
   statusBadge?: string | null;
+  marketingBadges?: MarketingBadge[];
 };
 
 export type OfferOverrides = {
@@ -111,6 +113,7 @@ type PublicOfferProjectionRow = {
   detail_url?: string | null;
   is_top?: boolean | null;
   source_updated_at?: string | null;
+  updated_at?: string | null;
   external_id?: string | null;
   source?: string | null;
   offer_id?: string | null;
@@ -128,6 +131,8 @@ function mapProjectionRowToOffer(
   fallbackMode: OfferMode,
   raw?: Record<string, unknown> | null,
 ): Offer {
+  const updatedAt = row.source_updated_at ?? row.updated_at ?? null;
+  const statusBadge = readOfferStatusBadge(raw);
   return {
     id: String(row.offer_id ?? row.id ?? ""),
     partnerId: String(row.partner_id ?? ""),
@@ -143,11 +148,17 @@ function mapProjectionRowToOffer(
     imageUrl: row.image_url ?? null,
     detailUrl: row.detail_url ?? null,
     isTop: Boolean(row.is_top),
-    updatedAt: row.source_updated_at ?? null,
+    updatedAt,
     externalId: row.external_id ?? null,
     source: row.source ?? null,
     raw: raw ?? null,
-    statusBadge: readOfferStatusBadge(raw),
+    statusBadge,
+    marketingBadges: normalizeOfferMarketingBadges({
+      raw,
+      isTop: Boolean(row.is_top),
+      updatedAt,
+      statusBadge,
+    }),
   };
 }
 
@@ -178,6 +189,7 @@ type PublicOfferDetailRow = {
   image_url?: string | null;
   detail_url?: string | null;
   source_updated_at?: string | null;
+  updated_at?: string | null;
   external_id?: string | null;
   source?: string | null;
 };
@@ -234,6 +246,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     "detail_url",
     "is_top",
     "source_updated_at",
+    "updated_at",
   ].join(",");
 
   const nonTopQuery = await supabase
@@ -411,6 +424,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
           "image_url",
           "detail_url",
           "source_updated_at",
+          "updated_at",
           "external_id",
           "source",
         ].join(","),
@@ -432,6 +446,9 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
 
   const record = offerRes.data as unknown as Record<string, unknown>;
   const publicRecord = (publicRes.data ?? null) as PublicOfferDetailRow | null;
+  const raw = (record["raw"] as Record<string, unknown> | null) ?? null;
+  const updatedAt = publicRecord?.source_updated_at ?? publicRecord?.updated_at ?? (record["updated_at"] as string | null) ?? null;
+  const statusBadge = readOfferStatusBadge(raw);
   return {
     id: String(record["id"] ?? ""),
     partnerId: String(record["partner_id"] ?? ""),
@@ -447,10 +464,10 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     imageUrl: publicRecord?.image_url ?? (record["image_url"] as string | null) ?? null,
     detailUrl: publicRecord?.detail_url ?? (record["detail_url"] as string | null) ?? null,
     isTop: Boolean(record["is_top"]),
-    updatedAt: publicRecord?.source_updated_at ?? (record["updated_at"] as string | null) ?? null,
+    updatedAt,
     externalId: publicRecord?.external_id ?? (record["external_id"] as string | null) ?? null,
     source: publicRecord?.source ?? (record["source"] as string | null) ?? null,
-    raw: (record["raw"] as Record<string, unknown> | null) ?? null,
+    raw,
     seoTitle: publicRecord?.seo_title ?? null,
     seoDescription: publicRecord?.seo_description ?? null,
     seoH1: publicRecord?.seo_h1 ?? null,
@@ -463,7 +480,13 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     targetAudience: publicRecord?.target_audience ?? null,
     highlights: toStringArray(publicRecord?.highlights) ?? null,
     imageAltTexts: toStringArray(publicRecord?.image_alt_texts) ?? null,
-    statusBadge: readOfferStatusBadge((record["raw"] as Record<string, unknown> | null) ?? null),
+    statusBadge,
+    marketingBadges: normalizeOfferMarketingBadges({
+      raw,
+      isTop: Boolean(record["is_top"]),
+      updatedAt,
+      statusBadge,
+    }),
   };
 }
 
