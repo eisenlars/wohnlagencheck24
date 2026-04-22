@@ -85,8 +85,13 @@ type RequestListFilter = 'all' | 'haus' | 'wohnung';
 
 const workspaceTabClassName = (active: boolean) =>
   active
-    ? `${workspaceStyles.workspaceTab} ${workspaceStyles.workspaceTabActive}`
-    : workspaceStyles.workspaceTab;
+    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
+    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
+const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
+const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
+const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm';
+const workspacePreviewLabelClassName = 'small text-secondary text-uppercase fw-bold mb-2';
+const workspacePreviewBodyClassName = 'small text-secondary lh-base text-break';
 type RequestWorkspaceLoadDebug = {
   requests: number;
   overrides: number;
@@ -624,30 +629,29 @@ export default function RequestsWorkspaceManager(props: Props) {
     return (
       <div className="d-flex flex-column gap-2">
         <div className="d-flex justify-content-between align-items-center gap-3">
-          <h4 className={workspaceStyles.workspaceFieldTitle}>{label}</h4>
+          <h4 className="m-0 fs-6 fw-bold text-dark">{label}</h4>
         </div>
         <div className="d-flex flex-column gap-2">
           {options?.multiline === false ? (
             <input
               value={value}
               onChange={(event) => updateField(key, event.target.value)}
-              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldInput} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+              className="form-control form-control-sm"
               placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
             />
           ) : (
             <textarea
               value={value}
               onChange={(event) => updateField(key, event.target.value)}
-              className={`${workspaceStyles.workspaceFieldControl} ${workspaceStyles.workspaceFieldTextarea} ${workspaceStyles.workspaceFieldTextareaCompact}`}
+              className="form-control form-control-sm"
+              rows={4}
               placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
             />
           )}
           <div className="d-flex align-items-center flex-wrap gap-2">
             <button
               type="button"
-              className={`${workspaceStyles.workspaceAiButton} ${
-                isRewriting ? workspaceStyles.workspaceAiButtonLoading : ''
-              }`}
+              className="btn btn-sm btn-outline-secondary fw-semibold"
               onClick={() => void runAiRewrite(key, label, effectivePrompt)}
               disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
             >
@@ -656,21 +660,22 @@ export default function RequestsWorkspaceManager(props: Props) {
             <button
               type="button"
               onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-              className={workspaceStyles.workspacePromptButton}
+              className="btn btn-sm btn-outline-secondary fw-semibold"
             >
               {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
             </button>
           </div>
           {showPrompt ? (
-            <div className={workspaceStyles.workspacePromptPanel}>
-              <div className={workspaceStyles.workspacePromptLabel}>Standard-Prompt</div>
-              <div className={workspaceStyles.workspacePromptContent}>{standardPrompt}</div>
-              <label className={`d-flex flex-column gap-1 ${workspaceStyles.workspacePromptInputLabel}`}>
+            <div className="border rounded-3 p-3 bg-light">
+              <div className="small text-secondary text-uppercase fw-bold mb-2">Standard-Prompt</div>
+              <div className="small text-secondary lh-base mb-2">{standardPrompt}</div>
+              <label className="d-flex flex-column gap-1 small fw-semibold text-dark">
                 Eigener Prompt (optional)
                 <textarea
                   value={customPrompt}
                   onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                  className={workspaceStyles.workspacePromptInput}
+                  className="form-control form-control-sm"
+                  rows={4}
                   placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                 />
               </label>
@@ -823,7 +828,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
         <section className="mb-2">
-          <div className={`border rounded-3 p-3 d-flex flex-column gap-3 mb-2 ${workspaceStyles.workspaceControlTone}`}>
+          <div className="border border-success rounded-3 p-3 d-flex flex-column gap-3 mb-2 bg-secondary">
             <div className="row g-3 align-items-center">
               <label className="col-12 col-xl">
                 <select
@@ -853,7 +858,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className={workspaceStyles.workspaceControlMissingHint}>Keine aktive LLM-Integration</span>
+                  <span className="small text-light">Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>
@@ -881,7 +886,7 @@ export default function RequestsWorkspaceManager(props: Props) {
             <h3 className="m-0 fs-6 fw-bold text-dark">{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
             <button
               type="button"
-              className={`btn btn-light border rounded-circle p-0 d-inline-flex align-items-center justify-content-center fw-bold ${workspaceStyles.workspaceListInfoButton}`}
+              className="btn btn-sm btn-light border rounded-circle fw-bold lh-1"
               onClick={() => setRequestDebugOpen(true)}
               disabled={!requestLoadDebug}
               aria-label="Debug-Informationen anzeigen"
@@ -901,8 +906,8 @@ export default function RequestsWorkspaceManager(props: Props) {
               onClick={() => setListFilter('all')}
               className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
                 listFilter === 'all'
-                  ? workspaceStyles.workspaceFilterToneActive
-                  : workspaceStyles.workspaceFilterTone
+                  ? 'btn-secondary'
+                  : 'btn-outline-secondary'
               }`}
             >
               Alle
@@ -912,8 +917,8 @@ export default function RequestsWorkspaceManager(props: Props) {
               onClick={() => setListFilter('haus')}
               className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
                 listFilter === 'haus'
-                  ? workspaceStyles.workspaceFilterToneActive
-                  : workspaceStyles.workspaceFilterTone
+                  ? 'btn-secondary'
+                  : 'btn-outline-secondary'
               }`}
             >
               Haus
@@ -923,8 +928,8 @@ export default function RequestsWorkspaceManager(props: Props) {
               onClick={() => setListFilter('wohnung')}
               className={`btn btn-sm rounded-pill flex-fill fw-semibold ${
                 listFilter === 'wohnung'
-                  ? workspaceStyles.workspaceFilterToneActive
-                  : workspaceStyles.workspaceFilterTone
+                  ? 'btn-secondary'
+                  : 'btn-outline-secondary'
               }`}
             >
               Wohnung
@@ -957,9 +962,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                   </span>
                   <span
                     aria-hidden="true"
-                    className={`position-absolute top-0 end-0 mt-2 me-2 ${workspaceStyles.workspaceStatusDot} ${
-                      rowIsReady ? workspaceStyles.workspaceStatusDotReady : workspaceStyles.workspaceStatusDotBlocked
-                    }`}
+                    className={`position-absolute top-0 end-0 mt-2 me-2 badge rounded-pill p-1 ${rowIsReady ? 'bg-success' : 'bg-danger'}`}
                   />
                 </button>
               );
@@ -982,7 +985,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                   <>
                     <div className="bg-light border rounded-4 p-3">
                       <div className="d-flex align-items-center justify-content-between gap-3 mb-2 flex-wrap">
-                        <div className={`${workspaceStyles.workspaceSectionHeading} mb-2`}>Überblick</div>
+                        <div className={`${workspaceHeadingClassName} mb-2`}>Überblick</div>
                         <div
                           className={`d-inline-flex align-items-center gap-2 rounded-pill px-2 py-1 small fw-bold border ${
                             isReady
@@ -992,27 +995,23 @@ export default function RequestsWorkspaceManager(props: Props) {
                         >
                           <span
                             aria-hidden="true"
-                            className={`${workspaceStyles.workspaceStatusDot} ${
-                              isReady
-                                ? workspaceStyles.workspaceStatusDotReady
-                                : workspaceStyles.workspaceStatusDotBlocked
-                            }`}
+                            className={`badge rounded-pill p-1 ${isReady ? 'bg-success' : 'bg-danger'}`}
                           />
                           <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
                         </div>
                       </div>
                       <div className="row g-3">
                         <div className="col-12 col-md-4">
-                          <div className={workspaceStyles.workspaceMetaLabel}>Gesuch-ID</div>
-                          <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.id}</div>
+                          <div className={workspaceMetaLabelClassName}>Gesuch-ID</div>
+                          <div className={workspaceMetaValueClassName}>{selectedRow.id}</div>
                         </div>
                         <div className="col-12 col-md-4">
-                          <div className={workspaceStyles.workspaceMetaLabel}>Quelle</div>
-                          <div className={workspaceStyles.workspaceMetaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                          <div className={workspaceMetaLabelClassName}>Quelle</div>
+                          <div className={workspaceMetaValueClassName}>{selectedRow.provider} · {selectedRow.external_id}</div>
                         </div>
                         <div className="col-12 col-md-4">
-                          <div className={workspaceStyles.workspaceMetaLabel}>Aktualisiert</div>
-                          <div className={workspaceStyles.workspaceMetaValue}>{formatDateLabel(selectedUpdatedAt)}</div>
+                          <div className={workspaceMetaLabelClassName}>Aktualisiert</div>
+                          <div className={workspaceMetaValueClassName}>{formatDateLabel(selectedUpdatedAt)}</div>
                         </div>
                       </div>
                     </div>
@@ -1032,39 +1031,39 @@ export default function RequestsWorkspaceManager(props: Props) {
                     {activeTab === 'criteria' ? (
                       <div className="d-flex flex-column gap-2 mb-3">
                         <div className="bg-light border rounded-4 p-3">
-                          <div className={workspaceStyles.workspaceSmallHeading}>Suchkriterien</div>
+                          <div className={`${workspaceHeadingClassName} mb-2`}>Suchkriterien</div>
                           <div className="row g-3">
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Vermarktung</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedMarketingDisplay}</div>
+                              <div className={workspaceMetaLabelClassName}>Vermarktung</div>
+                              <div className={workspaceMetaValueClassName}>{selectedMarketingDisplay}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Objektart</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedTypeDisplay}</div>
+                              <div className={workspaceMetaLabelClassName}>Objektart</div>
+                              <div className={workspaceMetaValueClassName}>{selectedTypeDisplay}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Objekt-Untertyp</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedSubtypeDisplay}</div>
+                              <div className={workspaceMetaLabelClassName}>Objekt-Untertyp</div>
+                              <div className={workspaceMetaValueClassName}>{selectedSubtypeDisplay}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Budget</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedBudgetLabel}</div>
+                              <div className={workspaceMetaLabelClassName}>Budget</div>
+                              <div className={workspaceMetaValueClassName}>{selectedBudgetLabel}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Fläche</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedAreaLabel}</div>
+                              <div className={workspaceMetaLabelClassName}>Fläche</div>
+                              <div className={workspaceMetaValueClassName}>{selectedAreaLabel}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Zimmer</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedRoomsLabel}</div>
+                              <div className={workspaceMetaLabelClassName}>Zimmer</div>
+                              <div className={workspaceMetaValueClassName}>{selectedRoomsLabel}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Umkreis</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedRadiusLabel}</div>
+                              <div className={workspaceMetaLabelClassName}>Umkreis</div>
+                              <div className={workspaceMetaValueClassName}>{selectedRadiusLabel}</div>
                             </div>
                             <div className="col-12 col-sm-6 col-xl-3">
-                              <div className={workspaceStyles.workspaceMetaLabel}>Zielregionen</div>
-                              <div className={workspaceStyles.workspaceMetaValue}>{selectedLocation}</div>
+                              <div className={workspaceMetaLabelClassName}>Zielregionen</div>
+                              <div className={workspaceMetaValueClassName}>{selectedLocation}</div>
                             </div>
                           </div>
                         </div>
@@ -1075,22 +1074,22 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div className="d-flex flex-column gap-2 mb-3">
                         <div className="row g-3 align-items-start">
                           <div className="col-12 col-xl-7">
-                            <div className={`${workspaceStyles.workspaceSectionHeading} mb-3`}>
+                            <div className={`${workspaceHeadingClassName} mb-3`}>
                               Online-Gesuch erstellen
                             </div>
                             <div className="d-flex flex-column gap-1 mb-3">
                               <div className="d-flex align-items-center gap-2">
-                                <div className={workspaceStyles.workspaceFieldTitle}>CRM-Notiz</div>
+                                <div className="m-0 fs-6 fw-bold text-dark">CRM-Notiz</div>
                                 <button
                                   type="button"
                                   onClick={() => setRequestNoteInfoOpen(true)}
-                                  className={workspaceStyles.workspaceInlineInfoButton}
+                                  className="btn btn-sm btn-light border rounded-circle fw-bold lh-1 p-0"
                                   aria-label="Information zur CRM-Notiz anzeigen"
                                 >
                                   i
                                 </button>
                               </div>
-                              <div className={workspaceStyles.workspaceNoteBox}>
+                              <div className="small text-secondary lh-base bg-light border rounded-3 px-3 py-2">
                                 {selectedNote || 'Keine CRM-Notiz vorhanden.'}
                               </div>
                             </div>
@@ -1116,17 +1115,17 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   multiline: true,
                                   placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                                 })}
-                                <div className={workspaceStyles.workspaceSeoPreviewCard}>
-                                  <div className={workspaceStyles.workspaceSeoPreviewLabel}>
+                                <div className="bg-light border rounded-3 p-3">
+                                  <div className={workspacePreviewLabelClassName}>
                                     SEO‑Vorschau
                                   </div>
-                                  <div className={workspaceStyles.workspaceSeoPreviewTitle}>
+                                  <div className="fs-6 fw-bold mt-2">
                                     {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
                                   </div>
-                                  <div className={workspaceStyles.workspaceSeoPreviewText}>
+                                  <div className="small text-secondary mt-2">
                                     {form.seo_description || form.long_description || 'SEO‑Description'}
                                   </div>
-                                  <div className={workspaceStyles.workspaceSeoPreviewUrl}>
+                                  <div className="small text-secondary mt-2">
                                     /immobiliengesuche/{form.external_id}_&lt;titel&gt;
                                   </div>
                                 </div>
@@ -1136,23 +1135,23 @@ export default function RequestsWorkspaceManager(props: Props) {
                           <div className="col-12 col-xl-5">
                             <div className="bg-light border rounded-4 p-3">
                               <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                <div className={workspaceStyles.workspaceSectionHeading}>Motivwahl</div>
-                                <button type="button" onClick={() => setImageInfoOpen(true)} className={workspaceStyles.workspaceTextButton}>
+                                <div className={workspaceHeadingClassName}>Motivwahl</div>
+                                <button type="button" onClick={() => setImageInfoOpen(true)} className="btn btn-link btn-sm fw-bold p-0 text-secondary">
                                   Info
                                 </button>
                               </div>
                               <div className="d-flex flex-column gap-2">
                                 {effectiveRequestImagePreview?.imageUrl ? (
-                                  <div className={workspaceStyles.workspaceRequestImageFrame}>
+                                  <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
                                     <img
                                       src={effectiveRequestImagePreview.imageUrl}
                                       alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                      className={workspaceStyles.workspaceRequestImage}
+                                      className="w-100 h-100 object-fit-cover"
                                     />
                                   </div>
                                 ) : null}
                                 <div className="d-flex flex-column gap-2">
-                                  <div className={workspaceStyles.workspaceMetaLabel}>Alternative Bildauswahl</div>
+                                  <div className={workspaceMetaLabelClassName}>Alternative Bildauswahl</div>
                                   <div className="row row-cols-2 row-cols-md-3 g-2">
                                     {readyRequestImageChoices.map((item) => {
                                       const active = pendingRequestImageSelectionId === item.id;
@@ -1160,17 +1159,19 @@ export default function RequestsWorkspaceManager(props: Props) {
                                         <div key={item.id} className="col">
                                           <button
                                             type="button"
-                                            className={`w-100 d-grid gap-2 ${workspaceStyles.workspaceImageChoiceCard} ${
-                                              active ? workspaceStyles.workspaceImageChoiceCardActive : ''
+                                            className={`btn w-100 d-grid gap-2 p-2 rounded-3 border text-start ${
+                                              active ? 'btn-success bg-success-subtle text-dark border-success' : 'btn-light'
                                             }`}
                                             onClick={() => setPendingRequestImageSelectionId(item.id)}
                                           >
-                                            <img
-                                              src={item.thumbnail_url || item.image_url}
-                                              alt={item.alt_template || item.title}
-                                              className={workspaceStyles.workspaceImageChoiceImage}
-                                            />
-                                            <span className={workspaceStyles.workspaceImageChoiceTitle}>{item.title}</span>
+                                            <span className="ratio ratio-4x3 rounded-2 overflow-hidden bg-secondary-subtle">
+                                              <img
+                                                src={item.thumbnail_url || item.image_url}
+                                                alt={item.alt_template || item.title}
+                                                className="w-100 h-100 object-fit-cover"
+                                              />
+                                            </span>
+                                            <span className="small fw-semibold text-dark lh-sm">{item.title}</span>
                                           </button>
                                         </div>
                                       );
@@ -1179,7 +1180,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   <div className="d-flex flex-wrap justify-content-end gap-2">
                                     <button
                                       type="button"
-                                      className={workspaceStyles.workspaceImageChoicePrimaryButton}
+                                      className="btn btn-secondary btn-sm fw-bold px-3 py-2"
                                       disabled={!hasPendingManualImageSelection || saving}
                                       onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
                                     >
@@ -1187,7 +1188,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                     </button>
                                     <button
                                       type="button"
-                                      className={workspaceStyles.workspaceImageChoiceResetButton}
+                                      className="btn btn-outline-secondary btn-sm fw-semibold px-3 py-2 text-start"
                                       disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
                                       onClick={() => {
                                         setPendingRequestImageSelectionId(null);
@@ -1198,7 +1199,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                                     </button>
                                   </div>
                                   {imageSelectionStatus ? (
-                                    <div className={workspaceStyles.workspaceImageSelectionStatus}>
+                                    <div className="alert alert-danger small mb-0 py-2 px-3">
                                       {imageSelectionStatus}
                                     </div>
                                   ) : null}
@@ -1208,34 +1209,34 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                         </div>
                         <div className="d-flex flex-column gap-2">
-                          <div className={workspaceStyles.workspaceSectionHeading}>Gesuch-Zusammenfassung vor Speichern</div>
+                          <div className={workspaceHeadingClassName}>Gesuch-Zusammenfassung vor Speichern</div>
                           <div className="row g-3 mb-3">
                             <div className="col-12 col-xl-7 d-flex flex-column gap-3">
                               <div className="bg-light border rounded-3 p-3">
-                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Gesuch-Titel</div>
-                                <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
+                                <div className={workspacePreviewLabelClassName}>Gesuch-Titel</div>
+                                <div className={workspacePreviewBodyClassName}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
                               </div>
                               <div className="bg-light border rounded-3 p-3">
-                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Beschreibung</div>
-                                <div className={workspaceStyles.workspaceContentPreviewBody}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
+                                <div className={workspacePreviewLabelClassName}>Beschreibung</div>
+                                <div className={workspacePreviewBodyClassName}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
                               </div>
                             </div>
                             <div className="col-12 col-xl-5">
                               <div className="bg-light border rounded-3 p-3">
-                                <div className={workspaceStyles.workspaceContentPreviewLabel}>Motiv</div>
+                                <div className={workspacePreviewLabelClassName}>Motiv</div>
                                 {effectiveRequestImagePreview?.imageUrl ? (
                                   <div className="d-flex flex-column gap-2">
-                                    <div className={workspaceStyles.workspaceRequestImageFrame}>
+                                    <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
                                       <img
                                         src={effectiveRequestImagePreview.imageUrl}
                                         alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                                        className={workspaceStyles.workspaceRequestImage}
+                                        className="w-100 h-100 object-fit-cover"
                                       />
                                     </div>
-                                    <div className={workspaceStyles.workspaceContentPreviewBody}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
+                                    <div className={workspacePreviewBodyClassName}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
                                   </div>
                                 ) : (
-                                  <div className={workspaceStyles.workspaceContentPreviewBody}>Kein Motiv gewählt.</div>
+                                  <div className={workspacePreviewBodyClassName}>Kein Motiv gewählt.</div>
                                 )}
                               </div>
                             </div>
@@ -1271,65 +1272,70 @@ export default function RequestsWorkspaceManager(props: Props) {
       </div>
       {requestDebugOpen && requestLoadDebug ? (
         <div
-          className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`}
+          className="modal d-block bg-dark bg-opacity-50"
+          tabIndex={-1}
           onClick={() => setRequestDebugOpen(false)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setRequestDebugOpen(false);
           }}
         >
           <div
-            className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceDebugModalCard}`}
+            className="modal-dialog modal-dialog-centered modal-sm"
             role="dialog"
             aria-modal="true"
             aria-labelledby="request-workspace-debug-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div id="request-workspace-debug-title" className={workspaceStyles.workspaceSmallHeading}>Gesuche Debug</div>
-              <button
-                type="button"
-                onClick={() => setRequestDebugOpen(false)}
-                className={workspaceStyles.workspaceModalCloseButton}
-                aria-label="Debug-Modal schließen"
-              >
-                Schließen
-              </button>
-            </div>
-            <div className={`d-flex flex-column gap-2 ${workspaceStyles.workspaceModalText}`}>
-              <div>requests={requestLoadDebug.requests}</div>
-              <div>overrides={requestLoadDebug.overrides}</div>
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <div id="request-workspace-debug-title" className={workspaceHeadingClassName}>Gesuche Debug</div>
+                <button
+                  type="button"
+                  onClick={() => setRequestDebugOpen(false)}
+                  className="btn btn-sm btn-outline-secondary fw-semibold"
+                  aria-label="Debug-Modal schließen"
+                >
+                  Schließen
+                </button>
+              </div>
+              <div className="modal-body d-flex flex-column gap-2 small text-secondary lh-base">
+                <div>requests={requestLoadDebug.requests}</div>
+                <div>overrides={requestLoadDebug.overrides}</div>
+              </div>
             </div>
           </div>
         </div>
       ) : null}
       {imageInfoOpen ? (
-        <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceModalCard}`}>
-            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div className={workspaceStyles.workspaceSmallHeading}>Matching-Info</div>
-              <button type="button" onClick={() => setImageInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
-                Schließen
-              </button>
-            </div>
-            <div className="d-flex flex-column gap-3">
-              <div>
-                <div className={workspaceStyles.workspaceMetaLabel}>Erkannte Persona</div>
-                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+        <div className="modal d-block bg-dark bg-opacity-50" role="dialog" aria-modal="true" tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <div className={workspaceHeadingClassName}>Matching-Info</div>
+                <button type="button" onClick={() => setImageInfoOpen(false)} className="btn btn-sm btn-outline-secondary fw-semibold">
+                  Schließen
+                </button>
               </div>
-              <div>
-                <div className={workspaceStyles.workspaceMetaLabel}>Umfeld</div>
-                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
-              </div>
-              <div>
-                <div className={workspaceStyles.workspaceMetaLabel}>Signale</div>
-                <div className={workspaceStyles.workspaceMetaValue}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
-              </div>
-              <div>
-                <div className={workspaceStyles.workspaceMetaLabel}>Gematchtes Motiv</div>
-                <div className={workspaceStyles.workspaceMetaValue}>
-                  {selectedImageMatch.primary
-                    ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
-                    : 'Kein Motiv gefunden'}
+              <div className="modal-body d-flex flex-column gap-3">
+                <div>
+                  <div className={workspaceMetaLabelClassName}>Erkannte Persona</div>
+                  <div className={workspaceMetaValueClassName}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+                </div>
+                <div>
+                  <div className={workspaceMetaLabelClassName}>Umfeld</div>
+                  <div className={workspaceMetaValueClassName}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
+                </div>
+                <div>
+                  <div className={workspaceMetaLabelClassName}>Signale</div>
+                  <div className={workspaceMetaValueClassName}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
+                </div>
+                <div>
+                  <div className={workspaceMetaLabelClassName}>Gematchtes Motiv</div>
+                  <div className={workspaceMetaValueClassName}>
+                    {selectedImageMatch.primary
+                      ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
+                      : 'Kein Motiv gefunden'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1337,16 +1343,18 @@ export default function RequestsWorkspaceManager(props: Props) {
         </div>
       ) : null}
       {requestNoteInfoOpen ? (
-        <div className={`d-flex align-items-center justify-content-center ${workspaceStyles.workspaceModalOverlay}`} role="dialog" aria-modal="true">
-          <div className={`d-flex flex-column gap-3 ${workspaceStyles.workspaceModalCard}`}>
-            <div className="d-flex align-items-center justify-content-between gap-3 mb-2">
-              <div className={workspaceStyles.workspaceSmallHeading}>CRM-Notiz</div>
-              <button type="button" onClick={() => setRequestNoteInfoOpen(false)} className={workspaceStyles.workspaceModalCloseButton}>
-                Schließen
-              </button>
-            </div>
-            <div className={workspaceStyles.workspaceModalText}>
-              Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
+        <div className="modal d-block bg-dark bg-opacity-50" role="dialog" aria-modal="true" tabIndex={-1}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow">
+              <div className="modal-header">
+                <div className={workspaceHeadingClassName}>CRM-Notiz</div>
+                <button type="button" onClick={() => setRequestNoteInfoOpen(false)} className="btn btn-sm btn-outline-secondary fw-semibold">
+                  Schließen
+                </button>
+              </div>
+              <div className="modal-body small text-secondary lh-base">
+                Die CRM-Notiz und die Suchkriterien dienen der KI als Basis für die Formulierung von Titel und Beschreibung des Gesuchs.
+              </div>
             </div>
           </div>
         </div>

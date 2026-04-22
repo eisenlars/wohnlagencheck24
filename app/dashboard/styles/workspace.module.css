@@ -15,151 +15,6 @@
   margin-bottom: 10px;
 }
 
-.workspaceSeoPreviewCard {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.workspaceSeoPreviewLabel {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-}
-
-.workspaceSeoPreviewTitle {
-  font-weight: 700;
-  font-size: 16px;
-  margin-top: 6px;
-}
-
-.workspaceSeoPreviewText {
-  color: #64748b;
-  font-size: 13px;
-  margin-top: 6px;
-}
-
-.workspaceSeoPreviewUrl {
-  color: #94a3b8;
-  font-size: 12px;
-  margin-top: 6px;
-}
-
-.workspaceContentPreviewLabel {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.workspaceContentPreviewBody {
-  color: #334155;
-  font-size: 13px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-
-.workspaceRequestImageFrame {
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #cbd5e1;
-  background-color: #e2e8f0;
-}
-
-.workspaceRequestImage {
-  display: block;
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-}
-
-.workspaceImageChoiceCard {
-  padding: 8px;
-  border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  cursor: pointer;
-  text-align: left;
-}
-
-.workspaceImageChoiceCardActive {
-  border-color: #0f766e;
-  background-color: #ecfeff;
-}
-
-.workspaceImageChoiceImage {
-  display: block;
-  width: 100%;
-  height: 88px;
-  object-fit: cover;
-  border-radius: 8px;
-  background-color: #e2e8f0;
-}
-
-.workspaceImageChoiceTitle {
-  font-size: 11px;
-  font-weight: 600;
-  color: #0f172a;
-  line-height: 1.35;
-}
-
-.workspaceImageChoicePrimaryButton,
-.workspaceImageChoiceResetButton {
-  padding: 9px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.workspaceImageChoicePrimaryButton {
-  border: 1px solid transparent;
-  background-color: #486b7a;
-  color: #ffffff;
-}
-
-.workspaceImageChoiceResetButton {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #0f172a;
-  font-weight: 600;
-  text-align: left;
-}
-
-.workspaceImageChoicePrimaryButton:disabled,
-.workspaceImageChoiceResetButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.workspaceImageChoicePrimaryButton:disabled {
-  background-color: #94a3b8;
-}
-
-.workspaceImageSelectionStatus {
-  border-radius: 10px;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-  padding: 10px 12px;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.workspaceTextButton {
-  border: none;
-  background: transparent;
-  color: #486b7a;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-}
-
 .workspacePromptLabel {
   font-size: 10px;
   text-transform: uppercase;
@@ -196,48 +51,6 @@
 .workspaceMutedText {
   color: #94a3b8;
   font-size: 13px;
-}
-
-.workspaceModalOverlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(15, 23, 42, 0.45);
-  padding: 24px;
-  z-index: 70;
-}
-
-.workspaceModalCard,
-.workspaceDebugModalCard {
-  border-radius: 16px;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-  padding: 18px;
-}
-
-.workspaceModalCard {
-  width: min(520px, 100%);
-}
-
-.workspaceDebugModalCard {
-  width: min(340px, 100%);
-}
-
-.workspaceModalCloseButton {
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #334155;
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.workspaceModalText {
-  font-size: 13px;
-  color: #334155;
-  line-height: 1.55;
 }
 
 .workspaceTab {
@@ -434,18 +247,6 @@
   color: #ffffff;
 }
 
-.workspaceFilterTone {
-  border-color: #e2e8f0;
-  background-color: #f8fafc;
-  color: #1e293b;
-}
-
-.workspaceFilterToneActive {
-  border-color: #486b7a;
-  background-color: #486b7a;
-  color: #ffffff;
-}
-
 .workspaceList {
   display: grid;
   gap: 10px;
@@ -573,11 +374,6 @@
   display: grid;
   gap: 12px;
   margin-bottom: 8px;
-}
-
-.workspaceControlTone {
-  border-color: #99f6b4 !important;
-  background: #486b7a;
 }
 
 .workspaceControlRow {
