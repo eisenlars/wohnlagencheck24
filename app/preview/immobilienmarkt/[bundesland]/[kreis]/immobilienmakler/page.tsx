@@ -79,7 +79,12 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 async function loadFeaturedMarketItems(args: {
   bundeslandSlug: string;
   kreisSlug: string;
-}): Promise<{ featuredOffer: Offer | null; featuredRequest: RegionalRequest | null }> {
+}): Promise<{
+  featuredBuyOffer: Offer | null;
+  featuredRentOffer: Offer | null;
+  featuredBuyRequest: RegionalRequest | null;
+  featuredRentRequest: RegionalRequest | null;
+}> {
   const [buyOffers, rentOffers, buyRequests, rentRequests] = await Promise.all([
     getOffers({ ...args, mode: "kauf", pageSize: 6, locale: "de" }),
     getOffers({ ...args, mode: "miete", pageSize: 6, locale: "de" }),
@@ -87,20 +92,16 @@ async function loadFeaturedMarketItems(args: {
     getRegionalRequestsForKreis({ ...args, mode: "miete", pageSize: 6, limit: 48, locale: "de" }),
   ]);
   const daySeed = new Date().toISOString().slice(0, 10);
-  const offerCandidates = uniqueById([
-    ...buyOffers.topOffers,
-    ...buyOffers.offers,
-    ...rentOffers.topOffers,
-    ...rentOffers.offers,
-  ]);
-  const requestCandidates = uniqueById([
-    ...buyRequests.requests,
-    ...rentRequests.requests,
-  ]);
+  const buyOfferCandidates = uniqueById([...buyOffers.topOffers, ...buyOffers.offers]);
+  const rentOfferCandidates = uniqueById([...rentOffers.topOffers, ...rentOffers.offers]);
+  const buyRequestCandidates = uniqueById(buyRequests.requests);
+  const rentRequestCandidates = uniqueById(rentRequests.requests);
 
   return {
-    featuredOffer: pickStableItem(offerCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:offer:${daySeed}`),
-    featuredRequest: pickStableItem(requestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:request:${daySeed}`),
+    featuredBuyOffer: pickStableItem(buyOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-offer:${daySeed}`),
+    featuredRentOffer: pickStableItem(rentOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-offer:${daySeed}`),
+    featuredBuyRequest: pickStableItem(buyRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-request:${daySeed}`),
+    featuredRentRequest: pickStableItem(rentRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-request:${daySeed}`),
   };
 }
 
@@ -195,8 +196,10 @@ export default async function PreviewImmobilienmaklerPage({ params }: PageProps)
           kreisSlug={kreisSlug}
           basePath={pageModel.basePath}
           references={references}
-          featuredOffer={featuredMarketItems.featuredOffer}
-          featuredRequest={featuredMarketItems.featuredRequest}
+          featuredBuyOffer={featuredMarketItems.featuredBuyOffer}
+          featuredRentOffer={featuredMarketItems.featuredRentOffer}
+          featuredBuyRequest={featuredMarketItems.featuredBuyRequest}
+          featuredRentRequest={featuredMarketItems.featuredRentRequest}
         />
       </div>
     </>

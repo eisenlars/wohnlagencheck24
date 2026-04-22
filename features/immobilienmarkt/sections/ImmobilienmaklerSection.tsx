@@ -17,8 +17,10 @@ type ImmobilienmaklerSectionProps = {
   kreisSlug: string;
   basePath: string;
   references?: RegionalReference[];
-  featuredOffer?: Offer | null;
-  featuredRequest?: RegionalRequest | null;
+  featuredBuyOffer?: Offer | null;
+  featuredRentOffer?: Offer | null;
+  featuredBuyRequest?: RegionalRequest | null;
+  featuredRentRequest?: RegionalRequest | null;
 };
 
 function firstNonEmpty(...values: Array<string | undefined | null>): string | null {
@@ -68,9 +70,123 @@ function buildOfferHref(basePath: string, offer: Offer): string {
   return `${basePath}/${segment}/${offer.id}_${slugifyOfferTitle(offer.title)}`;
 }
 
+function buildOfferListHref(basePath: string, offerType: "kauf" | "miete"): string {
+  return `${basePath}/${offerType === "miete" ? "mietangebote" : "immobilienangebote"}`;
+}
+
 function buildRequestHref(basePath: string, request: RegionalRequest): string {
   const segment = request.requestType === "miete" ? "mietgesuche" : "immobiliengesuche";
   return `${basePath}/${segment}/${request.id}_${slugifyRequestTitle(request.title)}`;
+}
+
+function buildRequestListHref(basePath: string, requestType: "kauf" | "miete"): string {
+  return `${basePath}/${requestType === "miete" ? "mietgesuche" : "immobiliengesuche"}`;
+}
+
+function MarketOfferCard(props: {
+  offer: Offer;
+  detailHref: string;
+  listHref: string;
+  detailLabel: string;
+  listLabel: string;
+}) {
+  const { offer, detailHref, listHref, detailLabel, listLabel } = props;
+  const imageSrc = sanitizeImageUrl(offer.imageUrl);
+
+  return (
+    <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
+      {imageSrc ? (
+        <a href={detailHref} className="ratio ratio-16x9 d-block">
+          <Image
+            src={imageSrc}
+            alt={offer.title}
+            fill
+            sizes="(min-width: 992px) 40vw, 100vw"
+            className="object-fit-cover"
+          />
+        </a>
+      ) : null}
+      <div className="card-body p-3">
+        <div className="d-flex flex-wrap gap-2 mb-2">
+          <span className="badge rounded-pill text-bg-light border">{formatObjectType(offer.objectType)}</span>
+          <span className="badge rounded-pill text-bg-light border">
+            {offer.offerType === "miete" ? "Mietangebot" : "Kaufangebot"}
+          </span>
+        </div>
+        <h3 className="h6 mb-2">
+          <a href={detailHref} className="link-dark text-decoration-none">
+            {offer.title}
+          </a>
+        </h3>
+        <p className="text-body-secondary mb-3">
+          {[formatCurrency(offer.offerType === "miete" ? offer.rent : offer.price), formatArea(offer.areaSqm)]
+            .filter(Boolean)
+            .join(" · ") || "Details auf Anfrage"}
+        </p>
+        <div className="d-flex flex-wrap gap-2">
+          <a href={detailHref} className="btn btn-outline-dark btn-sm">
+            {detailLabel}
+          </a>
+          <a href={listHref} className="btn btn-light border btn-sm fw-semibold">
+            {listLabel}
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MarketRequestCard(props: {
+  request: RegionalRequest;
+  detailHref: string;
+  listHref: string;
+  detailLabel: string;
+  listLabel: string;
+}) {
+  const { request, detailHref, listHref, detailLabel, listLabel } = props;
+  const imageSrc = request.imageUrl;
+
+  return (
+    <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
+      {imageSrc ? (
+        <a href={detailHref} className="ratio ratio-16x9 d-block">
+          <Image
+            src={imageSrc}
+            alt={request.imageAlt ?? request.imageTitle ?? request.title}
+            fill
+            sizes="(min-width: 992px) 40vw, 100vw"
+            className="object-fit-cover"
+          />
+        </a>
+      ) : null}
+      <div className="card-body p-3">
+        <div className="d-flex flex-wrap gap-2 mb-2">
+          <span className="badge rounded-pill text-bg-light border">{formatObjectType(request.objectType)}</span>
+          <span className="badge rounded-pill text-bg-light border">
+            {request.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch"}
+          </span>
+        </div>
+        <h3 className="h6 mb-2">
+          <a href={detailHref} className="link-dark text-decoration-none">
+            {request.title}
+          </a>
+        </h3>
+        <p className="text-body-secondary mb-3">
+          {[formatCurrency(request.maxPrice), formatArea(request.maxAreaSqm)]
+            .filter(Boolean)
+            .join(" · ") || "Suchprofil auf Anfrage"}
+        </p>
+        <div className="d-flex flex-wrap gap-2">
+          <a href={detailHref} className="btn btn-outline-dark btn-sm">
+            {detailLabel}
+          </a>
+          <a href={listHref} className="btn btn-light border btn-sm fw-semibold">
+            {listLabel}
+          </a>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 function selectLocalitySlugs(report: Report, kreisSlug: string): string[] {
@@ -93,8 +209,10 @@ export function ImmobilienmaklerSection({
   kreisSlug,
   basePath,
   references = [],
-  featuredOffer = null,
-  featuredRequest = null,
+  featuredBuyOffer = null,
+  featuredRentOffer = null,
+  featuredBuyRequest = null,
+  featuredRentRequest = null,
 }: ImmobilienmaklerSectionProps) {
   const text = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const makler = asRecord(text["makler"]) ?? {};
@@ -143,10 +261,7 @@ export function ImmobilienmaklerSection({
     })),
     ...localityGallery,
   ].slice(0, 6);
-  const featuredOfferImage = sanitizeImageUrl(featuredOffer?.imageUrl ?? null);
-  const featuredRequestImage = featuredRequest?.imageUrl ?? null;
-  const featuredOfferHref = featuredOffer ? buildOfferHref(basePath, featuredOffer) : null;
-  const featuredRequestHref = featuredRequest ? buildRequestHref(basePath, featuredRequest) : null;
+  const hasMarketItems = Boolean(featuredBuyOffer || featuredBuyRequest || featuredRentOffer || featuredRentRequest);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -282,7 +397,7 @@ export function ImmobilienmaklerSection({
         </div>
       </section>
 
-      {featuredOffer || featuredRequest ? (
+      {hasMarketItems ? (
         <section className="card border-0 shadow-sm rounded-4">
           <div className="card-body p-3 p-lg-4">
             <div className="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
@@ -294,94 +409,66 @@ export function ImmobilienmaklerSection({
                 Ausgewählte Live-Inhalte aus {kreisName}.
               </p>
             </div>
-            <div className="row g-3">
-              {featuredOffer ? (
-                <div className={featuredRequest ? "col-12 col-lg-6" : "col-12"}>
-                  <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
-                    {featuredOfferImage ? (
-                      <a href={featuredOfferHref ?? undefined} className="ratio ratio-16x9 d-block">
-                        <Image
-                          src={featuredOfferImage}
-                          alt={featuredOffer.title}
-                          fill
-                          sizes="(min-width: 992px) 40vw, 100vw"
-                          className="object-fit-cover"
+            <div className="d-flex flex-column gap-4">
+              {featuredBuyOffer || featuredBuyRequest ? (
+                <div>
+                  <h3 className="h5 mb-3">Kaufen</h3>
+                  <div className="row g-3">
+                    {featuredBuyOffer ? (
+                      <div className="col-12 col-lg-6">
+                        <MarketOfferCard
+                          offer={featuredBuyOffer}
+                          detailHref={buildOfferHref(basePath, featuredBuyOffer)}
+                          listHref={buildOfferListHref(basePath, "kauf")}
+                          detailLabel="Kaufangebot ansehen"
+                          listLabel="Alle Kaufangebote"
                         />
-                      </a>
-                    ) : null}
-                    <div className="card-body p-3">
-                      <div className="d-flex flex-wrap gap-2 mb-2">
-                        <span className="badge rounded-pill text-bg-light border">{formatObjectType(featuredOffer.objectType)}</span>
-                        <span className="badge rounded-pill text-bg-light border">
-                          {featuredOffer.offerType === "miete" ? "Mietangebot" : "Kaufangebot"}
-                        </span>
                       </div>
-                      <h3 className="h6 mb-2">
-                        {featuredOfferHref ? (
-                          <a href={featuredOfferHref} className="link-dark text-decoration-none">
-                            {featuredOffer.title}
-                          </a>
-                        ) : (
-                          featuredOffer.title
-                        )}
-                      </h3>
-                      <p className="text-body-secondary mb-3">
-                        {[formatCurrency(featuredOffer.offerType === "miete" ? featuredOffer.rent : featuredOffer.price), formatArea(featuredOffer.areaSqm)]
-                          .filter(Boolean)
-                          .join(" · ") || "Details auf Anfrage"}
-                      </p>
-                      {featuredOfferHref ? (
-                        <a href={featuredOfferHref} className="btn btn-outline-dark btn-sm">
-                          Objekt ansehen
-                        </a>
-                      ) : null}
-                    </div>
-                  </article>
+                    ) : null}
+
+                    {featuredBuyRequest ? (
+                      <div className="col-12 col-lg-6">
+                        <MarketRequestCard
+                          request={featuredBuyRequest}
+                          detailHref={buildRequestHref(basePath, featuredBuyRequest)}
+                          listHref={buildRequestListHref(basePath, "kauf")}
+                          detailLabel="Kaufgesuch ansehen"
+                          listLabel="Alle Kaufgesuche"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
 
-              {featuredRequest ? (
-                <div className={featuredOffer ? "col-12 col-lg-6" : "col-12"}>
-                  <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
-                    {featuredRequestImage ? (
-                      <a href={featuredRequestHref ?? undefined} className="ratio ratio-16x9 d-block">
-                        <Image
-                          src={featuredRequestImage}
-                          alt={featuredRequest.imageAlt ?? featuredRequest.imageTitle ?? featuredRequest.title}
-                          fill
-                          sizes="(min-width: 992px) 40vw, 100vw"
-                          className="object-fit-cover"
+              {featuredRentOffer || featuredRentRequest ? (
+                <div>
+                  <h3 className="h5 mb-3">Mieten</h3>
+                  <div className="row g-3">
+                    {featuredRentOffer ? (
+                      <div className="col-12 col-lg-6">
+                        <MarketOfferCard
+                          offer={featuredRentOffer}
+                          detailHref={buildOfferHref(basePath, featuredRentOffer)}
+                          listHref={buildOfferListHref(basePath, "miete")}
+                          detailLabel="Mietangebot ansehen"
+                          listLabel="Alle Mietangebote"
                         />
-                      </a>
-                    ) : null}
-                    <div className="card-body p-3">
-                      <div className="d-flex flex-wrap gap-2 mb-2">
-                        <span className="badge rounded-pill text-bg-light border">{formatObjectType(featuredRequest.objectType)}</span>
-                        <span className="badge rounded-pill text-bg-light border">
-                          {featuredRequest.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch"}
-                        </span>
                       </div>
-                      <h3 className="h6 mb-2">
-                        {featuredRequestHref ? (
-                          <a href={featuredRequestHref} className="link-dark text-decoration-none">
-                            {featuredRequest.title}
-                          </a>
-                        ) : (
-                          featuredRequest.title
-                        )}
-                      </h3>
-                      <p className="text-body-secondary mb-3">
-                        {[formatCurrency(featuredRequest.maxPrice), formatArea(featuredRequest.maxAreaSqm)]
-                          .filter(Boolean)
-                          .join(" · ") || "Suchprofil auf Anfrage"}
-                      </p>
-                      {featuredRequestHref ? (
-                        <a href={featuredRequestHref} className="btn btn-outline-dark btn-sm">
-                          Gesuch ansehen
-                        </a>
-                      ) : null}
-                    </div>
-                  </article>
+                    ) : null}
+
+                    {featuredRentRequest ? (
+                      <div className="col-12 col-lg-6">
+                        <MarketRequestCard
+                          request={featuredRentRequest}
+                          detailHref={buildRequestHref(basePath, featuredRentRequest)}
+                          listHref={buildRequestListHref(basePath, "miete")}
+                          detailLabel="Mietgesuch ansehen"
+                          listLabel="Alle Mietgesuche"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
             </div>
