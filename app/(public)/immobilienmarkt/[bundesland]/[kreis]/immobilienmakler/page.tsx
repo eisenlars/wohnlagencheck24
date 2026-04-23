@@ -14,6 +14,7 @@ import { loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-map
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { getOffers, type Offer } from "@/lib/angebote";
 import { getRegionalRequestsForKreis, type RegionalRequest } from "@/lib/gesuche";
+import { buildNewMarketingBadge } from "@/lib/offer-marketing-flags";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -50,6 +51,24 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
   return out;
 }
 
+function isNewOffer(offer: Offer): boolean {
+  return (offer.marketingBadges ?? []).some((badge) => badge.key === "new")
+    || Boolean(buildNewMarketingBadge(offer.updatedAt));
+}
+
+function isNewRequest(request: RegionalRequest): boolean {
+  return Boolean(buildNewMarketingBadge(request.updatedAt));
+}
+
+function pickStableNewFirst<T extends { id: string }>(
+  items: T[],
+  seed: string,
+  isNew: (item: T) => boolean,
+): T | null {
+  const newItems = items.filter(isNew);
+  return pickStableItem(newItems.length > 0 ? newItems : items, seed);
+}
+
 async function loadFeaturedMarketItems(args: {
   bundeslandSlug: string;
   kreisSlug: string;
@@ -72,10 +91,10 @@ async function loadFeaturedMarketItems(args: {
   const rentRequestCandidates = uniqueById(rentRequests.requests);
 
   return {
-    featuredBuyOffer: pickStableItem(buyOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-offer:${daySeed}`),
-    featuredRentOffer: pickStableItem(rentOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-offer:${daySeed}`),
-    featuredBuyRequest: pickStableItem(buyRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-request:${daySeed}`),
-    featuredRentRequest: pickStableItem(rentRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-request:${daySeed}`),
+    featuredBuyOffer: pickStableNewFirst(buyOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-offer:${daySeed}`, isNewOffer),
+    featuredRentOffer: pickStableNewFirst(rentOfferCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-offer:${daySeed}`, isNewOffer),
+    featuredBuyRequest: pickStableNewFirst(buyRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:buy-request:${daySeed}`, isNewRequest),
+    featuredRentRequest: pickStableNewFirst(rentRequestCandidates, `${args.bundeslandSlug}:${args.kreisSlug}:rent-request:${daySeed}`, isNewRequest),
   };
 }
 

@@ -96,7 +96,7 @@ function NewImageBadge() {
   return (
     <span
       className="badge text-bg-warning position-absolute top-0 start-0 m-2"
-      style={{ zIndex: 2 }}
+      style={{ zIndex: 2, width: "auto", height: "auto", display: "inline-flex" }}
     >
       NEU
     </span>
