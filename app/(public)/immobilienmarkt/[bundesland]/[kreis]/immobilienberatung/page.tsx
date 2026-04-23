@@ -9,7 +9,10 @@ import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/Imm
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
-import { loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
+import {
+  loadPublicVisibleAreaOptionsForPartner,
+  loadPublicVisiblePartnerContextForArea,
+} from "@/lib/public-partner-mappings";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type PageParams = { bundesland?: string; kreis?: string };
@@ -30,6 +33,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
   const bundeslandNameRaw = asString(meta["bundesland_name"]) ?? "";
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : formatRegionFallback(bundeslandSlug);
   let reportWithMedia = report;
+  let advisorRegionLinks: Array<{ label: string; href: string }> = [];
   const areaId = asString(meta["kreis_schluessel"]) ?? "";
   if (areaId) {
     const admin = createAdminClient() as unknown as SupabaseClientLike & {
@@ -47,6 +51,10 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
     }
     if (partnerContext.partnerId) {
       const overrides = await getApprovedReportTexts(admin, areaId, partnerContext.partnerId);
+      const areaOptions = await loadPublicVisibleAreaOptionsForPartner(admin, partnerContext.partnerId);
+      advisorRegionLinks = areaOptions.flatMap((option) => (
+        option.href ? [{ label: option.label, href: option.href }] : []
+      ));
       if (overrides.length > 0) {
         const textBase = asRecord(report["text"]) ?? {};
         const berater = asRecord(textBase["berater"]) ?? {};
@@ -120,6 +128,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
           report={reportWithMedia}
           bundeslandSlug={bundeslandSlug}
           kreisSlug={kreisSlug}
+          regionLinks={advisorRegionLinks}
         />
       </div>
     </>

@@ -6,6 +6,7 @@ import { asRecord, asString } from "@/utils/records";
 import { buildWebAssetUrl } from "@/utils/assets";
 import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
+import { FaqSection } from "@/components/FaqSection";
 
 type ContactItem = { label: string; value: string; href?: string };
 type RegionBadge = { label: string; href: string };
@@ -20,23 +21,23 @@ const consultationReasons = [
 
 const faqs = [
   {
-    question: "Muss ich bereits verkaufen wollen?",
-    answer:
+    q: "Muss ich bereits verkaufen wollen?",
+    a:
       "Nein. Die Beratung ist auch sinnvoll, wenn Sie Optionen pruefen oder eine Entscheidung vorbereiten moechten.",
   },
   {
-    question: "Welche Unterlagen sind hilfreich?",
-    answer:
+    q: "Welche Unterlagen sind hilfreich?",
+    a:
       "Hilfreich sind Adresse, Objektart, Wohn- oder Nutzflaeche, Baujahr, Zustand und vorhandene Grundrisse oder Fotos.",
   },
   {
-    question: "Wird die Region konkret beruecksichtigt?",
-    answer:
+    q: "Wird die Region konkret beruecksichtigt?",
+    a:
       "Ja. Die Einschaetzung verbindet Objektdaten mit regionalen Markt-, Lage- und Nachfrageindikatoren.",
   },
   {
-    question: "Ist eine Beratung auch vor einer Sanierung sinnvoll?",
-    answer:
+    q: "Ist eine Beratung auch vor einer Sanierung sinnvoll?",
+    a:
       "Ja. Gerade vor groesseren Investitionen hilft eine Markteinordnung, damit Aufwand und erwartbarer Mehrwert zusammenpassen.",
   },
 ];
@@ -57,16 +58,27 @@ function parseStructuredText(value: string): { isList: boolean; items: string[] 
   return { isList, items: isList ? listItems : lines };
 }
 
+function dedupeRegionBadges(items: RegionBadge[]): RegionBadge[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  });
+}
+
 type ImmobilienberatungSectionProps = {
   report: Report;
   bundeslandSlug: string;
   kreisSlug: string;
+  regionLinks?: RegionBadge[];
 };
 
 export function ImmobilienberatungSection({
   report,
   bundeslandSlug,
   kreisSlug,
+  regionLinks = [],
 }: ImmobilienberatungSectionProps) {
   const text = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
@@ -96,13 +108,18 @@ export function ImmobilienberatungSection({
 
   const meta = asRecord(report.meta) ?? {};
   const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
+  const bundeslandName = asString(meta["bundesland_name"]) ?? bundeslandSlug;
   const regionImageSrc = buildWebAssetUrl(
     `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
   );
   const regionBadges: RegionBadge[] = [
-    { label: kreisSlug, href: `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}` },
-    { label: bundeslandSlug, href: `/immobilienmarkt/${bundeslandSlug}` },
+    { label: kreisName, href: `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}` },
+    { label: bundeslandName, href: `/immobilienmarkt/${bundeslandSlug}` },
   ];
+  const advisorRegions = dedupeRegionBadges([
+    ...(regionLinks.length ? regionLinks : [regionBadges[0]]),
+    regionBadges[1],
+  ]);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -138,7 +155,7 @@ export function ImmobilienberatungSection({
             <div className="col-12 col-lg-6">
               <h2 className="mb-3">Regionale Expertise</h2>
               <div className="d-flex flex-wrap gap-2 mb-3">
-                {regionBadges.map((badge) => (
+                {advisorRegions.map((badge) => (
                   <Link
                     key={badge.href}
                     href={badge.href}
@@ -225,6 +242,22 @@ export function ImmobilienberatungSection({
                   <li key={reason}>{reason}</li>
                 ))}
               </ul>
+              {contactItems.length ? (
+                <div className="border-top pt-3">
+                  <div className="fw-semibold mb-2">Kontakt:</div>
+                  <div className="d-flex flex-wrap gap-2">
+                    {contactItems.map((item) => (
+                      <a
+                        key={item.label}
+                        href={item.href}
+                        className="badge rounded-pill text-bg-light border text-decoration-none text-dark"
+                      >
+                        {item.label}: {item.value}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -236,24 +269,6 @@ export function ImmobilienberatungSection({
               <p className="text-body-secondary">
                 Sie erhalten eine persoenliche Einschaetzung und klare Handlungsempfehlungen.
               </p>
-              {contactItems.length ? (
-                <div className="row g-3 mb-4">
-                  {contactItems.map((item) => (
-                    <div key={item.label} className="col-12 col-md-6">
-                      <span className="d-block small text-uppercase text-body-secondary fw-semibold mb-1">
-                        {item.label}
-                      </span>
-                      {item.href ? (
-                        <a href={item.href} className="link-dark fw-semibold text-decoration-none">
-                          {item.value}
-                        </a>
-                      ) : (
-                        <span className="fw-semibold">{item.value}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
               <KontaktForm
                 targetEmail={emailTarget}
                 scope="berater"
@@ -264,23 +279,20 @@ export function ImmobilienberatungSection({
         </div>
       </section>
 
-      <section className="card border-0 shadow-sm rounded-4">
-        <div className="card-body p-4 p-lg-5">
-          <div className="mb-4">
-            <span className="badge rounded-pill text-bg-light border text-uppercase mb-3">Fragen</span>
-            <h2>Haeufige Fragen zur Immobilienberatung</h2>
-          </div>
-          <div className="row g-3">
-            {faqs.map((faq) => (
-              <div key={faq.question} className="col-12 col-lg-6">
-                <details className="border rounded-4 p-3 bg-light h-100">
-                  <summary className="fw-semibold">{faq.question}</summary>
-                  <p className="text-body-secondary mb-0 mt-3">{faq.answer}</p>
-                </details>
-              </div>
-            ))}
-          </div>
-        </div>
+      <section>
+        <h2 className="text-center mb-3">Haeufige Fragen zur Immobilienberatung</h2>
+        <FaqSection id="faq-immobilienberatung" items={faqs} />
+      </section>
+
+      <section className="text-center mb-5">
+        <h2 className="mb-3">Meine Region</h2>
+        <nav className="nav nav-pills justify-content-center gap-2" aria-label="Regionen des Beraters">
+          {advisorRegions.map((badge) => (
+            <Link key={badge.href} href={badge.href} className="nav-link border text-dark">
+              {badge.label}
+            </Link>
+          ))}
+        </nav>
       </section>
     </div>
   );

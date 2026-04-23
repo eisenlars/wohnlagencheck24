@@ -204,9 +204,10 @@ type PreviewAccessResult = {
   status: PreviewAccessStatus;
 };
 
-type AreaOption = {
+export type AreaOption = {
   areaId: string;
   label: string;
+  href?: string;
 };
 
 type AreaLookupClient = {
@@ -226,23 +227,45 @@ async function loadAreaOptions(client: unknown, areaIds: string[]): Promise<Area
   const areaClient = client as AreaLookupClient;
   const { data, error } = await areaClient
     .from("areas")
-    .select("id, name")
+    .select("id, name, slug, parent_slug, bundesland_slug")
     .in("id", areaIds);
 
   if (error) throw new Error(String(error.message ?? "areas lookup failed"));
 
-  const labelMap = new Map<string, string>();
+  const optionMap = new Map<string, AreaOption>();
   for (const row of data ?? []) {
     const id = String(row.id ?? "").trim();
     const label = String(row.name ?? "").trim();
-    if (!id || !label) continue;
-    labelMap.set(id, label);
+    if (!id) continue;
+    optionMap.set(id, {
+      areaId: id,
+      label: label || id,
+      href: buildAreaHref(row),
+    });
   }
 
   return areaIds.map((areaId) => ({
     areaId,
-    label: labelMap.get(areaId) ?? areaId,
+    label: optionMap.get(areaId)?.label ?? areaId,
+    href: optionMap.get(areaId)?.href,
   }));
+}
+
+function buildAreaHref(row: Record<string, unknown>): string | undefined {
+  const slug = String(row.slug ?? "").trim();
+  const bundeslandSlug = String(row.bundesland_slug ?? "").trim();
+  const parentSlug = String(row.parent_slug ?? "").trim();
+  if (!slug || !bundeslandSlug) return undefined;
+
+  if (slug === bundeslandSlug) {
+    return `/immobilienmarkt/${bundeslandSlug}`;
+  }
+
+  if (parentSlug && parentSlug !== bundeslandSlug) {
+    return `/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+  }
+
+  return `/immobilienmarkt/${bundeslandSlug}/${slug}`;
 }
 
 function normalizePreviewStatus(row: Record<string, unknown>): PreviewAccessStatus {

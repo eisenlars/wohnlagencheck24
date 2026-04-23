@@ -13,7 +13,10 @@ import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { createClient } from "@/utils/supabase/server";
 import { getAdminRoleForUser } from "@/lib/security/admin-auth";
 import { getReportBySlugs } from "@/lib/data";
-import { loadPreviewAccessForArea } from "@/lib/public-partner-mappings";
+import {
+  loadPreviewAccessForArea,
+  loadPreviewAreaOptionsForPartner,
+} from "@/lib/public-partner-mappings";
 import { buildPageModel } from "@/features/immobilienmarkt/page/buildPageModel";
 import type { RouteModel } from "@/features/immobilienmarkt/types/route";
 
@@ -84,6 +87,7 @@ export default async function PreviewImmobilienberatungPage({ params }: PageProp
   const meta = asRecord(asArray(pageModel.report.meta)[0] ?? pageModel.report.meta) ?? {};
   const text = asRecord(pageModel.report["text"]) ?? asRecord(asRecord(pageModel.report.data)?.["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
+  const areaId = asString(meta["kreis_schluessel"]) ?? "";
   const kreisName = asString(meta["kreis_name"]) ?? formatRegionFallback(kreisSlug);
   const bundeslandNameRaw = asString(meta["bundesland_name"]) ?? "";
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : formatRegionFallback(bundeslandSlug);
@@ -100,6 +104,17 @@ export default async function PreviewImmobilienberatungPage({ params }: PageProp
     ...tabs,
     { id: "immobilienberatung", label: "Immobilienberatung" },
   ];
+  let advisorRegionLinks: Array<{ label: string; href: string }> = [];
+  if (areaId) {
+    const admin = createAdminClient();
+    const previewAccess = await loadPreviewAccessForArea(admin, areaId);
+    if (previewAccess.partnerId) {
+      const areaOptions = await loadPreviewAreaOptionsForPartner(admin, previewAccess.partnerId);
+      advisorRegionLinks = areaOptions.flatMap((option) => (
+        option.href ? [{ label: option.label, href: option.href }] : []
+      ));
+    }
+  }
   const texts = await getPortalSystemTexts("de");
 
   return (
@@ -133,6 +148,7 @@ export default async function PreviewImmobilienberatungPage({ params }: PageProp
           report={pageModel.report}
           bundeslandSlug={bundeslandSlug}
           kreisSlug={kreisSlug}
+          regionLinks={advisorRegionLinks}
         />
       </div>
     </>
