@@ -492,6 +492,23 @@ export function ImmobilienmaklerSection({
           </div>
         </section>
       ) : null}
+
+      <section className="card border-0 shadow-sm rounded-4">
+        <div className="card-body p-3 p-lg-4 text-center">
+          <h2 className="mb-3">Unsere Region {kreisName}</h2>
+          <div className="d-flex flex-column flex-md-row justify-content-center gap-2">
+            <a href={basePath} className="btn btn-outline-dark fw-semibold">
+              Marktbericht
+            </a>
+            <a href={buildOfferListHref(basePath, "kauf")} className="btn btn-outline-dark fw-semibold">
+              Angebote
+            </a>
+            <a href={buildRequestListHref(basePath, "kauf")} className="btn btn-outline-dark fw-semibold">
+              Gesuche
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
