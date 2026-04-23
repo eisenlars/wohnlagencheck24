@@ -5,6 +5,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import styles from './styles/factor-form.module.css';
 
 export type FactorFormHandle = {
   autoSyncIfDirty: () => Promise<void>;
@@ -96,6 +97,20 @@ const defaultRendite: RenditeValues = {
   mietrendite_mfh: 1,
   kaufpreisfaktor_mfh: 1,
 };
+
+function deltaToneClass(value: number): string {
+  if (value > 0) return styles.deltaPositive;
+  if (value < 0) return styles.deltaNegative;
+  return styles.deltaNeutral;
+}
+
+function rebuildButtonClass(active: boolean): string {
+  return [
+    'btn fw-bold ms-auto',
+    styles.rebuildButton,
+    active ? styles.rebuildButtonActive : styles.rebuildButtonDisabled,
+  ].join(' ');
+}
 
 function toFactorValue(value: unknown, fallback = 1): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
@@ -227,20 +242,13 @@ function TrendRow({
   const displayDelta = delta > 0 ? `+${delta}` : `${delta}`;
   const baseLabel = typeof baseValue === 'number' ? baseValue.toFixed(1).replace('.', ',') : '—';
   return (
-    <div style={{ marginBottom: '15px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
+    <div className="mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <span className="fw-semibold text-dark">{label}</span>
       </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: showActivate ? '1fr 140px' : '1fr',
-          gap: '10px',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
+      <div className="row g-2 align-items-center">
+        <div className={showActivate ? 'col' : 'col-12'}>
+          <div className={`d-flex justify-content-between mb-2 ${styles.rangeTicks}`}>
             <span>-100</span>
             <span>-50</span>
             <span>0</span>
@@ -254,28 +262,21 @@ function TrendRow({
             step={1}
             value={currentIndex}
             onChange={(e) => onChange(Number(e.target.value) - base)}
-            style={{ width: '100%' }}
+            className="w-100"
           />
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
-            Basis {baseLabel} · Δ {displayDelta} → <span style={{ fontWeight: 700, color: '#0f172a' }}>Index {displayIndex}</span>
+          <div className={`mt-2 ${styles.factorMetaText}`}>
+            Basis {baseLabel} · Δ {displayDelta} → <span className="fw-bold text-dark">Index {displayIndex}</span>
           </div>
         </div>
         {showActivate && isDirty ? (
-          <button
-            onClick={() => onActivate?.(delta)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              border: '2px solid #2b6cb0',
-              backgroundColor: '#2b6cb0',
-              color: '#fff',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Aktivieren
-          </button>
+          <div className="col-auto">
+            <button
+              onClick={() => onActivate?.(delta)}
+              className={`btn fw-bold text-nowrap ${styles.activateButton}`}
+            >
+              Aktivieren
+            </button>
+          </div>
         ) : null}
       </div>
     </div>
@@ -322,10 +323,10 @@ function FactorGrid({
   const factorKeys: Array<keyof FactorValues> = ['f02', 'f03', 'f04', 'f05', 'f06'];
   const rangeError = getFactorRangeError(title, data, previewBase);
   return (
-    <div style={{ padding: '15px 0' }}>
-      <h5 style={gridTitleStyle}>{title}</h5>
-      <div style={currentYearPanelStyle}>
-        <div style={factorGroupLabelStyle}>Aktuelles Jahr</div>
+    <div className="py-3">
+      <h5 className={styles.factorGridTitle}>{title}</h5>
+      <div className={`${styles.factorPanel} ${styles.factorPanelCurrent}`}>
+        <div className={styles.factorGroupLabel}>Aktuelles Jahr</div>
         <InputRow
           label={`${yearLabelByFactor.f01} · Min`}
           value={data.f01_min}
@@ -365,10 +366,10 @@ function FactorGrid({
           isDirty={Number(data?.f01_max) !== Number(persistedData?.f01_max)}
           fmt={fmt}
         />
-        {rangeError ? <div style={factorRangeErrorStyle}>{rangeError}</div> : null}
+        {rangeError ? <div className={styles.factorRangeError}>{rangeError}</div> : null}
       </div>
-      <div style={historyPanelStyle}>
-        <div style={factorGroupLabelStyle}>Vorjahre</div>
+      <div className={`${styles.factorPanel} ${styles.factorPanelHistory}`}>
+        <div className={styles.factorGroupLabel}>Vorjahre</div>
         {factorKeys.map((f) => (
           <InputRow
             key={f}
@@ -416,7 +417,7 @@ function InputRow({
   }, [numericValue, isEditing]);
 
   const deltaPercent = (numericValue - 1) * 100;
-  const deltaColor = deltaPercent > 0 ? '#166534' : deltaPercent < 0 ? '#b91c1c' : '#64748b';
+  const deltaClassName = deltaToneClass(deltaPercent);
 
   const commitValue = (raw: string) => {
     const parsed = parseFloat(String(raw).replace(',', '.'));
@@ -430,108 +431,83 @@ function InputRow({
   };
 
   return (
-    <div style={{ marginBottom: '15px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
+    <div className="mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-1">
+        <span className="fw-semibold text-dark">{label}</span>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: showActivate ? '140px 1fr' : '140px',
-          gap: '10px',
-          alignItems: 'center',
-        }}
-      >
-        <input
-          type="text"
-          inputMode="decimal"
-          pattern="[0-9]*[.,]?[0-9]*"
-          min={0.1}
-          max={5.0}
-          step={0.01}
-          value={draft}
-          onPointerDown={(e) => {
-            const el = e.currentTarget;
-            if (document.activeElement !== el) {
-              el.focus({ preventScroll: true });
-            }
-          }}
-          onMouseDown={(e) => {
-            const el = e.currentTarget;
-            if (document.activeElement !== el) {
-              el.focus({ preventScroll: true });
-            }
-          }}
-          onFocus={() => {
-            setIsEditing(true);
-          }}
-          onBlur={() => {
-            setIsEditing(false);
-            commitValue(draft);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-          onChange={(e) => {
-            const next = e.target.value;
-            setDraft(next);
-            const parsed = parseFloat(next.replace(',', '.'));
-            if (Number.isFinite(parsed)) {
-              const newVal = Math.min(5.0, Math.max(0.1, Math.round(parsed * 100) / 100));
-              onChange(newVal);
-            }
-          }}
-          style={{
-            width: '100%',
-            padding: '10px',
-            borderRadius: '8px',
-            border: '2px solid #2b6cb0',
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#2b6cb0',
-            backgroundColor: '#ebf8ff',
-            textAlign: 'center',
-            appearance: 'textfield',
-            WebkitAppearance: 'none',
-            MozAppearance: 'textfield',
-          }}
-        />
-        {showActivate && isDirty ? (
-          <button
-            onClick={() => onActivate?.(numericValue)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '8px',
-              border: '2px solid #2b6cb0',
-              backgroundColor: '#2b6cb0',
-              color: '#fff',
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
+      <div className="row g-2 align-items-center">
+        <div className="col-auto">
+          <input
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*[.,]?[0-9]*"
+            min={0.1}
+            max={5.0}
+            step={0.01}
+            value={draft}
+            onPointerDown={(e) => {
+              const el = e.currentTarget;
+              if (document.activeElement !== el) {
+                el.focus({ preventScroll: true });
+              }
             }}
-          >
-            Aktivieren
-          </button>
+            onMouseDown={(e) => {
+              const el = e.currentTarget;
+              if (document.activeElement !== el) {
+                el.focus({ preventScroll: true });
+              }
+            }}
+            onFocus={() => {
+              setIsEditing(true);
+            }}
+            onBlur={() => {
+              setIsEditing(false);
+              commitValue(draft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                (e.currentTarget as HTMLInputElement).blur();
+              }
+            }}
+            onChange={(e) => {
+              const next = e.target.value;
+              setDraft(next);
+              const parsed = parseFloat(next.replace(',', '.'));
+              if (Number.isFinite(parsed)) {
+                const newVal = Math.min(5.0, Math.max(0.1, Math.round(parsed * 100) / 100));
+                onChange(newVal);
+              }
+            }}
+            className={`form-control ${styles.factorNumberInput}`}
+          />
+        </div>
+        {showActivate && isDirty ? (
+          <div className="col">
+            <button
+              onClick={() => onActivate?.(numericValue)}
+              className={`btn fw-bold text-nowrap ${styles.activateButton}`}
+            >
+              Aktivieren
+            </button>
+          </div>
         ) : null}
       </div>
 
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
+      <div className={`mt-2 ${styles.factorMetaText}`}>
         {typeof previewBase === 'number' ? (
           <>
             Basis {fmt(previewBase)}{unitLabel ? ` ${unitLabel}` : ''} · Neu {fmt(previewBase * numericValue)}{unitLabel ? ` ${unitLabel}` : ''} ·{" "}
-            <span style={{ color: deltaColor, fontWeight: 700 }}>
+            <span className={`fw-bold ${deltaClassName}`}>
               {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
             </span>
-            <div style={{ marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
+            <div className={`mt-1 ${styles.factorHintText}`}>
               Basis = Originalwert (vor Faktorisierung)
             </div>
           </>
         ) : (
-          <span style={{ color: deltaColor, fontWeight: 700 }}>
+          <span className={`fw-bold ${deltaClassName}`}>
             Änderung ggü. Basis: {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
           </span>
         )}
@@ -1193,40 +1169,16 @@ const FactorForm = forwardRef<FactorFormHandle, {
   const fmt = (v: number | null | undefined, digits = 3) => (typeof v === 'number' ? v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', position: 'relative' }}>
-      <style jsx global>{`
-        input[type='number']::-webkit-inner-spin-button,
-        input[type='number']::-webkit-outer-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        input[type='number'] {
-          -moz-appearance: textfield;
-          appearance: textfield;
-        }
-        .reset-spinner {
-          width: 44px;
-          height: 44px;
-          border: 4px solid #e2e8f0;
-          border-top-color: #486b7a;
-          border-right-color: #ffe000;
-          border-radius: 50%;
-          animation: reset-spin 0.8s linear infinite;
-        }
-        @keyframes reset-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-
+    <div className="d-flex flex-column gap-4 position-relative">
       {!onLoadingChange && isLoading ? (
         <FullscreenLoader show label="Faktoren werden geladen..." fixed={false} />
       ) : null}
       
       {/* 1. Markttrends */}
       {!isOrtslage ? (
-        <details open style={sectionStyle}>
-          <summary style={summaryStyle}>Markttrends & Basis</summary>
-          <div style={gridStyle}>
+        <details open className="bg-white border rounded-4 shadow-sm px-4 py-3">
+          <summary className={`fw-bold fs-5 text-dark py-2 ${styles.sectionSummary}`}>Markttrends & Basis</summary>
+          <div className="row row-cols-1 row-cols-xl-2 g-5 py-4">
             <TrendRow
               label="Trend Immobilienmarkt"
               value={trend.immobilienmarkt}
@@ -1250,83 +1202,93 @@ const FactorForm = forwardRef<FactorFormHandle, {
       ) : null}
 
       {/* 2. Kaufpreise */}
-      <details style={sectionStyle}>
-        <summary style={summaryStyle}>Kaufpreis-Faktoren</summary>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '50px', padding: '25px 0' }}>
-          <FactorGrid
-            title="Häuser"
-            data={kh}
-            setter={setKh}
-            previewBase={previewBase?.haus_kaufpreis}
-            unitLabel="€/m²"
-            showActivate={showActivate}
-            onActivate={handleActivate}
-            persistedData={persistedFactors.kauf_haus}
-            yearLabelByFactor={yearLabelByFactor}
-            fmt={fmt}
-          />
-          <FactorGrid
-            title="Wohnungen"
-            data={kw}
-            setter={setKw}
-            previewBase={previewBase?.wohnung_kaufpreis}
-            unitLabel="€/m²"
-            showActivate={showActivate}
-            onActivate={handleActivate}
-            persistedData={persistedFactors.kauf_wohnung}
-            yearLabelByFactor={yearLabelByFactor}
-            fmt={fmt}
-          />
-          <FactorGrid
-            title="Grundstücke"
-            data={kg}
-            setter={setKg}
-            previewBase={previewBase?.grundstueck_kaufpreis}
-            unitLabel="€/m²"
-            showActivate={showActivate}
-            onActivate={handleActivate}
-            persistedData={persistedFactors.kauf_grundstueck}
-            yearLabelByFactor={yearLabelByFactor}
-            fmt={fmt}
-          />
+      <details className="bg-white border rounded-4 shadow-sm px-4 py-3">
+        <summary className={`fw-bold fs-5 text-dark py-2 ${styles.sectionSummary}`}>Kaufpreis-Faktoren</summary>
+        <div className="row row-cols-1 row-cols-xl-3 g-5 py-4">
+          <div className="col">
+            <FactorGrid
+              title="Häuser"
+              data={kh}
+              setter={setKh}
+              previewBase={previewBase?.haus_kaufpreis}
+              unitLabel="€/m²"
+              showActivate={showActivate}
+              onActivate={handleActivate}
+              persistedData={persistedFactors.kauf_haus}
+              yearLabelByFactor={yearLabelByFactor}
+              fmt={fmt}
+            />
+          </div>
+          <div className="col">
+            <FactorGrid
+              title="Wohnungen"
+              data={kw}
+              setter={setKw}
+              previewBase={previewBase?.wohnung_kaufpreis}
+              unitLabel="€/m²"
+              showActivate={showActivate}
+              onActivate={handleActivate}
+              persistedData={persistedFactors.kauf_wohnung}
+              yearLabelByFactor={yearLabelByFactor}
+              fmt={fmt}
+            />
+          </div>
+          <div className="col">
+            <FactorGrid
+              title="Grundstücke"
+              data={kg}
+              setter={setKg}
+              previewBase={previewBase?.grundstueck_kaufpreis}
+              unitLabel="€/m²"
+              showActivate={showActivate}
+              onActivate={handleActivate}
+              persistedData={persistedFactors.kauf_grundstueck}
+              yearLabelByFactor={yearLabelByFactor}
+              fmt={fmt}
+            />
+          </div>
         </div>
       </details>
 
       {/* 3. Mietpreise */}
-      <details style={sectionStyle}>
-        <summary style={summaryStyle}>Mietpreis-Faktoren</summary>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', padding: '25px 0' }}>
-          <FactorGrid
-            title="Miete Häuser"
-            data={mh}
-            setter={setMh}
-            previewBase={previewBase?.miete_haus}
-            unitLabel="€/m²"
-            showActivate={showActivate}
-            onActivate={handleActivate}
-            persistedData={persistedFactors.miete_haus}
-            yearLabelByFactor={yearLabelByFactor}
-            fmt={fmt}
-          />
-          <FactorGrid
-            title="Miete Wohnungen"
-            data={mw}
-            setter={setMw}
-            previewBase={previewBase?.miete_wohnung}
-            unitLabel="€/m²"
-            showActivate={showActivate}
-            onActivate={handleActivate}
-            persistedData={persistedFactors.miete_wohnung}
-            yearLabelByFactor={yearLabelByFactor}
-            fmt={fmt}
-          />
+      <details className="bg-white border rounded-4 shadow-sm px-4 py-3">
+        <summary className={`fw-bold fs-5 text-dark py-2 ${styles.sectionSummary}`}>Mietpreis-Faktoren</summary>
+        <div className="row row-cols-1 row-cols-xl-2 g-5 py-4">
+          <div className="col">
+            <FactorGrid
+              title="Miete Häuser"
+              data={mh}
+              setter={setMh}
+              previewBase={previewBase?.miete_haus}
+              unitLabel="€/m²"
+              showActivate={showActivate}
+              onActivate={handleActivate}
+              persistedData={persistedFactors.miete_haus}
+              yearLabelByFactor={yearLabelByFactor}
+              fmt={fmt}
+            />
+          </div>
+          <div className="col">
+            <FactorGrid
+              title="Miete Wohnungen"
+              data={mw}
+              setter={setMw}
+              previewBase={previewBase?.miete_wohnung}
+              unitLabel="€/m²"
+              showActivate={showActivate}
+              onActivate={handleActivate}
+              persistedData={persistedFactors.miete_wohnung}
+              yearLabelByFactor={yearLabelByFactor}
+              fmt={fmt}
+            />
+          </div>
         </div>
       </details>
 
       {/* 4. Rendite */}
-      <details style={sectionStyle}>
-        <summary style={summaryStyle}>Rendite & Indizes</summary>
-        <div style={gridStyle}>
+      <details className="bg-white border rounded-4 shadow-sm px-4 py-3">
+        <summary className={`fw-bold fs-5 text-dark py-2 ${styles.sectionSummary}`}>Rendite & Indizes</summary>
+        <div className="row row-cols-1 row-cols-xl-2 g-5 py-4">
           <InputRow
             label="Mietrendite ETW"
             value={rendite.mietrendite_etw}
@@ -1385,9 +1347,9 @@ const FactorForm = forwardRef<FactorFormHandle, {
       </details>
 
       {/* 5. Standortfaktoren */}
-      <details style={sectionStyle}>
-        <summary style={summaryStyle}>Standortbewertung</summary>
-        <div style={gridStyle}>
+      <details className="bg-white border rounded-4 shadow-sm px-4 py-3">
+        <summary className={`fw-bold fs-5 text-dark py-2 ${styles.sectionSummary}`}>Standortbewertung</summary>
+        <div className="row row-cols-1 row-cols-xl-2 g-5 py-4">
           {(Object.keys(defaultSf) as Array<keyof typeof defaultSf>).map((key) => (
             <InputRow
               key={key}
@@ -1404,41 +1366,14 @@ const FactorForm = forwardRef<FactorFormHandle, {
       </details>
 
       {saveModalOpen ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '14px',
-              padding: '24px 28px',
-              minWidth: '320px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>
+        <div className={`position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${styles.modalBackdrop}`}>
+          <div className={`bg-white rounded-4 p-4 text-center shadow ${styles.modalDialog}`}>
+            <div className="fw-bold fs-5 mb-2 text-dark">
               {saveModalMessage || 'Gespeichert ✓'}
             </div>
             <button
               onClick={() => setSaveModalOpen(false)}
-              style={{
-                marginTop: '12px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e0',
-                background: '#f8fafc',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
+              className="btn btn-light border fw-bold mt-3"
             >
               Schließen
             </button>
@@ -1446,41 +1381,14 @@ const FactorForm = forwardRef<FactorFormHandle, {
         </div>
       ) : null}
       {resetModalOpen ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '14px',
-              padding: '24px 28px',
-              minWidth: '320px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>
+        <div className={`position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${styles.modalBackdrop}`}>
+          <div className={`bg-white rounded-4 p-4 text-center shadow ${styles.modalDialog}`}>
+            <div className="fw-bold fs-5 mb-2 text-dark">
               {resetModalMessage || 'Zurückgesetzt ✓'}
             </div>
             <button
               onClick={() => setResetModalOpen(false)}
-              style={{
-                marginTop: '12px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e0',
-                background: '#f8fafc',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
+              className="btn btn-light border fw-bold mt-3"
             >
               Schließen
             </button>
@@ -1488,77 +1396,27 @@ const FactorForm = forwardRef<FactorFormHandle, {
         </div>
       ) : null}
       {isBusy ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '14px',
-              padding: '24px 28px',
-              minWidth: '280px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-            }}
-          >
-            <div className="reset-spinner" />
-            <div style={{ fontWeight: 700, color: '#0f172a' }}>
+        <div className={`position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${styles.busyBackdrop}`}>
+          <div className={`bg-white rounded-4 p-4 text-center shadow d-flex flex-column align-items-center gap-3 ${styles.busyDialog}`}>
+            <div className={styles.resetSpinner} />
+            <div className="fw-bold text-dark">
               {busyStepLabel ? `Schritt ${busyStepIndex}/${busyStepTotal}: ${busyStepLabel}` : 'Bitte warten…'}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
+            <div className={styles.factorHintText}>
               Änderungen werden übernommen. Bitte nicht schließen.
             </div>
           </div>
         </div>
       ) : null}
       {rebuildSuccessOpen ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '14px',
-              padding: '24px 28px',
-              minWidth: '320px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>
+        <div className={`position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center ${styles.modalBackdrop}`}>
+          <div className={`bg-white rounded-4 p-4 text-center shadow ${styles.modalDialog}`}>
+            <div className="fw-bold fs-5 mb-2 text-dark">
               ✅ Erfolgreich Live-geschalten. Bitte prüfen Sie Ihre Berichtseiten.
             </div>
             <button
               onClick={() => setRebuildSuccessOpen(false)}
-              style={{
-                marginTop: '12px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e0',
-                background: '#f8fafc',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
+              className="btn btn-light border fw-bold mt-3"
             >
               Schließen
             </button>
@@ -1566,32 +1424,32 @@ const FactorForm = forwardRef<FactorFormHandle, {
         </div>
       ) : null}
       {/* Kommentar & Footer */}
-      <div style={{ marginTop: '20px' }}>
-        <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#4a5568' }}>Warum wurden diese Änderungen vorgenommen? (Optional)</label>
+      <div className="mt-4">
+        <label className={`form-label fw-bold ${styles.commentLabel}`}>Warum wurden diese Änderungen vorgenommen? (Optional)</label>
         <textarea 
           value={comment} onChange={(e) => setComment(e.target.value)}
-          style={textareaStyle} placeholder="Ihre Begründung für die Redaktion..."
+          className={`form-control ${styles.commentTextarea}`} placeholder="Ihre Begründung für die Redaktion..."
         />
       </div>
 
-      <div style={footerStyle}>
-        <button onClick={handleReset} style={resetButtonStyle}>🔄 Zurücksetzen</button>
+      <div className="mt-4 p-4 border-top d-flex align-items-center gap-3 bg-light rounded-4 flex-wrap">
+        <button onClick={handleReset} className="btn btn-outline-danger fw-bold px-4 py-3">🔄 Zurücksetzen</button>
         {isKreis ? (
-          <button onClick={handleGlobalReset} style={resetButtonStyle}>🌐 Global zurücksetzen</button>
+          <button onClick={handleGlobalReset} className="btn btn-outline-danger fw-bold px-4 py-3">🌐 Global zurücksetzen</button>
         ) : null}
-        <div style={{ flex: 1 }}></div>
+        <div className="flex-grow-1"></div>
         {rebuildMessage && null}
         {/* Upload-Summary bewusst ausgeblendet */}
-        {factorValidationError ? <span style={validationMessageStyle}>⚠ {factorValidationError}</span> : null}
+        {factorValidationError ? <span className={styles.validationMessage}>⚠ {factorValidationError}</span> : null}
         {message ? (
-          <span style={{ fontWeight: 'bold', fontSize: '18px', color: message.startsWith('❌') ? '#b91c1c' : '#2f855a' }}>
+          <span className={`fw-bold fs-5 ${message.startsWith('❌') ? styles.messageError : styles.messageSuccess}`}>
             {message}
           </span>
         ) : null}
         <button
           onClick={handleRebuild}
           disabled={rebuildLoading || !canRebuild}
-          style={rebuildButtonStyle(!rebuildLoading && canRebuild)}
+          className={rebuildButtonClass(!rebuildLoading && canRebuild)}
         >
           {rebuildLoading ? 'Neuberechnung & Liveschaltung…' : '🔁 Neu berechnen & live schalten'}
         </button>
@@ -1601,93 +1459,3 @@ const FactorForm = forwardRef<FactorFormHandle, {
 });
 
 export default FactorForm;
-
-// --- STYLES FÜR GROSSE DARSTELLUNG ---
-
-const sectionStyle = {
-  backgroundColor: '#fff', border: '1px solid #cbd5e0', borderRadius: '15px',
-  padding: '15px 25px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-};
-
-const summaryStyle = {
-  fontWeight: '800', fontSize: '19px', color: '#2d3748', cursor: 'pointer', outline: 'none', padding: '10px 0'
-};
-
-const gridStyle = {
-  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', padding: '25px 0'
-};
-
-const gridTitleStyle = {
-  borderBottom: '3px solid #2d3748', marginBottom: '20px', paddingBottom: '8px', 
-  color: '#2d3748', fontSize: '15px', textTransform: 'uppercase' as const, letterSpacing: '1px'
-};
-
-const factorRangeErrorStyle = {
-  marginBottom: '14px',
-  padding: '10px 12px',
-  borderRadius: '8px',
-  border: '1px solid #fecaca',
-  backgroundColor: '#fef2f2',
-  color: '#b91c1c',
-  fontSize: '12px',
-  fontWeight: 700,
-};
-
-const currentYearPanelStyle = {
-  marginBottom: '18px',
-  padding: '16px 18px 6px',
-  borderRadius: '12px',
-  border: '1px solid #bfdbfe',
-  backgroundColor: '#f8fbff',
-};
-
-const historyPanelStyle = {
-  padding: '14px 18px 6px',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: '#ffffff',
-};
-
-const factorGroupLabelStyle = {
-  marginBottom: '14px',
-  fontSize: '12px',
-  fontWeight: 800,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase' as const,
-  color: '#475569',
-};
-
-const textareaStyle = {
-  width: '100%', minHeight: '100px', padding: '15px', borderRadius: '10px', 
-  border: '2px solid #cbd5e0', marginTop: '10px', fontSize: '16px', fontFamily: 'inherit'
-};
-
-const footerStyle = {
-  marginTop: '30px', padding: '30px', borderTop: '2px solid #e2e8f0', 
-  display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: '#f7fafc', borderRadius: '15px'
-};
-
-const validationMessageStyle = {
-  fontWeight: 700,
-  fontSize: '14px',
-  color: '#b91c1c',
-};
-
-const rebuildButtonStyle = (active: boolean) => ({
-  width: '300px',
-  height: '54px',
-  backgroundColor: active ? '#0f766e' : '#e2e8f0',
-  color: active ? '#fff' : '#64748b',
-  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
-  borderRadius: '10px',
-  fontSize: '14px',
-  fontWeight: '700',
-  cursor: active ? 'pointer' : 'not-allowed',
-  opacity: active ? 1 : 0.75,
-  marginLeft: 'auto',
-});
-
-const resetButtonStyle = {
-  padding: '15px 25px', backgroundColor: 'transparent', color: '#e53e3e',
-  border: '2px solid #feb2b2', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer'
-};

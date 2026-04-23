@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import styles from './styles/crm-asset-manager.module.css';
 
 type RawAssetRow = {
   id: string;
@@ -405,15 +406,6 @@ export default function CrmAssetManager(props: Props) {
     }
   }
 
-  const formStyle: React.CSSProperties = {
-    border: '1px solid #e2e8f0',
-    borderRadius: 10,
-    padding: 12,
-    background: '#fff',
-    display: 'grid',
-    gap: 10,
-  };
-
   function getStandardPromptText(label: string, areaName: string) {
     const lowerLabel = String(label || '').toLowerCase();
     if (lowerLabel.includes('seo title') || lowerLabel.includes('seo-title')) {
@@ -469,156 +461,149 @@ export default function CrmAssetManager(props: Props) {
   if (loading) return <FullscreenLoader show label={`${title} werden geladen...`} />;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 14 }}>
-      <aside style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 10, background: '#f8fafc' }}>
-        <div style={{ marginBottom: 8, fontSize: 12, color: '#334155', fontWeight: 700 }}>{title}</div>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suchen..."
-          style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px', marginBottom: 10 }}
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '62vh', overflowY: 'auto' }}>
-          {filteredRows.map((row) => (
-            <button
-              key={row.id}
-              onClick={() => setSelectedId(row.id)}
-              style={{
-                textAlign: 'left',
-                border: selectedId === row.id ? '1px solid #0f766e' : '1px solid #e2e8f0',
-                background: selectedId === row.id ? '#ecfeff' : '#fff',
-                borderRadius: 8,
-                padding: '8px 10px',
-                cursor: 'pointer',
-                display: 'grid',
-                gap: 2,
-              }}
-            >
-              <strong style={{ color: '#0f172a', fontSize: 13 }}>{row.title || row.external_id}</strong>
-              <span style={{ color: '#64748b', fontSize: 11 }}>
-                {row.provider} · {row.external_id}
-              </span>
-              <span style={{ color: '#64748b', fontSize: 11 }}>
-                {isRequestTable
-                  ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).request_type) || '—'} · ${
-                      asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
-                    }`
-                  : isReferenceTable
-                    ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).transaction_result) || '—'} · ${
+    <div className="row g-3">
+      <aside className="col-12 col-xl-4">
+        <div className="border rounded-3 p-2 bg-light">
+          <div className={`mb-2 fw-bold ${styles.sidebarTitle}`}>{title}</div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suchen..."
+            className="form-control form-control-sm mb-2"
+          />
+          <div className={`d-flex flex-column gap-2 overflow-auto ${styles.assetList}`}>
+            {filteredRows.map((row) => (
+              <button
+                key={row.id}
+                onClick={() => setSelectedId(row.id)}
+                className={`btn text-start border rounded-3 d-grid gap-1 px-2 py-2 ${selectedId === row.id ? styles.assetListItemActive : styles.assetListItem}`}
+              >
+                <strong className={styles.assetListTitle}>{row.title || row.external_id}</strong>
+                <span className={styles.assetListMeta}>
+                  {row.provider} · {row.external_id}
+                </span>
+                <span className={styles.assetListMeta}>
+                  {isRequestTable
+                    ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).request_type) || '—'} · ${
                         asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
                       }`
-                  : `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).offer_type) || '—'} · ${
-                      asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
-                    }`}
-              </span>
-              {isRequestTable ? (
-                <span style={{ color: '#475569', fontSize: 11 }}>
-                  {getPayloadText(((row.normalized_payload ?? {}) as Record<string, unknown>), ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
+                    : isReferenceTable
+                      ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).transaction_result) || '—'} · ${
+                          asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
+                        }`
+                    : `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).offer_type) || '—'} · ${
+                        asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
+                      }`}
                 </span>
-              ) : null}
-            </button>
-          ))}
-          {!filteredRows.length ? <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{emptyHint}</p> : null}
+                {isRequestTable ? (
+                  <span className={styles.assetListDescription}>
+                    {getPayloadText(((row.normalized_payload ?? {}) as Record<string, unknown>), ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+            {!filteredRows.length ? <p className={`m-0 ${styles.emptyHint}`}>{emptyHint}</p> : null}
+          </div>
         </div>
       </aside>
 
-      <section>
-        <p style={{ marginTop: 0, marginBottom: 10, fontSize: 12, color: '#334155' }}>{status}</p>
+      <section className="col-12 col-xl-8">
+        <p className={`mt-0 mb-2 ${styles.statusText}`}>{status}</p>
         {headerContent}
         {form && selectedRow ? (
-          <div style={formStyle}>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}>
-              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', fontWeight: 700, marginBottom: 8 }}>
+          <div className="border rounded-3 p-3 bg-white d-grid gap-2">
+            <div className="border rounded-3 px-3 py-2 bg-light">
+              <div className={styles.sectionLabel}>
                 Datensatz-Übersicht
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Titel</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedRow.title || '—'}</div>
+              <div className="row row-cols-1 row-cols-md-2 row-cols-xxl-3 g-2">
+                <div className="col">
+                  <div className={styles.metaLabel}>Titel</div>
+                  <div className={styles.metaValue}>{selectedRow.title || '—'}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Quelle</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                <div className="col">
+                  <div className={styles.metaLabel}>Quelle</div>
+                  <div className={styles.metaValue}>{selectedRow.provider} · {selectedRow.external_id}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Typ</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedType}</div>
+                <div className="col">
+                  <div className={styles.metaLabel}>Typ</div>
+                  <div className={styles.metaValue}>{selectedType}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                <div className="col">
+                  <div className={styles.metaLabel}>
                     {isRequestTable ? 'Gesuchstyp' : isReferenceTable ? 'Transaktion' : 'Vermarktung'}
                   </div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedMode}</div>
+                  <div className={styles.metaValue}>{selectedMode}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                <div className="col">
+                  <div className={styles.metaLabel}>
                     {selectedMetricLabel}
                   </div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedMetricValue}</div>
+                  <div className={styles.metaValue}>{selectedMetricValue}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                <div className="col">
+                  <div className={styles.metaLabel}>
                     {isRequestTable ? 'Zimmer min.' : 'Zimmer'}
                   </div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedRooms ?? '—'}</div>
+                  <div className={styles.metaValue}>{selectedRooms ?? '—'}</div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Fläche</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>
+                <div className="col">
+                  <div className={styles.metaLabel}>Fläche</div>
+                  <div className={styles.metaValue}>
                     {selectedArea ? `${selectedArea} m²` : '—'}
                   </div>
                 </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
+                <div className="col-12">
+                  <div className={styles.metaLabel}>
                     {selectedLocationLabel}
                   </div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedLocation}</div>
+                  <div className={styles.metaValue}>{selectedLocation}</div>
                 </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Aktualisiert</div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedUpdatedAt ?? '—'}</div>
+                <div className="col-12">
+                  <div className={styles.metaLabel}>Aktualisiert</div>
+                  <div className={styles.metaValue}>{selectedUpdatedAt ?? '—'}</div>
                 </div>
               </div>
             </div>
             {isRequestTable ? (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Zielregionen</div>
-                <div style={{ fontSize: 12, color: '#0f172a' }}>
+              <div className="border rounded-3 px-2 py-2 bg-light">
+                <div className={styles.cardTitle}>Zielregionen</div>
+                <div className={styles.cardText}>
                   {getRegionTargetLabels((selectedRow.normalized_payload ?? {}) as Record<string, unknown>).join(', ') || '—'}
                 </div>
               </div>
             ) : null}
             {isRequestTable ? (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Gesuchsbeschreibung</div>
-                <div style={{ fontSize: 12, color: '#0f172a' }}>
+              <div className="border rounded-3 px-2 py-2 bg-light">
+                <div className={styles.cardTitle}>Gesuchsbeschreibung</div>
+                <div className={styles.cardText}>
                   {requestDescription || 'Keine Beschreibung im normalisierten Payload vorhanden.'}
                 </div>
               </div>
             ) : null}
             {isReferenceTable ? (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Referenztext</div>
-                <div style={{ fontSize: 12, color: '#0f172a' }}>
+              <div className="border rounded-3 px-2 py-2 bg-light">
+                <div className={styles.cardTitle}>Referenztext</div>
+                <div className={styles.cardText}>
                   {referenceDescription || 'Kein Referenztext im normalisierten Payload vorhanden.'}
                 </div>
               </div>
             ) : null}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 11, color: '#334155', fontWeight: 600 }}>SEO Title</span>
+            <div className="row g-2">
+              <label className="col-12 col-md-6 d-grid gap-1">
+                <span className={styles.fieldLabel}>SEO Title</span>
                 <input
                   value={form.seo_title ?? ''}
                   onChange={(e) => setForm((prev) => (prev ? { ...prev, seo_title: e.target.value } : prev))}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
+                  className="form-control form-control-sm"
                 />
               </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 11, color: '#334155', fontWeight: 600 }}>SEO H1</span>
+              <label className="col-12 col-md-6 d-grid gap-1">
+                <span className={styles.fieldLabel}>SEO H1</span>
                 <input
                   value={form.seo_h1 ?? ''}
                   onChange={(e) => setForm((prev) => (prev ? { ...prev, seo_h1: e.target.value } : prev))}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
+                  className="form-control form-control-sm"
                 />
               </label>
             </div>
@@ -639,27 +624,27 @@ export default function CrmAssetManager(props: Props) {
                 const standardPrompt = getStandardPromptText(label, selectedRow.title || selectedRow.external_id);
                 const isRewriting = rewritingKey === keyName;
                 return (
-                  <label key={keyName} style={{ display: 'grid', gap: 4 }}>
-                    <span style={{ fontSize: 11, color: '#334155', fontWeight: 600 }}>{label}</span>
+                  <label key={keyName} className="d-grid gap-1">
+                    <span className={styles.fieldLabel}>{label}</span>
                     <textarea
                       value={String(form[key] ?? '')}
                       onChange={(e) => setForm((prev) => (prev ? { ...prev, [key]: e.target.value } : prev))}
                       rows={3}
-                      style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
+                      className="form-control form-control-sm"
                     />
-                    <div style={aiActionsRowStyle}>
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
                       <button
                         type="button"
                         onClick={() => runAiRewrite(key, label, customPrompt)}
                         disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                        style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                        className={`btn fw-semibold ${styles.aiButton} ${isRewriting ? styles.aiButtonLoading : ''}`}
                       >
                         {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                        style={promptToggleStyle}
+                        className={`btn fw-semibold ${styles.promptToggleButton}`}
                       >
                         {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
                       </button>
@@ -669,28 +654,21 @@ export default function CrmAssetManager(props: Props) {
                           const defaultForm = buildDefaultForm(selectedRow, rawTable, null);
                           setForm((prev) => (prev ? { ...prev, [key]: defaultForm[key] } : prev));
                         }}
-                        style={{
-                          border: '1px solid #cbd5e1',
-                          borderRadius: 8,
-                          padding: '6px 10px',
-                          background: '#f8fafc',
-                          color: '#334155',
-                          cursor: 'pointer',
-                        }}
+                        className="btn btn-light border btn-sm text-secondary"
                       >
                         Original nutzen
                       </button>
                     </div>
                     {showPrompt ? (
-                      <div style={promptPanelStyle}>
-                        <div style={promptLabelStyle}>Standard-Prompt</div>
-                        <div style={promptContentStyle}>{standardPrompt}</div>
-                        <label style={promptInputLabelStyle}>
+                      <div className={`border rounded-3 p-3 bg-light ${styles.promptPanel}`}>
+                        <div className={styles.promptLabel}>Standard-Prompt</div>
+                        <div className={styles.promptContent}>{standardPrompt}</div>
+                        <label className={`d-flex flex-column gap-2 ${styles.promptInputLabel}`}>
                           Eigener Prompt (optional)
                           <textarea
                             value={customPrompt}
                             onChange={(e) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: e.target.value }))}
-                            style={promptInputStyle}
+                            className={`form-control form-control-sm ${styles.promptInput}`}
                             placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
                           />
                         </label>
@@ -701,107 +679,20 @@ export default function CrmAssetManager(props: Props) {
               })()
             ))}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div className="d-flex gap-2 mt-1">
               <button
                 onClick={() => saveOverride()}
                 disabled={saving}
-                style={{
-                  border: '1px solid #0f766e',
-                  background: '#0f766e',
-                  color: '#fff',
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                }}
+                className={`btn fw-semibold ${styles.saveButton}`}
               >
                 {saving ? 'Speichert...' : 'Speichern'}
               </button>
             </div>
           </div>
         ) : (
-          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>{emptyHint}</p>
+          <p className={`m-0 ${styles.emptyHint}`}>{emptyHint}</p>
         )}
       </section>
     </div>
   );
 }
-
-const aiActionsRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
-const aiButtonStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  padding: '9px 16px',
-  backgroundColor: 'rgba(72, 107, 122, 0.12)',
-  color: 'rgb(72, 107, 122)',
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: '8px',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const aiButtonLoadingStyle: React.CSSProperties = {
-  ...aiButtonStyle,
-  opacity: 0.7,
-  cursor: 'not-allowed',
-};
-
-const promptToggleStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  backgroundColor: '#ffffff',
-  border: '1px solid rgb(72, 107, 122)',
-  color: 'rgb(72, 107, 122)',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: '9px 16px',
-  borderRadius: '8px',
-};
-
-const promptPanelStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  padding: '12px',
-  backgroundColor: '#f8fafc',
-};
-
-const promptLabelStyle: React.CSSProperties = {
-  fontSize: '10px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-  marginBottom: '6px',
-};
-
-const promptContentStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: '#475569',
-  marginBottom: '10px',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const promptInputStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: '80px',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '1px solid #e2e8f0',
-  fontSize: '12px',
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-};

@@ -301,6 +301,48 @@ function reviewMessageToneClass(tone: 'info' | 'success' | 'error'): string {
   return dashboardStyles.reviewMessageInfo;
 }
 
+function utilityToolButtonClass(active: boolean, hovered: boolean, disabled: boolean): string {
+  return [
+    dashboardStyles.toolIconButton,
+    active || hovered ? dashboardStyles.toolIconButtonHighlighted : '',
+    disabled ? dashboardStyles.toolIconButtonDisabled : '',
+  ].filter(Boolean).join(' ');
+}
+
+function districtButtonClass(active: boolean, isAreaActive: boolean): string {
+  return [
+    dashboardStyles.districtButton,
+    'd-flex align-items-center',
+    active
+      ? dashboardStyles.districtButtonSelected
+      : isAreaActive
+        ? dashboardStyles.districtButtonActive
+        : dashboardStyles.districtButtonInactive,
+  ].join(' ');
+}
+
+function subAreaButtonClass(active: boolean): string {
+  return [
+    dashboardStyles.subAreaButton,
+    active ? dashboardStyles.subAreaButtonActive : '',
+  ].filter(Boolean).join(' ');
+}
+
+function activationTabClass(active: boolean, hovered: boolean): string {
+  return [
+    dashboardStyles.activationTabButton,
+    active ? dashboardStyles.activationTabButtonActive : '',
+    !active && hovered ? dashboardStyles.activationTabButtonHovered : '',
+  ].filter(Boolean).join(' ');
+}
+
+function welcomeCardClass(disabled: boolean): string {
+  return [
+    dashboardStyles.welcomeCard,
+    disabled ? dashboardStyles.welcomeCardDisabled : '',
+  ].filter(Boolean).join(' ');
+}
+
 function findDistrictConfig(
   configs: PartnerAreaConfig[],
   config: PartnerAreaConfig | null,
@@ -531,7 +573,6 @@ export default function DashboardClient({
   const [activationEditorMode, setActivationEditorMode] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [hoveredUtilityToolId, setHoveredUtilityToolId] = useState<string | null>(null);
-  const [hoveredUtilityToolTop, setHoveredUtilityToolTop] = useState<number | null>(null);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('konto');
   const [submitReviewBusy, setSubmitReviewBusy] = useState(false);
   const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
@@ -561,7 +602,6 @@ export default function DashboardClient({
   const internationalLocalesLoadedRef = useRef(false);
   const detailedConfigsLoadedRef = useRef(false);
   const detailedConfigsLoadingRef = useRef(false);
-  const utilityBarRef = useRef<HTMLElement | null>(null);
 
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
@@ -994,18 +1034,6 @@ export default function DashboardClient({
       { id: 'partner_billing', label: 'Partnererlöse', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
     ],
   ];
-
-  const hoveredUtilityTool = utilityToolGroups
-    .flat()
-    .find((item) => item.id === hoveredUtilityToolId) ?? null;
-
-  const updateHoveredUtilityTool = (toolId: string, element: HTMLElement) => {
-    const asideRect = utilityBarRef.current?.getBoundingClientRect();
-    const buttonRect = element.getBoundingClientRect();
-    const nextTop = asideRect ? (buttonRect.top - asideRect.top) + (buttonRect.height / 2) : null;
-    setHoveredUtilityToolId(toolId);
-    setHoveredUtilityToolTop(nextTop);
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -1583,18 +1611,18 @@ export default function DashboardClient({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+    <div className={`d-flex flex-column ${dashboardStyles.dashboardShell}`}>
       <FullscreenLoader show={submitReviewBusy} label="Daten werden geladen..." />
       {submitReviewSuccessOpen ? (
         <div
-          style={successOverlayStyle}
+          className={`position-fixed d-flex align-items-center justify-content-center ${dashboardStyles.successOverlay}`}
           onClick={() => setSubmitReviewSuccessOpen(false)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setSubmitReviewSuccessOpen(false);
           }}
         >
           <div
-            style={successCardStyle}
+            className={`bg-white rounded-4 p-4 ${dashboardStyles.successCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="submit-review-success-title"
@@ -1602,19 +1630,19 @@ export default function DashboardClient({
             tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 id="submit-review-success-title" style={successTitleStyle}>Freigabe erfolgreich angefordert</h3>
-            <p id="submit-review-success-text" style={successTextStyle}>
+            <h3 id="submit-review-success-title" className={dashboardStyles.successTitle}>Freigabe erfolgreich angefordert</h3>
+            <p id="submit-review-success-text" className={dashboardStyles.successText}>
               Dein Gebiet ist jetzt freigabebereit. Die Angaben liegen beim Admin zur Prüfung vor.
             </p>
             {submitReviewMessage && submitReviewTone === 'error' ? (
-              <p style={{ ...successTextStyle, color: '#991b1b', marginTop: '8px' }}>
+              <p className={`${dashboardStyles.successText} ${dashboardStyles.successTextError}`}>
                 {submitReviewMessage}
               </p>
             ) : null}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="d-flex justify-content-end">
               <button
                 type="button"
-                style={successButtonStyle}
+                className={dashboardStyles.successButton}
                 onClick={() => setSubmitReviewSuccessOpen(false)}
               >
                 Verstanden
@@ -1623,10 +1651,9 @@ export default function DashboardClient({
           </div>
         </div>
       ) : null}
-      <header style={dashboardHeaderStyle}>
+      <header className={`d-flex align-items-center justify-content-between ${dashboardStyles.dashboardHeader}`}>
         <div
-          className="brand-header"
-          style={{ margin: 0, cursor: 'pointer' }}
+          className={`brand-header ${dashboardStyles.brandButton}`}
           onClick={() => setShowWelcome(true)}
           title="Zur Willkommensseite"
         >
@@ -1635,22 +1662,21 @@ export default function DashboardClient({
             width={48}
             height={48}
             src="/logo/wohnlagencheck24.svg"
-            className="brand-icon"
-            style={{ display: 'block' }}
+            className="brand-icon d-block"
             priority
           />
           <span className="brand-text">
             <span className="brand-title">
-              Wohnlagencheck<span style={{ color: '#ffe000' }}>24</span>
+              Wohnlagencheck<span className={dashboardStyles.brandAccent}>24</span>
             </span>
             <small>DATA-DRIVEN. EXPERT-LED.</small>
           </span>
         </div>
-        <div style={dashboardStatusStyle}>
+        <div className={`d-flex align-items-center gap-2 ${dashboardStyles.dashboardStatus}`}>
           <div>{lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString('de-DE')}` : 'Letzter Login: –'}</div>
           <button
             type="button"
-            style={headerActionButtonStyle}
+            className={`d-inline-flex align-items-center gap-1 ${dashboardStyles.headerActionButton}`}
             onClick={() => {
               setShowWelcome(true);
               setShowSettingsMenu(false);
@@ -1662,35 +1688,34 @@ export default function DashboardClient({
           </button>
           <button
             type="button"
-            style={headerActionButtonStyle}
+            className={`d-inline-flex align-items-center gap-1 ${dashboardStyles.headerActionButton}`}
             onClick={handleLogout}
             title="Abmelden"
           >
             <span aria-hidden>⎋</span>
             <span>Ausloggen</span>
           </button>
-          <div className="navbar navbar-light p-0 m-0" style={menuWrapStyle}>
+          <div className="navbar navbar-light p-0 m-0 position-relative">
             <button
-              className="navbar-toggler"
-              style={dashboardBurgerButtonStyle}
+              className={`navbar-toggler d-inline-flex align-items-center justify-content-center ${dashboardStyles.burgerButton}`}
               onClick={() => setShowSettingsMenu((v) => !v)}
               title="Einstellungen-Menü"
               aria-label="Einstellungen öffnen"
             >
-              <span className="navbar-toggler-icon" style={dashboardBurgerIconStyle} />
+              <span className={`navbar-toggler-icon ${dashboardStyles.burgerIcon}`} />
             </button>
             {showSettingsMenu ? (
-              <div style={menuDropdownStyle}>
-                <button style={menuItemStyle} onClick={() => handleSettingsSelect('konto')}>
+              <div className={`position-absolute ${dashboardStyles.menuDropdown}`}>
+                <button className={dashboardStyles.menuItem} onClick={() => handleSettingsSelect('konto')}>
                   Konto
                 </button>
-                <button style={menuItemStyle} onClick={() => handleSettingsSelect('profil')}>
+                <button className={dashboardStyles.menuItem} onClick={() => handleSettingsSelect('profil')}>
                   Profil
                 </button>
-                <button style={menuItemStyle} onClick={() => handleSettingsSelect('integrationen')}>
+                <button className={dashboardStyles.menuItem} onClick={() => handleSettingsSelect('integrationen')}>
                   Anbindungen
                 </button>
-                <button style={menuItemStyle} onClick={() => handleSettingsSelect('kostenmonitor')}>
+                <button className={dashboardStyles.menuItem} onClick={() => handleSettingsSelect('kostenmonitor')}>
                   Monitor
                 </button>
               </div>
@@ -1699,7 +1724,7 @@ export default function DashboardClient({
         </div>
       </header>
 
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+      <div className={`d-flex flex-grow-1 position-relative ${dashboardStyles.dashboardBody}`}>
       {activeMainTab === 'factors' && factorPaneLoading && !showWelcome ? (
         <FullscreenLoader show label="Wertanpassungen werden geladen..." fixed={false} />
       ) : null}
@@ -1707,16 +1732,14 @@ export default function DashboardClient({
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
       {showUtilityBar ? (
       <aside
-        ref={utilityBarRef}
-        style={utilityBarStyle}
+        className={`d-flex flex-column align-items-center position-relative ${dashboardStyles.utilityBar}`}
         onMouseLeave={() => {
           setHoveredUtilityToolId(null);
-          setHoveredUtilityToolTop(null);
         }}
       >
-        <div style={toolIconsGroupStyle}>
+        <div className={`d-flex flex-column align-items-center gap-2 ${dashboardStyles.toolIconsGroup}`}>
           {utilityToolGroups.map((group, groupIndex) => (
-            <div key={`utility-group-${groupIndex}`} style={toolGroupStyle}>
+            <div key={`utility-group-${groupIndex}`} className={`d-flex flex-column align-items-center gap-2 ${dashboardStyles.toolGroup}`}>
               {group.map((item) => {
                 const active = item.tab
                   ? (
@@ -1728,33 +1751,32 @@ export default function DashboardClient({
                 const hovered = hoveredUtilityToolId === item.id;
                 const disabled = Boolean(item.disabled);
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      if (disabled) return;
-                      if (!item.tab) return;
-                      handleToolSelect(item.tab, item.networkPartnerSection);
-                    }}
-                    onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
-                    onFocus={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
-                    style={toolIconButtonStyle(active, hovered, disabled)}
-                    aria-disabled={disabled}
-                    aria-label={item.label}
-                  >
-                    {renderUtilityIcon(item.icon)}
-                  </button>
+                  <div key={item.id} className={dashboardStyles.toolIconWrap}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (disabled) return;
+                        if (!item.tab) return;
+                        handleToolSelect(item.tab, item.networkPartnerSection);
+                      }}
+                      onMouseEnter={() => setHoveredUtilityToolId(item.id)}
+                      onFocus={() => setHoveredUtilityToolId(item.id)}
+                      onBlur={() => setHoveredUtilityToolId((prev) => (prev === item.id ? null : prev))}
+                      className={utilityToolButtonClass(active, hovered, disabled)}
+                      aria-disabled={disabled}
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      {renderUtilityIcon(item.icon)}
+                    </button>
+                    {hovered ? <span className={dashboardStyles.utilityTooltipCard}>{item.label}</span> : null}
+                  </div>
                 );
               })}
-              {groupIndex < utilityToolGroups.length - 1 ? <div style={toolGroupDividerStyle} /> : null}
+              {groupIndex < utilityToolGroups.length - 1 ? <div className={dashboardStyles.toolGroupDivider} /> : null}
             </div>
           ))}
         </div>
-        {hoveredUtilityTool && hoveredUtilityToolTop !== null ? (
-          <div style={utilityTooltipLayerStyle(hoveredUtilityToolTop)}>
-            <div style={utilityTooltipCardStyle}>{hoveredUtilityTool.label}</div>
-          </div>
-        ) : null}
       </aside>
       ) : null}
 
@@ -1770,15 +1792,15 @@ export default function DashboardClient({
         && activeMainTab !== 'marketing'
         && activeMainTab !== 'blog'
         && !showWelcome ? (
-        <aside style={regionSidebarStyle}>
-          <div style={sidebarHeaderStyle}>
-            <h2 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>Regionen</h2>
-            <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', textTransform: 'uppercase' }}>
+        <aside className={`d-flex flex-column ${dashboardStyles.regionSidebar}`}>
+          <div className={dashboardStyles.sidebarHeader}>
+            <h2 className={`m-0 ${dashboardStyles.sidebarTitle}`}>Regionen</h2>
+            <p className={`mb-0 ${dashboardStyles.sidebarSubTitle}`}>
               {activeMainTab === 'factors' ? 'Faktor-Anpassung' : 'Content Management'}
             </p>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+          <div className="flex-grow-1 overflow-auto p-3">
             {regionSidebarMainDistricts.map(district => {
               const isSelected = Boolean(effectiveSelectedConfig?.area_id?.startsWith(district.area_id));
               const isExpanded = expandedDistrict === district.area_id;
@@ -1786,7 +1808,7 @@ export default function DashboardClient({
               const districtIsActive = Boolean(district.is_active);
 
               return (
-                <div key={district.area_id} style={{ marginBottom: '8px' }}>
+                <div key={district.area_id} className="mb-2">
                   <button
                     onClick={() => {
                       if (activeMainTab === 'factors') {
@@ -1795,19 +1817,19 @@ export default function DashboardClient({
                       handleSelectConfig(district);
                       setExpandedDistrict(isExpanded ? null : district.area_id);
                     }}
-                    style={districtButtonStyle(isSelected, districtIsActive)}
+                    className={districtButtonClass(isSelected, districtIsActive)}
                   >
-                    <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{district.areas?.name}</span>
+                    <span className={dashboardStyles.sidebarDisclosureIcon}>{isExpanded ? '▼' : '▶'}</span>
+                    <span className="flex-grow-1 text-start">{district.areas?.name}</span>
                   </button>
 
                   {isExpanded && subAreas.length > 0 && (
-                    <div style={subAreaListStyle}>
+                    <div className={dashboardStyles.subAreaList}>
                       {subAreas.map(ort => (
                         <button
                           key={ort.area_id}
                           onClick={() => handleSelectConfig(ort)}
-                          style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
+                          className={subAreaButtonClass(effectiveSelectedConfig?.area_id === ort.area_id)}
                         >
                           <span>{ort.areas?.name}</span>
                         </button>
@@ -1823,42 +1845,36 @@ export default function DashboardClient({
 
       {/* 3. SPALTE: ARBEITSBEREICH (Rechts) */}
       <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: showWelcome
-            ? '40px'
-            : '0 40px 40px',
-        }}
+        className={showWelcome ? dashboardStyles.dashboardMainWelcome : dashboardStyles.dashboardMain}
       >
         {showWelcome ? (
-          <div style={welcomeWrapStyle}>
-            <div style={welcomeHeaderStyle}>
-              <h1 style={welcomeTitleStyle}>
+          <div className={`d-flex flex-column ${dashboardStyles.welcomeWrap}`}>
+            <div className={dashboardStyles.welcomeHeader}>
+              <h1 className={dashboardStyles.welcomeTitle}>
                 {partnerFirstName ? `Willkommen ${partnerFirstName}` : 'Willkommen'}
               </h1>
-              <p style={welcomeTextStyle}>
+              <p className={dashboardStyles.welcomeText}>
                 Hier verwaltest du Wertanpassungen, Texte und Marketing-Inhalte für deine Regionen.
                 Wähl einfach einen Bereich aus und leg los.
               </p>
             </div>
             {(onboardingMode || activationDistricts.length > 0) ? (
-              <div style={isAwaitingAreaAssignment ? welcomeActivationAwaitingBoxStyle : welcomeActivationBoxStyle}>
-                <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a' }}>
+              <div className={isAwaitingAreaAssignment ? dashboardStyles.welcomeActivationAwaitingBox : dashboardStyles.welcomeActivationBox}>
+                <h2 className={dashboardStyles.welcomeSectionTitle}>
                   {isAwaitingAreaAssignment ? 'Warte auf Gebietszuweisung' : 'Gebietsfreigabe'}
                 </h2>
                 {isAwaitingAreaAssignment ? (
-                  <p style={welcomeAwaitingAssignmentTextStyle}>
+                  <p className={dashboardStyles.welcomeAwaitingAssignmentText}>
                     Schön, dass du dich in deinem Partnerbereich registriert und angemeldet hast. Bewahre dein Passwort sicher auf.
                     Der Administrator ist informiert und wird dir in Kürze deine Gebiete zuweisen.
                   </p>
                 ) : (
-                  <p style={{ margin: '8px 0 0', fontSize: '14px', color: '#475569' }}>
+                  <p className={dashboardStyles.welcomeIntroText}>
                     Vervollständige die Pflichtangaben je Gebiet und fordere danach die Freigabe an.
                   </p>
                 )}
                 {!isAwaitingAreaAssignment ? (
-                  <div style={activationTabsRowStyle}>
+                  <div className={`d-flex flex-wrap gap-2 ${dashboardStyles.activationTabsRow}`}>
                     {activationDistricts.map((district) => {
                       const active = effectiveWelcomeActivationConfig?.area_id === district.area_id;
                       const label = district.areas?.name || district.areas?.slug || district.area_id;
@@ -1873,7 +1889,7 @@ export default function DashboardClient({
                             setShowWelcome(true);
                             setProgressRefreshTick((prev) => prev + 1);
                           }}
-                          style={activationTabButtonStyle(active, hoveredActivationTabId === district.area_id)}
+                          className={activationTabClass(active, hoveredActivationTabId === district.area_id)}
                         >
                           {label}
                         </button>
@@ -1882,133 +1898,131 @@ export default function DashboardClient({
                   </div>
                 ) : null}
                 {!isAwaitingAreaAssignment && activationDistricts.length === 0 ? (
-                  <div style={alreadyActiveInfoStyle}>Alle zugewiesenen Gebiete sind bereits aktiv.</div>
+                  <div className={dashboardStyles.alreadyActiveInfo}>Alle zugewiesenen Gebiete sind bereits aktiv.</div>
                 ) : !isAwaitingAreaAssignment && showActivationPanelForWelcomeSelected ? (
-                  <div style={reviewPanelStyle}>
-                    <div style={{ ...reviewPanelTitleStyle, fontSize: '24px', marginBottom: '10px' }}>
+                  <div className={dashboardStyles.reviewPanelStrong}>
+                    <div className={dashboardStyles.reviewPanelTitleLarge}>
                       Gebietsfreigabe {effectiveWelcomeActivationConfig?.areas?.name ?? ''}
                     </div>
                     {isWelcomeAwaitingAdminApproval ? (
-                      <div style={awaitingApprovalBadgeRowStyle}>
-                        <span style={awaitingApprovalBadgeStyle}>
+                      <div className="mb-4">
+                        <span className={dashboardStyles.awaitingApprovalBadge}>
                           {welcomeActivationStatusKey === 'in_review' ? 'In Prüfung' : 'Freigabebereit'}
                         </span>
                       </div>
                     ) : null}
-                    <div style={{ ...reviewPanelTextStyle, fontSize: '15px', marginTop: '4px', marginBottom: '10px' }}>
+                    <div className={dashboardStyles.reviewPanelTextLarge}>
                       {isWelcomeAwaitingAdminApproval
                         ? 'Deine Pflichtangaben wurden erfolgreich übermittelt und liegen beim Admin zur Prüfung vor. Solange die Prüfung läuft, ist die Aktivierungsmaske gesperrt. Du kannst nach der Freigabe wie gewohnt weiterarbeiten.'
                         : 'Pflichtangaben fehlen! Vervollständige deine Eingaben als Voraussetzung für die Freigabe deines Gebietes.'}
                     </div>
                     {welcomeActivationStatusKey === 'changes_requested' && welcomeActivationReviewNote ? (
-                      <div style={{ marginBottom: '14px', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: '10px', padding: '12px 14px', color: '#991b1b' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '6px' }}>Nachbesserung erforderlich</div>
-                        <div style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{welcomeActivationReviewNote}</div>
+                      <div className={`${dashboardStyles.reviewIssueBox} mb-3`}>
+                        <div className="fw-bold mb-1">Nachbesserung erforderlich</div>
+                        <div className={dashboardStyles.reviewIssueText}>{welcomeActivationReviewNote}</div>
                       </div>
                     ) : null}
                     {!isWelcomeAwaitingAdminApproval ? (
                       <div
-                        style={{
-                          ...progressWrapStyle,
-                          marginTop: '40px',
-                          marginBottom: '16px',
-                          minHeight: mandatoryProgressLoading ? '42px' : undefined,
-                        }}
+                        className={`${dashboardStyles.progressWrap} ${mandatoryProgressLoading ? dashboardStyles.progressWrapLoading : ''} mt-4 mb-3`}
                       >
                         {mandatoryProgressLoading ? (
                           <>
-                            <div style={progressHeadStyle}>
-                              <span style={progressLabelSkeletonStyle}>Fortschritt Pflichtangaben</span>
-                              <strong style={progressValueSkeletonStyle}>--/--</strong>
+                            <div className="d-flex justify-content-between align-items-center small text-secondary mb-1">
+                              <span className="text-secondary">Fortschritt Pflichtangaben</span>
+                              <strong className="text-secondary opacity-75">--/--</strong>
                             </div>
-                            <div style={progressSkeletonStyle} />
+                            <div className={dashboardStyles.progressSkeleton} />
                           </>
                         ) : mandatoryPercent < 100 ? (
                           <>
-                            <div style={progressHeadStyle}>
+                            <div className="d-flex justify-content-between align-items-center small text-secondary mb-1">
                               <span>Fortschritt Pflichtangaben</span>
                               <strong>{mandatoryProgress.completed}/{mandatoryProgress.total}</strong>
                             </div>
-                            <div style={progressTrackStyle}>
-                              <div style={progressFillStyle(animatedMandatoryPercent)} />
-                            </div>
+                            <progress
+                              className={dashboardStyles.progressNative}
+                              value={animatedMandatoryPercent}
+                              max={100}
+                              aria-label="Fortschritt Pflichtangaben"
+                            />
                           </>
                         ) : null}
                       </div>
                     ) : null}
                     {!isWelcomeAwaitingAdminApproval ? (
                       <>
-                        <div style={quickAccessRowStyle}>
-                          <span style={quickAccessLabelStyle}>Schnellzugriff:</span>
-                          <button type="button" onClick={() => openTextEditorAt('berater_name')} style={inlineLinkButtonStyle}>
+                        <div className="d-flex align-items-center flex-wrap gap-2">
+                          <span className={dashboardStyles.quickAccessLabel}>Schnellzugriff:</span>
+                          <button type="button" onClick={() => openTextEditorAt('berater_name')} className={dashboardStyles.inlineLinkButton}>
                             Berater-Angaben
                           </button>
-                          <span style={quickAccessSeparatorStyle}>,</span>
-                          <button type="button" onClick={() => openTextEditorAt('makler_name')} style={inlineLinkButtonStyle}>
+                          <span className={dashboardStyles.quickAccessSeparator}>,</span>
+                          <button type="button" onClick={() => openTextEditorAt('makler_name')} className={dashboardStyles.inlineLinkButton}>
                             Makler-Angaben
                           </button>
-                          <span style={quickAccessSeparatorStyle}>,</span>
-                          <button type="button" onClick={() => openTextEditorAt('immobilienmarkt_individuell_01')} style={inlineLinkButtonStyle}>
+                          <span className={dashboardStyles.quickAccessSeparator}>,</span>
+                          <button type="button" onClick={() => openTextEditorAt('immobilienmarkt_individuell_01')} className={dashboardStyles.inlineLinkButton}>
                             Experten-Angaben
                           </button>
                         </div>
-                        <button type="button" onClick={() => openTextEditorAt('berater_name')} style={activationCtaButtonStyle}>
+                        <button type="button" onClick={() => openTextEditorAt('berater_name')} className={dashboardStyles.activationCtaButton}>
                           Pflichtangaben bearbeiten
                         </button>
                       </>
                     ) : null}
-                    <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
                       {submitReviewMessage ? (
-                        <span style={reviewMessageStyle(submitReviewTone)}>{submitReviewMessage}</span>
+                        <span className={`${dashboardStyles.reviewMessage} ${reviewMessageToneClass(submitReviewTone)}`}>{submitReviewMessage}</span>
                       ) : null}
                     </div>
                   </div>
                 ) : !isAwaitingAreaAssignment ? (
-                  <div style={alreadyActiveInfoStyle}>Dieses Gebiet ist bereits aktiv.</div>
+                  <div className={dashboardStyles.alreadyActiveInfo}>Dieses Gebiet ist bereits aktiv.</div>
                 ) : null}
               </div>
                 ) : null}
                 {previewDistricts.length > 0 ? (
-                  <div style={previewReadyWelcomeBoxStyle}>
-                    <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a' }}>Previewphase</h2>
-                    <p style={{ margin: '8px 0 0', fontSize: '14px', color: '#334155', lineHeight: 1.6 }}>
+                  <div className={dashboardStyles.previewReadyWelcomeBox}>
+                    <h2 className={dashboardStyles.welcomeSectionTitle}>Previewphase</h2>
+                    <p className={dashboardStyles.previewReadyIntroText}>
                       Mindestens ein Gebiet ist intern freigegeben und kann vor dem Onlineschalten im Partnerbereich vorbereitet werden.
                       Pruefe jetzt Inhalte, Werte und SEO/GEO sorgfaeltig. Das Gebiet ist in diesem Zustand noch nicht regulär online.
                     </p>
                     {effectiveWelcomePreviewConfig ? (
-                      <div style={previewReadyInnerPanelStyle}>
-                        <p style={previewReadyTextStyle}>
+                      <div className={dashboardStyles.previewReadyInnerPanel}>
+                        <p className={dashboardStyles.previewReadyText}>
                           <strong>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</strong>
                         </p>
-                        <p style={previewReadyTextStyle}>
+                        <p className={dashboardStyles.previewReadyText}>
                           Fuer <strong>{effectiveWelcomePreviewConfig.areas?.name ?? effectiveWelcomePreviewConfig.area_id}</strong> ist die fachliche Freigabe bereits erteilt.
                           Jetzt solltest du Texte, Werte, SEO/GEO und falls gebucht auch die Internationalisierung final vorbereiten.
                         </p>
                         {effectiveWelcomePreviewHref ? (
-                          <p style={previewReadyTextStyle}>
+                          <p className={dashboardStyles.previewReadyText}>
                             Die Frontend-Preview zeigt denselben Seitenstand wie die spätere Live-Seite. Sie ist nur intern für berechtigte Nutzer erreichbar und nach dem Onlinegang nicht mehr verfügbar.
                           </p>
                         ) : null}
-                        <p style={previewReadyTextStyle}>
+                        <p className={dashboardStyles.previewReadyText}>
                           Wenn du alles final geprüft hast, fordere hier den Livegang an. Das Admin-Team wird danach informiert und kann die finale Freigabe erteilen.
                         </p>
-                        <div style={previewReadyActionRowStyle}>
+                        <div className="d-flex flex-wrap gap-2 mt-3">
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
                             handleToolSelect('factors');
-                          }} style={previewReadyActionButtonStyle}>
+                          }} className={dashboardStyles.previewReadyActionButton}>
                             Werte pruefen
                           </button>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
                             handleToolSelect('texts');
-                          }} style={previewReadyActionButtonStyle}>
+                          }} className={dashboardStyles.previewReadyActionButton}>
                             Texte pruefen
                           </button>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
                             handleToolSelect('marketing');
-                          }} style={previewReadyActionButtonStyle}>
+                          }} className={dashboardStyles.previewReadyActionButton}>
                             SEO & GEO pruefen
                           </button>
                           {effectiveWelcomePreviewHref ? (
@@ -2016,13 +2030,13 @@ export default function DashboardClient({
                               href={effectiveWelcomePreviewHref}
                               target="_blank"
                               rel="noreferrer"
-                              style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginLeft: 'auto' }}
+                              className={`${dashboardStyles.previewReadyGhostButton} d-inline-flex align-items-center justify-content-center text-decoration-none ms-auto`}
                             >
                               Frontend-Preview öffnen
                             </a>
                           ) : null}
                           {effectiveWelcomePreviewSignoffAt ? (
-                            <span style={reviewMessageStyle('success')}>
+                            <span className={`${dashboardStyles.reviewMessage} ${dashboardStyles.reviewMessageSuccess}`}>
                               Livegang angefragt am {formatTimestampLabel(effectiveWelcomePreviewSignoffAt)}
                             </span>
                           ) : (
@@ -2030,35 +2044,35 @@ export default function DashboardClient({
                               type="button"
                               onClick={() => void handleRequestLive(effectiveWelcomePreviewConfig)}
                               disabled={previewRequestBusy}
-                              style={previewReadySuccessButtonStyle}
+                              className={dashboardStyles.previewReadySuccessButton}
                             >
                               {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                             </button>
                           )}
                         </div>
                         {previewRequestMessage ? (
-                          <div style={{ marginTop: '12px' }}>
-                            <span style={reviewMessageStyle(previewRequestTone)}>{previewRequestMessage}</span>
+                          <div className="mt-3">
+                            <span className={`${dashboardStyles.reviewMessage} ${reviewMessageToneClass(previewRequestTone)}`}>{previewRequestMessage}</span>
                           </div>
                         ) : null}
                       </div>
                     ) : null}
                   </div>
                 ) : null}
-                <div style={welcomeGroupsStyle}>
+                <div className={`d-grid ${dashboardStyles.welcomeGroups}`}>
               {welcomeToolGroups(hasInternationalFeature).map((group) => (
-                <section key={group.title} style={welcomeGroupCardStyle}>
-                  <h3 style={welcomeGroupTitleStyle}>{group.title}</h3>
-                  <div style={welcomeGridStyle}>
+                <section key={group.title} className={dashboardStyles.welcomeGroupCard}>
+                  <h3 className={dashboardStyles.welcomeGroupTitle}>{group.title}</h3>
+                  <div className={`d-grid ${dashboardStyles.welcomeGrid}`}>
                     {group.tools.map((tool) => (
                       <button
                         key={`${tool.key}:${tool.title}`}
                         onClick={() => handleToolSelect(tool.key, tool.networkPartnerSection)}
                         disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
-                        style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
+                        className={welcomeCardClass(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
                       >
-                        <div style={welcomeCardTitleStyle}>{tool.title}</div>
-                        <div style={welcomeCardTextStyle}>
+                        <div className={dashboardStyles.welcomeCardTitle}>{tool.title}</div>
+                        <div className={dashboardStyles.welcomeCardText}>
                           {tool.description}
                           {tool.comingSoon ? ' (bald verfügbar)' : (!isTabEnabled(tool.key) ? ' (derzeit nicht freigeschaltet)' : '')}
                         </div>
@@ -2070,24 +2084,24 @@ export default function DashboardClient({
             </div>
           </div>
         ) : activeMainTab === 'settings' ? (
-          <div style={{ width: '100%' }}>
-            <header style={settingsHeaderWrapStyle}>
-              <div style={{ marginBottom: '6px' }}>
-                <h1 style={mainTitleStyle}>{headerConfig.title}</h1>
-                <p style={headerDescriptionStyle}>{headerConfig.description}</p>
+          <div className="w-100">
+            <header className={dashboardStyles.settingsHeaderWrap}>
+              <div className="mb-1">
+                <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
+                <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
               </div>
             </header>
             <PartnerSettingsPanel section={settingsSection} onSectionChange={setSettingsSection} />
           </div>
         ) : activeMainTab === 'network_partners' ? (
-          <div style={{ width: '100%' }}>
-            <header style={settingsHeaderWrapStyle}>
-              <div style={{ marginBottom: '6px' }}>
-                <h1 style={mainTitleStyle}>{headerConfig.title}</h1>
-                <p style={headerDescriptionStyle}>{headerConfig.description}</p>
+          <div className="w-100">
+            <header className={dashboardStyles.settingsHeaderWrap}>
+              <div className="mb-1">
+                <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
+                <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
               </div>
             </header>
-            <div style={{ display: 'grid', gap: 18 }}>
+            <div className="d-grid gap-3">
               {networkPartnerSection === 'bookings' ? (
                 <NetworkBookingsWorkspace areas={networkAreaOptions} />
               ) : networkPartnerSection === 'content' ? (
@@ -2102,6 +2116,7 @@ export default function DashboardClient({
                   initialDetailSection={networkPartnerDetailSection}
                   onSelectedPartnerIdChange={setSelectedNetworkPartnerId}
                   onDetailSectionChange={setNetworkPartnerDetailSection}
+                  areas={networkAreaOptions}
                 />
               )}
             </div>
@@ -2424,26 +2439,26 @@ export default function DashboardClient({
                 onVisibilityModeChange={(value) => handleVisibilityModeChange('request_visibility_mode', value)}
               />
             ) : (
-              <div style={{ padding: '20px', color: '#64748b' }}>
+              <div className="p-4 text-secondary">
                 Bereich in Vorbereitung.
               </div>
             )}
           </div>
         ) : (
-          <div style={emptyStateStyle}>
+          <div className={`d-flex align-items-center justify-content-center ${dashboardStyles.emptyState}`}>
             {hasRegionAssignments ? (
-              <p style={{ margin: 0, fontSize: '16px', color: '#334155' }}>
+              <p className={`m-0 ${dashboardStyles.emptyStateText}`}>
                 Wähl eine Region aus der mittleren Spalte.
               </p>
             ) : (
-              <div style={emptyStateCardStyle}>
-                <p style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>
+              <div className={dashboardStyles.emptyStateCard}>
+                <p className={`m-0 ${dashboardStyles.emptyStateCardTitle}`}>
                   Deinem Konto ist aktuell keine Region zugewiesen.
                 </p>
-                <p style={{ margin: '8px 0 0', fontSize: '15px', color: '#475569', lineHeight: 1.45 }}>
+                <p className={`mb-0 ${dashboardStyles.emptyStateCardText}`}>
                   Melde dich kurz beim Administrator. Nach der Zuweisung wird der Bereich automatisch aktiv.
                 </p>
-                <p style={{ margin: '10px 0 0', fontSize: '14px', color: '#0f766e', fontWeight: 600 }}>
+                <p className={`mb-0 ${dashboardStyles.emptyStateCardHint}`}>
                   Hinweis: Bitte Administrator kontaktieren.
                 </p>
               </div>
@@ -2452,509 +2467,16 @@ export default function DashboardClient({
         )}
       </main>
       </div>
-      <footer style={dashboardFooterStyle}>
-        <span style={dashboardFooterCopyStyle}>© {new Date().getFullYear()} Wohnlagencheck24</span>
-        <div style={dashboardFooterLinksStyle}>
-          <Link href="/impressum" style={dashboardFooterLinkStyle}>Impressum</Link>
-          <Link href="/datenschutz" style={dashboardFooterLinkStyle}>Datenschutz</Link>
+      <footer className={`d-flex align-items-center justify-content-between ${dashboardStyles.dashboardFooter}`}>
+        <span className={dashboardStyles.dashboardFooterCopy}>© {new Date().getFullYear()} Wohnlagencheck24</span>
+        <div className="d-flex align-items-center gap-3">
+          <Link href="/impressum" className={dashboardStyles.dashboardFooterLink}>Impressum</Link>
+          <Link href="/datenschutz" className={dashboardStyles.dashboardFooterLink}>Datenschutz</Link>
         </div>
       </footer>
     </div>
   );
 }
-
-// --- STYLES ---
-
-const utilityBarStyle: React.CSSProperties = {
-  width: '50px',
-  minWidth: '50px',
-  backgroundColor: 'rgb(72, 107, 122)',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  padding: '8px 0',
-  overflow: 'visible',
-  position: 'relative',
-  zIndex: 50
-};
-
-const toolIconsGroupStyle = {
-  display: 'flex',
-  flexDirection: 'column' as const,
-  alignItems: 'center',
-  gap: '6px',
-  height: '100%',
-  width: '100%',
-  overflowY: 'auto' as const,
-  padding: '2px 0 8px',
-};
-
-const toolGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '6px',
-  width: '100%',
-};
-
-const toolGroupDividerStyle: React.CSSProperties = {
-  width: '28px',
-  height: '2px',
-  background: 'rgba(255,255,255,0.35)',
-  borderRadius: '2px',
-  margin: '2px auto 0',
-};
-
-const toolIconButtonStyle = (active: boolean, hovered: boolean, disabled = false) => {
-  const highlighted = active || hovered;
-  return {
-    width: '30px',
-    height: '30px',
-    borderRadius: '9px',
-    border: highlighted ? '1px solid #ffe000' : '1px solid rgba(255,255,255,0.92)',
-    backgroundColor: highlighted ? '#ffe000' : '#ffffff',
-    boxShadow: highlighted ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
-    color: '#111111',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.8 : 1,
-    transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
-};
-
-const utilityTooltipLayerStyle = (top: number): React.CSSProperties => ({
-  position: 'absolute',
-  top: `${top}px`,
-  left: 'calc(100% + 10px)',
-  transform: 'translateY(-50%)',
-  pointerEvents: 'none',
-  zIndex: 60,
-});
-
-const utilityTooltipCardStyle: React.CSSProperties = {
-  minWidth: '168px',
-  maxWidth: '220px',
-  borderRadius: '12px',
-  background: '#ffe000',
-  color: '#111111',
-  boxShadow: '0 18px 36px rgba(15,23,42,0.18)',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  lineHeight: 1.35,
-};
-
-const dashboardHeaderStyle: React.CSSProperties = {
-  minHeight: '72px',
-  backgroundColor: '#fff',
-  color: '#0f172a',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '10px 20px',
-  borderBottom: '1px solid #e2e8f0',
-  position: 'sticky',
-  top: 0,
-  zIndex: 40
-};
-
-const dashboardStatusStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  fontSize: '12px',
-  color: '#94a3b8'
-};
-
-const headerActionButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: '8px',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '6px 10px',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
-};
-
-const dashboardBurgerButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: '8px',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '0 10px',
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '34px',
-  lineHeight: 1,
-};
-
-const dashboardBurgerIconStyle: React.CSSProperties = {
-  width: '16px',
-  height: '16px',
-  display: 'block',
-};
-
-const menuWrapStyle: React.CSSProperties = {
-  position: 'relative'
-};
-
-const menuDropdownStyle: React.CSSProperties = {
-  position: 'absolute',
-  right: 0,
-  top: '42px',
-  minWidth: '180px',
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  background: '#fff',
-  boxShadow: '0 12px 24px rgba(15, 23, 42, 0.15)',
-  padding: '6px',
-  zIndex: 200
-};
-
-const menuItemStyle: React.CSSProperties = {
-  width: '100%',
-  textAlign: 'left',
-  border: 'none',
-  background: '#fff',
-  borderRadius: '8px',
-  padding: '10px 10px',
-  fontSize: '14px',
-  color: '#0f172a',
-  cursor: 'pointer'
-};
-
-const regionSidebarStyle: React.CSSProperties = {
-  width: '260px',
-  backgroundColor: '#fff',
-  borderRight: '1px solid #e2e8f0',
-  display: 'flex',
-  flexDirection: 'column'
-};
-
-const sidebarHeaderStyle = {
-  padding: '24px',
-  borderBottom: '1px solid #f1f5f9'
-};
-
-const districtButtonStyle = (active: boolean, isAreaActive: boolean) => ({
-  width: '100%',
-  padding: '10px 12px',
-  border: `1px solid ${active ? '#cbd5e1' : (isAreaActive ? '#bbf7d0' : '#fde68a')}`,
-  borderRadius: '8px',
-  backgroundColor: active ? '#f8fafc' : (isAreaActive ? '#f0fdf4' : '#fffbeb'),
-  color: active ? '#1e293b' : '#475569',
-  fontWeight: active ? '700' : '500',
-  fontSize: '14px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px'
-});
-
-const subAreaListStyle = {
-  marginLeft: '24px',
-  marginTop: '4px',
-  borderLeft: '1px solid #e2e8f0',
-  paddingLeft: '8px'
-};
-
-const subAreaButtonStyle = (active: boolean) => ({
-  width: '100%',
-  textAlign: 'left' as const,
-  padding: '6px 10px',
-  border: 'none',
-  borderRadius: '6px',
-  backgroundColor: active ? '#eff6ff' : 'transparent',
-  color: active ? '#2563eb' : '#64748b',
-  fontSize: '13px',
-  fontWeight: active ? '700' : '500',
-  cursor: 'pointer'
-});
-
-const mainTitleStyle = {
-  fontSize: '32px',
-  fontWeight: '800',
-  color: '#0f172a',
-  margin: 0,
-  letterSpacing: '-0.02em'
-};
-
-const headerDescriptionStyle = {
-  margin: '6px 0 0',
-  fontSize: '14px',
-  color: '#64748b'
-};
-
-const emptyStateStyle = {
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#94a3b8'
-};
-
-const emptyStateCardStyle: React.CSSProperties = {
-  maxWidth: '720px',
-  background: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '14px',
-  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.05)',
-  padding: '18px 20px',
-};
-
-const dashboardFooterStyle: React.CSSProperties = {
-  minHeight: '44px',
-  borderTop: '1px solid #e2e8f0',
-  backgroundColor: '#ffffff',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '0 20px',
-  fontSize: '12px',
-};
-
-const dashboardFooterCopyStyle: React.CSSProperties = {
-  color: '#64748b',
-};
-
-const dashboardFooterLinksStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-};
-
-const dashboardFooterLinkStyle: React.CSSProperties = {
-  color: '#0f766e',
-  textDecoration: 'none',
-  fontWeight: 600,
-};
-
-const reviewPanelStyle: React.CSSProperties = {
-  marginTop: '12px',
-  border: '1px solid #e2e8f0',
-  background: '#ffffff',
-  borderRadius: '12px',
-  padding: '12px 14px',
-  width: '100%',
-};
-
-const reviewPanelTitleStyle: React.CSSProperties = {
-  fontSize: '14px',
-  fontWeight: 800,
-  color: '#0f172a',
-  marginBottom: '6px',
-};
-
-const reviewPanelTextStyle: React.CSSProperties = {
-  fontSize: '13px',
-  color: '#334155',
-  margin: 0,
-};
-
-const inlineLinkButtonStyle: React.CSSProperties = {
-  border: 'none',
-  padding: 0,
-  margin: 0,
-  background: 'transparent',
-  color: '#0f766e',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-  textDecoration: 'underline',
-};
-
-const progressWrapStyle: React.CSSProperties = {
-  margin: '10px 0 12px',
-};
-
-const progressHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  fontSize: '12px',
-  color: '#334155',
-  marginBottom: '6px',
-};
-
-const progressTrackStyle: React.CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  height: '10px',
-  borderRadius: '999px',
-  background: '#e2e8f0',
-  overflow: 'hidden',
-};
-
-const progressSkeletonStyle: React.CSSProperties = {
-  width: '100%',
-  height: '10px',
-  borderRadius: '999px',
-  background: 'linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%)',
-};
-
-const progressLabelSkeletonStyle: React.CSSProperties = {
-  color: '#64748b',
-};
-
-const progressValueSkeletonStyle: React.CSSProperties = {
-  color: '#94a3b8',
-};
-
-const progressFillStyle = (percent: number): React.CSSProperties => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  bottom: 0,
-  width: `${percent}%`,
-  height: 'auto',
-  borderRadius: 'inherit',
-  background: percent >= 100 ? '#16a34a' : '#0f766e',
-  transition: 'width 0.2s ease',
-});
-
-const reviewMessageStyle = (tone: 'info' | 'success' | 'error'): React.CSSProperties => ({
-  fontSize: '13px',
-  color: tone === 'success' ? '#166534' : tone === 'error' ? '#991b1b' : '#334155',
-  background: tone === 'success' ? '#dcfce7' : tone === 'error' ? '#fee2e2' : '#f1f5f9',
-  border: tone === 'success' ? '1px solid #bbf7d0' : tone === 'error' ? '1px solid #fecaca' : '1px solid #e2e8f0',
-  borderRadius: '8px',
-  padding: '8px 10px',
-});
-
-const awaitingApprovalBadgeRowStyle: React.CSSProperties = {
-  marginBottom: '20px',
-};
-
-const awaitingApprovalBadgeStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  borderRadius: '999px',
-  border: '1px solid #facc15',
-  background: '#fde68a',
-  color: '#111827',
-  fontSize: '11px',
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  padding: '4px 9px',
-};
-
-const previewReadyWelcomeBoxStyle: React.CSSProperties = {
-  marginTop: '18px',
-  background: 'linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff)',
-  border: '1px solid #f59e0b',
-  borderRadius: '16px',
-  padding: '20px 22px',
-  boxShadow: '0 8px 16px rgba(180, 83, 9, 0.06)',
-};
-
-const previewReadyInnerPanelStyle: React.CSSProperties = {
-  marginTop: '18px',
-  border: '1px solid #fde68a',
-  background: '#ffffff',
-  borderRadius: '14px',
-  padding: '16px',
-};
-
-const previewReadyTextStyle: React.CSSProperties = {
-  margin: '0 0 8px',
-  fontSize: '15px',
-  color: '#374151',
-  lineHeight: 1.6,
-};
-
-const previewReadyActionRowStyle: React.CSSProperties = {
-  marginTop: '12px',
-  display: 'flex',
-  gap: '10px',
-  flexWrap: 'wrap',
-};
-
-const previewReadyActionButtonStyle: React.CSSProperties = {
-  border: 'none',
-  borderRadius: '10px',
-  background: '#0f172a',
-  color: '#ffffff',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const previewReadyGhostButtonStyle: React.CSSProperties = {
-  border: '1px solid #fcd34d',
-  borderRadius: '10px',
-  background: '#ffffff',
-  color: '#92400e',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const previewReadySuccessButtonStyle: React.CSSProperties = {
-  border: 'none',
-  borderRadius: '10px',
-  background: '#16a34a',
-  color: '#ffffff',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const successOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 80,
-  background: 'rgba(15, 23, 42, 0.4)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '20px',
-};
-
-const successCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: '560px',
-  borderRadius: '14px',
-  background: '#fff',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 20px 40px rgba(15, 23, 42, 0.25)',
-  padding: '20px',
-};
-
-const successTitleStyle: React.CSSProperties = {
-  margin: '0 0 10px',
-  fontSize: '20px',
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const successTextStyle: React.CSSProperties = {
-  margin: '0 0 16px',
-  fontSize: '15px',
-  lineHeight: 1.5,
-  color: '#334155',
-};
-
-const successButtonStyle: React.CSSProperties = {
-  border: 'none',
-  borderRadius: '8px',
-  background: '#0f766e',
-  color: '#fff',
-  padding: '9px 14px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
 
 function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: string; tools: WelcomeTool[] }> {
   const regionTools: WelcomeTool[] = [
@@ -3080,179 +2602,3 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
     },
   ];
 }
-
-const welcomeWrapStyle = {
-  maxWidth: '1100px',
-  margin: '0 auto',
-  padding: '20px 10px 40px',
-  display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '28px',
-};
-
-const welcomeGroupsStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '18px',
-};
-
-const welcomeGroupCardStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '16px',
-  padding: '20px',
-  boxShadow: '0 6px 14px rgba(15, 23, 42, 0.04)',
-};
-
-const welcomeGroupTitleStyle: React.CSSProperties = {
-  margin: '0 0 14px',
-  fontSize: '16px',
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const welcomeHeaderStyle = {
-  backgroundColor: '#fff',
-  borderRadius: '18px',
-  padding: '28px 32px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.06)',
-};
-
-const welcomeTitleStyle = {
-  margin: 0,
-  fontSize: '34px',
-  fontWeight: 800,
-  color: '#0f172a',
-  letterSpacing: '-0.02em',
-};
-
-const welcomeTextStyle = {
-  margin: '10px 0 0',
-  fontSize: '16px',
-  color: '#475569',
-  lineHeight: 1.5,
-};
-
-const welcomeGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '16px',
-};
-
-const welcomeCardStyle = (disabled: boolean): React.CSSProperties => ({
-  backgroundColor: '#fff',
-  border: '1px solid #e2e8f0',
-  borderRadius: '16px',
-  padding: '20px',
-  textAlign: 'left' as const,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.45 : 1,
-  boxShadow: '0 10px 18px rgba(15, 23, 42, 0.06)',
-  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-});
-
-const welcomeCardTitleStyle = {
-  fontSize: '16px',
-  fontWeight: 800,
-  color: '#0f172a',
-  marginBottom: '6px',
-};
-
-const welcomeCardTextStyle = {
-  fontSize: '13px',
-  color: '#64748b',
-  lineHeight: 1.4,
-};
-
-const settingsHeaderWrapStyle: React.CSSProperties = {
-  position: 'relative',
-  width: '100%',
-  maxWidth: 'none',
-  background: '#f8fafc',
-  padding: '20px 0 14px',
-};
-
-const welcomeActivationBoxStyle: React.CSSProperties = {
-  background: 'linear-gradient(0deg, rgba(250, 204, 21, 0.10), rgba(250, 204, 21, 0.10)), #ffffff',
-  border: '1px solid #facc15',
-  borderRadius: '16px',
-  padding: '20px 22px',
-  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.04)',
-};
-
-const welcomeActivationAwaitingBoxStyle: React.CSSProperties = {
-  background: 'linear-gradient(0deg, rgba(239, 68, 68, 0.10), rgba(239, 68, 68, 0.10)), #ffffff',
-  border: '1px solid #ef4444',
-  borderRadius: '16px',
-  padding: '20px 22px',
-  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.04)',
-};
-
-const welcomeAwaitingAssignmentTextStyle: React.CSSProperties = {
-  margin: '10px 0 0',
-  fontSize: '14px',
-  lineHeight: 1.55,
-  color: '#7f1d1d',
-  fontWeight: 600,
-};
-
-const activationTabsRowStyle: React.CSSProperties = {
-  marginTop: '40px',
-  display: 'flex',
-  gap: '8px',
-  flexWrap: 'wrap',
-};
-
-const activationTabButtonStyle = (active: boolean, hovered: boolean): React.CSSProperties => ({
-  border: '1px solid #111827',
-  background: active ? '#111827' : hovered ? '#f3f4f6' : '#ffffff',
-  color: active ? '#ffffff' : '#111827',
-  borderRadius: '999px',
-  padding: '7px 12px',
-  fontSize: '12px',
-  fontWeight: active ? 800 : 700,
-  cursor: 'pointer',
-  transition: 'background-color 0.15s ease, color 0.15s ease',
-});
-
-const quickAccessRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-};
-
-const quickAccessLabelStyle: React.CSSProperties = {
-  fontSize: '13px',
-  color: '#1f2937',
-  fontWeight: 700,
-};
-
-const quickAccessSeparatorStyle: React.CSSProperties = {
-  fontSize: '13px',
-  color: '#475569',
-  fontWeight: 600,
-};
-
-const activationCtaButtonStyle: React.CSSProperties = {
-  marginTop: '40px',
-  border: 'none',
-  borderRadius: '10px',
-  background: '#0f766e',
-  color: '#ffffff',
-  padding: '10px 14px',
-  fontSize: '13px',
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const alreadyActiveInfoStyle: React.CSSProperties = {
-  marginTop: '14px',
-  border: '1px solid #bbf7d0',
-  background: '#f0fdf4',
-  color: '#166534',
-  borderRadius: '10px',
-  padding: '10px 12px',
-  fontSize: '13px',
-  fontWeight: 600,
-};

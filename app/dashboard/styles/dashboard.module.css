@@ -326,6 +326,593 @@
   cursor: pointer;
 }
 
+.dashboardShell {
+  background-color: #f8fafc;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboardBody {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dashboardMain {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 40px 40px;
+}
+
+.dashboardMainWelcome {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 40px;
+}
+
+.successOverlay {
+  background: rgba(15, 23, 42, 0.4);
+  inset: 0;
+  padding: 20px;
+  z-index: 80;
+}
+
+.successCard {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+  max-width: 560px;
+  width: 100%;
+}
+
+.successTitle {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.successText {
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.successTextError {
+  color: #991b1b;
+  margin-top: 8px;
+}
+
+.successButton {
+  background: #0f766e;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 9px 14px;
+}
+
+.dashboardHeader {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  min-height: 72px;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.brandButton {
+  cursor: pointer;
+  margin: 0;
+}
+
+.brandAccent {
+  color: #ffe000;
+}
+
+.dashboardStatus {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.headerActionButton {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.burgerButton {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  cursor: pointer;
+  height: 34px;
+  line-height: 1;
+  padding: 0 10px;
+}
+
+.burgerIcon {
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.menuDropdown {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+  min-width: 180px;
+  padding: 6px;
+  right: 0;
+  top: 42px;
+  z-index: 200;
+}
+
+.menuItem {
+  background: #ffffff;
+  border: none;
+  border-radius: 8px;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.menuItem:hover,
+.menuItem:focus {
+  background: #f8fafc;
+}
+
+.utilityBar {
+  background-color: rgb(72, 107, 122);
+  min-width: 50px;
+  overflow: visible;
+  padding: 8px 0;
+  width: 50px;
+  z-index: 50;
+}
+
+.toolIconsGroup {
+  height: 100%;
+  overflow-y: auto;
+  padding: 2px 0 8px;
+  width: 100%;
+}
+
+.toolGroup {
+  width: 100%;
+}
+
+.toolGroupDivider {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  height: 2px;
+  margin: 2px auto 0;
+  width: 28px;
+}
+
+.toolIconWrap {
+  position: relative;
+}
+
+.toolIconButton {
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 9px;
+  color: #111111;
+  cursor: pointer;
+  display: flex;
+  height: 30px;
+  justify-content: center;
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  width: 30px;
+}
+
+.toolIconButtonHighlighted {
+  background-color: #ffe000;
+  border-color: #ffe000;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.toolIconButtonDisabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.utilityTooltipCard {
+  background: #ffe000;
+  border-radius: 12px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+  color: #111111;
+  font-size: 13px;
+  font-weight: 700;
+  left: calc(100% + 10px);
+  line-height: 1.35;
+  max-width: 220px;
+  min-width: 168px;
+  padding: 10px 14px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+}
+
+.regionSidebar {
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  width: 260px;
+}
+
+.sidebarHeader {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 24px;
+}
+
+.sidebarTitle {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.sidebarSubTitle {
+  color: #94a3b8;
+  font-size: 10px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.districtButton {
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.districtButtonSelected {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.districtButtonActive {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.districtButtonInactive {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.sidebarDisclosureIcon {
+  font-size: 10px;
+}
+
+.subAreaList {
+  border-left: 1px solid #e2e8f0;
+  margin-left: 24px;
+  margin-top: 4px;
+  padding-left: 8px;
+}
+
+.subAreaButton {
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.subAreaButtonActive {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.welcomeWrap {
+  gap: 28px;
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 20px 10px 40px;
+}
+
+.welcomeHeader {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+  padding: 28px 32px;
+}
+
+.welcomeTitle {
+  color: #0f172a;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.welcomeText {
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.welcomeActivationBox {
+  background: linear-gradient(0deg, rgba(250, 204, 21, 0.10), rgba(250, 204, 21, 0.10)), #ffffff;
+  border: 1px solid #facc15;
+  border-radius: 16px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.04);
+  padding: 20px 22px;
+}
+
+.welcomeActivationAwaitingBox {
+  background: linear-gradient(0deg, rgba(239, 68, 68, 0.10), rgba(239, 68, 68, 0.10)), #ffffff;
+  border: 1px solid #ef4444;
+  border-radius: 16px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.04);
+  padding: 20px 22px;
+}
+
+.welcomeSectionTitle {
+  color: #0f172a;
+  font-size: 22px;
+  margin: 0;
+}
+
+.welcomeIntroText {
+  color: #475569;
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+.welcomeAwaitingAssignmentText {
+  color: #7f1d1d;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  margin: 10px 0 0;
+}
+
+.activationTabsRow {
+  margin-top: 40px;
+}
+
+.activationTabButton {
+  background: #ffffff;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  color: #111827;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.activationTabButtonActive {
+  background: #111827;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.activationTabButtonHovered {
+  background: #f3f4f6;
+}
+
+.alreadyActiveInfo {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 14px;
+  padding: 10px 12px;
+}
+
+.reviewPanelTitleLarge {
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.reviewPanelTextLarge {
+  color: #334155;
+  font-size: 15px;
+  margin: 4px 0 10px;
+}
+
+.quickAccessLabel {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quickAccessSeparator {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.activationCtaButton {
+  background: #0f766e;
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 40px;
+  padding: 10px 14px;
+}
+
+.previewReadyWelcomeBox {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff);
+  border: 1px solid #f59e0b;
+  border-radius: 16px;
+  box-shadow: 0 8px 16px rgba(180, 83, 9, 0.06);
+  margin-top: 18px;
+  padding: 20px 22px;
+}
+
+.previewReadyIntroText {
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+
+.previewReadyInnerPanel {
+  background: #ffffff;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.welcomeGroups {
+  gap: 18px;
+}
+
+.welcomeGroupCard {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+  padding: 20px;
+}
+
+.welcomeGroupTitle {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
+.welcomeGrid {
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.welcomeCard {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  padding: 20px;
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.welcomeCardDisabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.welcomeCardTitle {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.welcomeCardText {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.settingsHeaderWrap {
+  background: #f8fafc;
+  max-width: none;
+  padding: 20px 0 14px;
+  position: relative;
+  width: 100%;
+}
+
+.emptyState {
+  color: #94a3b8;
+  height: 100%;
+}
+
+.emptyStateText {
+  color: #334155;
+  font-size: 16px;
+}
+
+.emptyStateCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
+  max-width: 720px;
+  padding: 18px 20px;
+}
+
+.emptyStateCardTitle {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.emptyStateCardText {
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.45;
+  margin-top: 8px;
+}
+
+.emptyStateCardHint {
+  color: #0f766e;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.dashboardFooter {
+  background-color: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  font-size: 12px;
+  min-height: 44px;
+  padding: 0 20px;
+}
+
+.dashboardFooterCopy {
+  color: #64748b;
+}
+
+.dashboardFooterLink {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 @media (max-width: 768px) {
   .regionHeaderSticky {
     padding: 16px 0 28px;
@@ -341,5 +928,10 @@
 
   .progressWrap {
     min-width: 100%;
+  }
+
+  .dashboardMain,
+  .dashboardMainWelcome {
+    padding: 24px 16px;
   }
 }
