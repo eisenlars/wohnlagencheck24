@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
 import IntegrationTriggerPanel from "@/components/network-partners/self-service/IntegrationTriggerPanel";
+import styles from "./styles/partner-settings.module.css";
 export type SettingsSection = "konto" | "profil" | "integrationen" | "kostenmonitor";
 
 type PartnerProfile = {
@@ -262,6 +263,46 @@ function shiftYearMonth(value: string, delta: number): string {
   const y = date.getUTCFullYear();
   const m = date.getUTCMonth() + 1;
   return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function settingsTabClass(active: boolean): string {
+  return `${styles.tabButton} ${active ? styles.tabButtonActive : ""}`;
+}
+
+function integrationListItemClass(active: boolean): string {
+  return `${styles.integrationListItem} ${active ? styles.integrationListItemActive : ""}`;
+}
+
+function flowTabClass(active: boolean): string {
+  return settingsTabClass(active);
+}
+
+function advancedToggleClass(open: boolean): string {
+  return `${styles.advancedToggleButton} ${open ? styles.advancedToggleButtonOpen : ""}`;
+}
+
+function integrationToggleClass(isActive: boolean): string {
+  return isActive ? styles.buttonDangerGhost : styles.buttonGhost;
+}
+
+function secretGridClass(fieldCount: number): string {
+  if (fieldCount <= 1) return `${styles.secretGrid} ${styles.secretGridOne}`;
+  if (fieldCount === 2) return `${styles.secretGrid} ${styles.secretGridTwo}`;
+  return `${styles.secretGrid} ${styles.secretGridThree}`;
+}
+
+function testResultClass(status: "ok" | "warning" | "error"): string {
+  if (status === "ok") return styles.testResultOk;
+  if (status === "warning") return styles.testResultWarning;
+  return styles.testResultError;
+}
+
+function featureBadgeClass(enabled: boolean): string {
+  return enabled ? styles.featureActiveBadge : styles.featureInactiveBadge;
+}
+
+function usageModeButtonClass(active: boolean): string {
+  return `${styles.usageModeButton} ${active ? styles.usageModeButtonActive : ""}`;
 }
 
 function buildIntegrationSettings(
@@ -813,12 +854,12 @@ export default function PartnerSettingsPanel({
     setCostMonitorTab("portalabo");
   }, [showsPortalLlmUsage, costMonitorTab]);
 
-  function getDefaultTintStyle(field: keyof IntegrationDraft): React.CSSProperties {
+  function getDefaultTintClass(field: keyof IntegrationDraft): string {
     const current = String(integrationDraft[field] ?? "").trim();
     const defaultValueRaw = (currentDefaults as Record<string, unknown>)[field];
     const defaultValue = String(defaultValueRaw ?? "").trim();
-    if (defaultValue && current === defaultValue) return inputMutedStyle;
-    return inputStyle;
+    if (defaultValue && current === defaultValue) return styles.inputMuted;
+    return styles.input;
   }
 
   useEffect(() => {
@@ -1089,27 +1130,27 @@ export default function PartnerSettingsPanel({
   }
 
   return (
-    <div style={inlineWrapStyle}>
+    <div className="d-flex justify-content-stretch w-100">
       <FullscreenLoader show={busy} label="Sektionen werden geladen..." />
-      <div style={contentStyle}>
-        <div style={{ ...settingsTabsBarStyle, marginBottom: 40 }}>
+      <div className={styles.content}>
+        <div className={`${styles.tabsBar} mb-5`}>
           <button
             type="button"
-            style={settingsTabButtonStyle(section === "konto")}
+            className={settingsTabClass(section === "konto")}
             onClick={() => onSectionChange?.("konto")}
           >
             Konto
           </button>
           <button
             type="button"
-            style={settingsTabButtonStyle(section === "profil")}
+            className={settingsTabClass(section === "profil")}
             onClick={() => onSectionChange?.("profil")}
           >
             Partnerprofil
           </button>
           <button
             type="button"
-            style={settingsTabButtonStyle(section === "integrationen")}
+            className={settingsTabClass(section === "integrationen")}
             onClick={() => onSectionChange?.("integrationen")}
           >
             Anbindungen
@@ -1117,23 +1158,23 @@ export default function PartnerSettingsPanel({
           {showsPortalLlmUsage ? (
               <button
                 type="button"
-                style={settingsTabButtonStyle(section === "kostenmonitor")}
+                className={settingsTabClass(section === "kostenmonitor")}
                 onClick={() => onSectionChange?.("kostenmonitor")}
               >
                 Monitor
               </button>
           ) : null}
         </div>
-        <p style={statusStyle}>{status}</p>
+        <p className={styles.status}>{status}</p>
 
-        {section === "konto" ? <section style={sectionStyle}>
-          <h3 style={h3Style}>Konto</h3>
-          <div style={grid2Style}>
+        {section === "konto" ? <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Konto</h3>
+          <div className="row g-2">
             <input
               type="password"
               placeholder="Neues Passwort"
               aria-label="Neues Passwort"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={passwordDraft.password}
               onChange={(e) => setPasswordDraft((v) => ({ ...v, password: e.target.value }))}
             />
@@ -1141,14 +1182,14 @@ export default function PartnerSettingsPanel({
               type="password"
               placeholder="Passwort wiederholen"
               aria-label="Passwort wiederholen"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={passwordDraft.password_confirm}
               onChange={(e) => setPasswordDraft((v) => ({ ...v, password_confirm: e.target.value }))}
             />
           </div>
-          <div style={{ marginTop: 10 }}>
+          <div className="mt-2">
             <button
-              style={buttonStyle}
+              className={styles.buttonPrimary}
               disabled={busy}
               onClick={() =>
                 run("Passwort ändern", async () => {
@@ -1167,53 +1208,53 @@ export default function PartnerSettingsPanel({
               Passwort aktualisieren
             </button>
           </div>
-          <div style={privacyHintStyle}>
+          <div className={styles.privacyHint}>
             Datenschutz: Passwortänderungen wirken sofort. Dein Passwort wird in der Oberfläche nicht angezeigt.
           </div>
         </section> : null}
 
-        {section === "profil" ? <section style={sectionStyle}>
-          <h3 style={h3Style}>Partnerprofil</h3>
-          <div style={grid2Style}>
+        {section === "profil" ? <section className={styles.section}>
+          <h3 className={styles.sectionTitle}>Partnerprofil</h3>
+          <div className="row g-2">
             <input
               placeholder="Firmenname"
               aria-label="Firmenname"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={profileDraft.company_name}
               onChange={(e) => setProfileDraft((v) => ({ ...v, company_name: e.target.value }))}
             />
             <input
               placeholder="Kontakt-E-Mail"
               aria-label="Kontakt-E-Mail"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={profileDraft.contact_email}
               onChange={(e) => setProfileDraft((v) => ({ ...v, contact_email: e.target.value }))}
             />
             <input
               placeholder="Vorname"
               aria-label="Vorname"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={profileDraft.contact_first_name}
               onChange={(e) => setProfileDraft((v) => ({ ...v, contact_first_name: e.target.value }))}
             />
             <input
               placeholder="Nachname"
               aria-label="Nachname"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={profileDraft.contact_last_name}
               onChange={(e) => setProfileDraft((v) => ({ ...v, contact_last_name: e.target.value }))}
             />
             <input
               placeholder="Website URL"
               aria-label="Website URL"
-              style={inputStyle}
+              className="form-control col-12 col-md-6"
               value={profileDraft.website_url}
               onChange={(e) => setProfileDraft((v) => ({ ...v, website_url: e.target.value }))}
             />
           </div>
-          <div style={{ marginTop: 10 }}>
+          <div className="mt-2">
             <button
-              style={buttonStyle}
+              className={styles.buttonPrimary}
               disabled={busy || !profile}
               onClick={() =>
                 run("Partnerprofil speichern", async () => {
@@ -1228,59 +1269,59 @@ export default function PartnerSettingsPanel({
               Profil speichern
             </button>
           </div>
-          <div style={privacyHintStyle}>
+          <div className={styles.privacyHint}>
             Datenschutz: Hinterlege nur Kontaktdaten, die öffentlich angezeigt werden sollen.
           </div>
         </section> : null}
 
-        {section === "integrationen" ? <section style={sectionStyle}>
-          <h3 style={integrationTitleStyle}>Anbindungen</h3>
-          <div style={integrationIntroCardStyle}>
-            <p style={integrationIntroHeadlineStyle}>Anbindung in 3 Schritten</p>
-            <p style={integrationIntroTextStyle}>
+        {section === "integrationen" ? <section className={styles.section}>
+          <h3 className={styles.integrationTitle}>Anbindungen</h3>
+          <div className={styles.introCard}>
+            <p className={styles.introHeadline}>Anbindung in 3 Schritten</p>
+            <p className={styles.introText}>
               1. Anbieter auswählen, 2. Basisdaten speichern, 3. Verbindung testen. CRM/LLM sind Datenquellen, Local Site ist ein Ausspielkanal.
             </p>
           </div>
-          <div style={integrationCreateRowStyle}>
+          <div className="mt-3 mb-4">
             <button
-              style={buttonGreenGhostStyle}
+              className={styles.buttonGreenGhost}
               disabled={busy}
               onClick={beginCreateIntegration}
             >
               Neue Anbindung anlegen
             </button>
           </div>
-          <div style={integrationLayoutStyle}>
-            <aside style={integrationListPaneStyle}>
-              <div style={integrationListHeaderStyle}>
-                <strong style={integrationListHeadingStyle}>Gespeicherte Anbindungen</strong>
+          <div className={styles.integrationLayout}>
+            <aside className={styles.integrationListPane}>
+              <div className="d-flex align-items-center justify-content-start mb-2">
+                <strong className="text-dark fw-bold">Gespeicherte Anbindungen</strong>
               </div>
-              <div style={integrationListStyle}>
+              <div className="d-flex flex-column gap-2">
                 {integrations.length === 0 ? (
-                  <p style={emptyHintStyle}>Noch keine Anbindung gespeichert.</p>
+                  <p className={styles.emptyHint}>Noch keine Anbindung gespeichert.</p>
                 ) : (
                   integrations.map((integration) => (
                     <button
                       key={integration.id}
-                      style={integrationListItemStyle(selectedIntegrationId === integration.id && !isCreateMode)}
+                      className={integrationListItemClass(selectedIntegrationId === integration.id && !isCreateMode)}
                       onClick={() => selectIntegration(integration)}
                       disabled={busy}
                     >
                       <strong>{getIntegrationListLabel(integration)}</strong>
-                      <span style={integrationMetaSubStyle}>{getIntegrationMetaText(integration)}</span>
+                      <span className={styles.integrationMetaSub}>{getIntegrationMetaText(integration)}</span>
                     </button>
                   ))
                 )}
               </div>
             </aside>
 
-            <div style={integrationDetailPaneStyle}>
-              <div style={integrationDetailHeaderStyle}>
-                <strong style={{ color: "#0f172a", fontSize: 22, lineHeight: 1.2 }}>{isCreateMode ? "Neue Anbindung" : "Anbindung bearbeiten"}</strong>
+            <div className={styles.integrationDetailPane}>
+              <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+                <strong className={styles.detailTitle}>{isCreateMode ? "Neue Anbindung" : "Anbindung bearbeiten"}</strong>
                 {!isCreateMode && selectedIntegration ? (
-                  <div style={integrationActionRowStyle}>
+                  <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
                     <button
-                      style={integrationToggleButtonStyle(selectedIntegration.is_active)}
+                      className={integrationToggleClass(selectedIntegration.is_active)}
                       disabled={busy}
                       onClick={() =>
                         run(selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren", async () => {
@@ -1303,7 +1344,7 @@ export default function PartnerSettingsPanel({
                       {selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren"}
                     </button>
                     <button
-                      style={buttonDangerGhostStyle}
+                      className={styles.buttonDangerGhost}
                       disabled={busy}
                       onClick={() => {
                         if (!window.confirm(getIntegrationDeleteConfirmationMessage(selectedIntegration))) return;
@@ -1323,33 +1364,33 @@ export default function PartnerSettingsPanel({
                 ) : null}
               </div>
 
-              <div style={integrationIntroCardStyle}>
-                <p style={integrationIntroHeadlineStyle}>{getIntegrationSetupHeadline(integrationDraft.kind)}</p>
-                <ol style={integrationIntroListStyle}>
+              <div className={styles.introCard}>
+                <p className={styles.introHeadline}>{getIntegrationSetupHeadline(integrationDraft.kind)}</p>
+                <ol className={styles.introList}>
                   {getIntegrationSetupSteps(integrationDraft.kind).map((step) => (
-                    <li key={step} style={integrationIntroListItemStyle}>{step}</li>
+                    <li key={step} className={styles.introListItem}>{step}</li>
                   ))}
                 </ol>
               </div>
 
-              <div style={integrationFlowTabsStyle}>
+              <div className={`${styles.tabsBar} mb-4`}>
                 <button
                   type="button"
-                  style={integrationFlowTabButtonStyle(integrationFlowTab === "basis")}
+                  className={flowTabClass(integrationFlowTab === "basis")}
                   onClick={() => setIntegrationFlowTab("basis")}
                 >
                   1. Basisdaten
                 </button>
                 <button
                   type="button"
-                  style={integrationFlowTabButtonStyle(integrationFlowTab === "zugangstest")}
+                  className={flowTabClass(integrationFlowTab === "zugangstest")}
                   onClick={() => setIntegrationFlowTab("zugangstest")}
                 >
                   2. API-Key
                 </button>
                 <button
                   type="button"
-                  style={integrationFlowTabButtonStyle(integrationFlowTab === "trigger")}
+                  className={flowTabClass(integrationFlowTab === "trigger")}
                   onClick={() => setIntegrationFlowTab("trigger")}
                 >
                   3. Automatische Aktualisierung
@@ -1359,11 +1400,11 @@ export default function PartnerSettingsPanel({
               {integrationFlowTab === "basis" ? (
                 <>
                   {isCreateMode ? (
-                    <div style={{ ...grid3Style, marginTop: 40 }}>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Anbindungstyp</label>
+                    <div className="row g-2 mt-5">
+                      <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>Anbindungstyp</label>
                         <select
-                          style={selectStyle}
+                          className={styles.selectInput}
                           aria-label="Anbindungstyp"
                           value={integrationDraft.kind}
                           disabled={!isCreateMode}
@@ -1390,24 +1431,24 @@ export default function PartnerSettingsPanel({
                           {llmPartnerManagedAllowed ? <option value="llm">LLM</option> : null}
                           <option value="local_site">Local Site</option>
                         </select>
-                        <span style={fieldHintStyle}>Was willst du anbinden?</span>
+                        <span className={styles.fieldHint}>Was willst du anbinden?</span>
                       </div>
                       {isLocalSiteDraft ? (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Kanal</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Kanal</label>
                           <input
-                            style={inputMutedStyle}
+                            className={styles.inputMuted}
                             aria-label="Kanal"
                             value="Local Site (Ausspielkanal)"
                             readOnly
                           />
-                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                          <span className={styles.fieldHint}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
                         </div>
                       ) : (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Provider</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Provider</label>
                           <select
-                            style={selectStyle}
+                            className={styles.selectInput}
                             aria-label="Provider"
                             value={integrationDraft.provider}
                             disabled={!isCreateMode}
@@ -1419,27 +1460,27 @@ export default function PartnerSettingsPanel({
                               </option>
                             ))}
                           </select>
-                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                          <span className={styles.fieldHint}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
                         </div>
                       )}
                       {(selectedProviderSpec?.authTypes?.length ?? 0) > 1 ? (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Authentifizierung (Erweitert)</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Authentifizierung (Erweitert)</label>
                           <button
                             type="button"
-                            style={advancedToggleButtonStyle(advancedAuthOpen)}
+                            className={advancedToggleClass(advancedAuthOpen)}
                             onClick={() => setAdvancedAuthOpen((v) => !v)}
                           >
                             {advancedAuthOpen ? "Erweitert ausblenden" : "Erweitert: Authentifizierung anpassen"}
                           </button>
                           {!advancedAuthOpen ? (
-                            <span style={fieldHintStyle}>
+                            <span className={styles.fieldHint}>
                               Standard: {AUTH_TYPE_LABELS[String(selectedProviderSpec?.defaultAuthType ?? integrationDraft.auth_type)] ?? String(selectedProviderSpec?.defaultAuthType ?? integrationDraft.auth_type)}
                             </span>
                           ) : (
                             <>
                               <select
-                                style={selectStyle}
+                                className={styles.selectInput}
                                 aria-label="Authentifizierungstyp"
                                 value={integrationDraft.auth_type}
                                 onChange={(e) => setIntegrationDraft((v) => ({ ...v, auth_type: e.target.value }))}
@@ -1450,7 +1491,7 @@ export default function PartnerSettingsPanel({
                                   </option>
                                 ))}
                               </select>
-                              <span style={fieldHintStyle}>
+                              <span className={styles.fieldHint}>
                                 {getAuthBeginnerHint(integrationDraft.kind, integrationDraft.provider, integrationDraft.auth_type)}
                               </span>
                             </>
@@ -1459,33 +1500,33 @@ export default function PartnerSettingsPanel({
                       ) : null}
                     </div>
                   ) : (
-                    <div style={{ ...grid3Style, marginTop: 40 }}>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Anbindungstyp</label>
+                    <div className="row g-2 mt-5">
+                      <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>Anbindungstyp</label>
                         <input
-                          style={inputMutedStyle}
+                          className={styles.inputMuted}
                           aria-label="Anbindungstyp"
                           value={getKindLabel(integrationDraft.kind)}
                           readOnly
                         />
-                        <span style={fieldHintStyle}>Der Anbindungstyp bleibt bei bestehenden Einträgen fix.</span>
+                        <span className={styles.fieldHint}>Der Anbindungstyp bleibt bei bestehenden Einträgen fix.</span>
                       </div>
                       {isLocalSiteDraft ? (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Kanal</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Kanal</label>
                           <input
-                            style={inputMutedStyle}
+                            className={styles.inputMuted}
                             aria-label="Kanal"
                             value="Local Site (Ausspielkanal)"
                             readOnly
                           />
-                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                          <span className={styles.fieldHint}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
                         </div>
                       ) : (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Provider</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Provider</label>
                           <select
-                            style={selectStyle}
+                            className={styles.selectInput}
                             aria-label="Provider"
                             value={integrationDraft.provider}
                             onChange={(e) => updateIntegrationProvider(e.target.value)}
@@ -1496,71 +1537,71 @@ export default function PartnerSettingsPanel({
                               </option>
                             ))}
                           </select>
-                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                          <span className={styles.fieldHint}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
                         </div>
                       )}
                     </div>
                   )}
 
                   {!isLocalSiteDraft ? (
-                    <div style={{ ...grid2Style, marginTop: 14 }}>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Base URL</label>
+                    <div className="row g-2 mt-3">
+                      <div className="col-12 col-md-6 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>Base URL</label>
                         <input
                           placeholder={isLlmDraft ? "https://api.openai.com/v1" : "https://api.propstack.de/v1"}
                           aria-label="Base URL"
-                          style={getDefaultTintStyle("base_url")}
+                          className={getDefaultTintClass("base_url")}
                           value={integrationDraft.base_url}
                           onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
                         />
-                        <span style={fieldHintStyle}>
+                        <span className={styles.fieldHint}>
                           API-Startadresse des Anbieters. Beispiel: `https://api.propstack.de/v1`
                         </span>
                       </div>
                       {!isLlmDraft ? (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Detail URL Template</label>
+                        <div className="col-12 col-md-6 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Detail URL Template</label>
                           <input
                             placeholder="https://www.partnerdomain.de/expose/{exposee_id}"
                             aria-label="Detail URL Template"
-                            style={getDefaultTintStyle("detail_url_template")}
+                            className={getDefaultTintClass("detail_url_template")}
                             value={integrationDraft.detail_url_template}
                             onChange={(e) => setIntegrationDraft((v) => ({ ...v, detail_url_template: e.target.value }))}
                           />
-                          <span style={fieldHintStyle}>
+                          <span className={styles.fieldHint}>
                             Optional. Nur erforderlich, wenn ein externer Partner-Exposé-Link erzeugt werden soll.
                           </span>
                         </div>
                       ) : (
-                        <div />
+                        <div className="col-12 col-md-6" />
                       )}
                     </div>
                   ) : (
-                    <div style={{ ...grid2Style, marginTop: 14 }}>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>URL deiner Website</label>
+                    <div className="row g-2 mt-3">
+                      <div className="col-12 col-md-6 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>URL deiner Website</label>
                         <input
                           placeholder="https://www.deine-website.de"
                           aria-label="URL deiner Website"
-                          style={getDefaultTintStyle("base_url")}
+                          className={getDefaultTintClass("base_url")}
                           value={integrationDraft.base_url}
                           onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
                         />
-                        <span style={fieldHintStyle}>
+                        <span className={styles.fieldHint}>
                           Diese URL wird als Kennung der Local-Site-Anbindung angezeigt (z. B. links in der Anbindungsliste).
                         </span>
                       </div>
-                      <div />
+                      <div className="col-12 col-md-6" />
                     </div>
                   )}
 
                   {isLlmDraft ? (
-                    <div style={{ ...grid3Style, marginTop: 16 }}>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>{getLlmModelFieldLabel(integrationDraft.provider)}</label>
+                    <div className="row g-2 mt-3">
+                      <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>{getLlmModelFieldLabel(integrationDraft.provider)}</label>
                         <select
                           aria-label={getLlmModelFieldLabel(integrationDraft.provider)}
-                          style={{ ...selectStyle, ...getDefaultTintStyle("llm_model") }}
+                          className={`${styles.selectInput} ${getDefaultTintClass("llm_model")}`}
                           value={
                             llmCustomModelMode
                               ? "__custom__"
@@ -1590,50 +1631,50 @@ export default function PartnerSettingsPanel({
                           <input
                             aria-label={`${getLlmModelFieldLabel(integrationDraft.provider)} (Eigenes Modell)`}
                             placeholder="Eigenes Modell eingeben"
-                            style={getDefaultTintStyle("llm_model")}
+                            className={getDefaultTintClass("llm_model")}
                             value={integrationDraft.llm_model}
                             onChange={(e) => setIntegrationDraft((v) => ({ ...v, llm_model: e.target.value }))}
                           />
                         ) : null}
-                        <span style={fieldHintStyle}>{getLlmModelHint(integrationDraft.provider)}</span>
+                        <span className={styles.fieldHint}>{getLlmModelHint(integrationDraft.provider)}</span>
                       </div>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Temperature</label>
+                      <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>Temperature</label>
                         <input
                           placeholder="0.4"
                           aria-label="Temperature"
-                          style={getDefaultTintStyle("llm_temperature")}
+                          className={getDefaultTintClass("llm_temperature")}
                           value={integrationDraft.llm_temperature}
                           onChange={(e) => setIntegrationDraft((v) => ({ ...v, llm_temperature: e.target.value }))}
                         />
-                        <span style={fieldHintStyle}>
+                        <span className={styles.fieldHint}>
                           Steuert die Kreativität der Ausgabe. Niedrig = sachlicher, höher = variabler.
                         </span>
                       </div>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Max Tokens</label>
+                      <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                        <label className={styles.fieldLabel}>Max Tokens</label>
                         <input
                           placeholder="800"
                           aria-label="Max Tokens"
-                          style={getDefaultTintStyle("llm_max_tokens")}
+                          className={getDefaultTintClass("llm_max_tokens")}
                           value={integrationDraft.llm_max_tokens}
                           onChange={(e) => setIntegrationDraft((v) => ({ ...v, llm_max_tokens: e.target.value }))}
                         />
-                        <span style={fieldHintStyle}>
+                        <span className={styles.fieldHint}>
                           Maximale Antwortlänge. Höher erlaubt längere Texte, erhöht aber meist Kosten und Laufzeit.
                         </span>
                       </div>
                       {String(integrationDraft.provider ?? "").toLowerCase() === "azure_openai" ? (
-                        <div style={fieldWrapStyle}>
-                          <label style={fieldLabelStyle}>Azure API-Version</label>
+                        <div className="col-12 col-lg-4 d-flex flex-column gap-1">
+                          <label className={styles.fieldLabel}>Azure API-Version</label>
                           <input
                             placeholder="2024-10-21"
                             aria-label="Azure API-Version"
-                            style={getDefaultTintStyle("llm_api_version")}
+                            className={getDefaultTintClass("llm_api_version")}
                             value={integrationDraft.llm_api_version}
                             onChange={(e) => setIntegrationDraft((v) => ({ ...v, llm_api_version: e.target.value }))}
                           />
-                          <span style={fieldHintStyle}>
+                          <span className={styles.fieldHint}>
                             Version laut Azure-Endpoint (z. B. 2024-10-21). Muss zum Deployment passen.
                           </span>
                         </div>
@@ -1641,9 +1682,9 @@ export default function PartnerSettingsPanel({
                     </div>
                   ) : null}
 
-                  <div style={{ marginTop: isLlmDraft ? 24 : 40 }}>
+                  <div className={isLlmDraft ? "mt-4" : "mt-5"}>
                     <button
-                      style={buttonGreenGhostStyle}
+                      className={styles.buttonGreenGhost}
                       disabled={busy}
                       onClick={() =>
                         run(isCreateMode ? "Anbindung anlegen" : "Basisdaten speichern", async () => {
@@ -1698,20 +1739,11 @@ export default function PartnerSettingsPanel({
 
               {integrationFlowTab === "zugangstest" ? (
                 !isCreateMode && selectedIntegration ? (
-                <div style={integrationSecretsSectionStyle}>
-                  <div
-                    style={{
-                      marginTop: 40,
-                      marginBottom: 10,
-                      color: "#0f172a",
-                      fontSize: 18,
-                      fontWeight: 700,
-                      lineHeight: 1.2,
-                    }}
-                  >
+                <div className="mt-3 pt-0">
+                  <div className="mt-5 mb-2 text-dark fs-5 fw-bold lh-sm">
                     API-Key und Test
                   </div>
-                  <p style={{ ...secretPrivacyHintStyle, marginBottom: 20 }}>
+                  <p className={`${styles.secretPrivacyHint} mb-4`}>
                     {getSecretsStepHint(selectedIntegration.kind)}
                   </p>
                   {(() => {
@@ -1733,9 +1765,9 @@ export default function PartnerSettingsPanel({
                     return (
                       <>
                         {supportsSecrets && isLocalSiteIntegration ? (
-                          <div style={{ marginTop: 0, marginBottom: 20 }}>
+                          <div className="mt-0 mb-4">
                             <button
-                              style={buttonGreenGhostStyle}
+                              className={styles.buttonGreenGhost}
                               disabled={busy}
                               onClick={() =>
                                 setSecretDraft((prev) => ({
@@ -1749,16 +1781,16 @@ export default function PartnerSettingsPanel({
                           </div>
                         ) : null}
                         {supportsSecrets ? (
-                          <div style={secretGridStyle(relevantSecretFields.length)}>
+                          <div className={secretGridClass(relevantSecretFields.length)}>
                             {relevantSecretFields.map((field) => (
-                              <div key={`${integration.id}-${field}`} style={fieldWrapLeftStyle}>
-                                <label style={fieldLabelStyle}>{getSecretFieldMeta(integration, field).label}</label>
-                                <div style={secretInputWrapStyle}>
+                              <div key={`${integration.id}-${field}`} className="d-flex flex-column align-items-stretch text-start w-100 gap-1">
+                                <label className={styles.fieldLabel}>{getSecretFieldMeta(integration, field).label}</label>
+                                <div className={styles.secretInputWrap}>
                                   <input
                                     type={visibility[field] ? "text" : "password"}
                                     placeholder={getSecretFieldMeta(integration, field).placeholder}
                                     aria-label={`${getSecretFieldMeta(integration, field).label} für ${integration.provider}`}
-                                    style={secretInputStyle}
+                                    className={styles.secretInput}
                                     value={draft[field]}
                                     onChange={(e) =>
                                       setSecretDraft((prev) => ({
@@ -1769,7 +1801,7 @@ export default function PartnerSettingsPanel({
                                   />
                                   <button
                                     type="button"
-                                    style={secretVisibilityButtonStyle}
+                                    className={styles.secretVisibilityButton}
                                     aria-label={visibility[field] ? "Wert verbergen" : "Wert anzeigen"}
                                     aria-pressed={visibility[field] === true}
                                     onClick={() =>
@@ -1786,12 +1818,12 @@ export default function PartnerSettingsPanel({
                                   </button>
                                 </div>
                                 {isLocalSiteIntegration && field === "token" ? (
-                                  <span style={fieldHintStyle}>
+                                  <span className={styles.fieldHint}>
                                     Das ist dein geheimer API-Key. Gib ihn nicht öffentlich weiter.
                                   </span>
                                 ) : null}
                                 {!isLocalSiteIntegration && !String(draft[field] ?? "").trim() && hasStoredSecret(integration, field) ? (
-                                  <span style={fieldHintStyle}>
+                                  <span className={styles.fieldHint}>
                                     Bereits gespeichert. Aus Sicherheitsgründen wird der Wert hier nicht erneut angezeigt.
                                   </span>
                                 ) : null}
@@ -1799,15 +1831,15 @@ export default function PartnerSettingsPanel({
                             ))}
                           </div>
                         ) : (
-                          <p style={{ marginTop: 0, marginBottom: 8, fontSize: 12, color: "#475569" }}>
+                          <p className={`${styles.secretPrivacyHint} mb-2`}>
                             Für diese Anbindung sind bei der gewählten Authentifizierung keine zusätzlichen Zugangsdaten erforderlich.
                           </p>
                         )}
-                        <div style={secretActionsWrapStyle}>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <div className="d-flex flex-column align-items-stretch text-start w-100 mt-5">
+                          <div className="d-flex gap-2 flex-wrap">
                             {supportsSecrets ? (
                               <button
-                                style={buttonStyle}
+                                className={styles.buttonPrimary}
                                 disabled={busy}
                                 onClick={() =>
                                   run(isLocalSiteIntegration ? "API-Key speichern" : "Secrets speichern", async () => {
@@ -1838,7 +1870,7 @@ export default function PartnerSettingsPanel({
                             ) : null}
                             {!isLocalSiteIntegration ? (
                               <button
-                                style={buttonGhostStyle}
+                                className={styles.buttonGhost}
                                 disabled={busy}
                                 onClick={() =>
                                   run("Verbindung testen", async () => {
@@ -1862,7 +1894,7 @@ export default function PartnerSettingsPanel({
                               </button>
                             ) : null}
                             {isCrmIntegration ? (
-                              <span style={{ ...fieldHintStyle, alignSelf: "center" }}>
+                              <span className={`${styles.fieldHint} align-self-center`}>
                                 CRM-Testläufe und Referenz-Mappings werden zentral im Admin-Bereich gesteuert.
                               </span>
                             ) : null}
@@ -1871,23 +1903,13 @@ export default function PartnerSettingsPanel({
                             <>
                               {testResult[integration.id] ? (
                                 <p
-                                  style={{
-                                    marginTop: 8,
-                                    marginBottom: 0,
-                                    fontSize: 12,
-                                    color:
-                                      testResult[integration.id].status === "ok"
-                                        ? "#15803d"
-                                        : testResult[integration.id].status === "warning"
-                                          ? "#b45309"
-                                          : "#b91c1c",
-                                  }}
+                                  className={`${styles.testResult} ${testResultClass(testResult[integration.id].status)}`}
                                 >
                                   {testResult[integration.id].message}
                                 </p>
                               ) : null}
                               {lastTestedAt ? (
-                                <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                <p className={styles.lastTestHint}>
                                   Zuletzt getestet: {new Date(lastTestedAt).toLocaleString("de-DE")}
                                   {lastTestStatus ? ` - ${lastTestStatus}` : ""}
                                   {lastTestMessage ? ` - ${lastTestMessage}` : ""}
@@ -1901,7 +1923,7 @@ export default function PartnerSettingsPanel({
                   })()}
                 </div>
                 ) : (
-                <p style={emptyHintStyle}>
+                <p className={styles.emptyHint}>
                   Nach dem Anlegen kannst du hier Zugangsdaten speichern und die Verbindung testen.
                 </p>
                 )
@@ -1910,7 +1932,7 @@ export default function PartnerSettingsPanel({
               {integrationFlowTab === "trigger" ? (
                 !isCreateMode && selectedIntegration ? (
                   String(selectedIntegration.kind ?? "").toLowerCase() === "crm" ? (
-                    <div style={{ marginTop: 40 }}>
+                    <div className="mt-5">
                       <IntegrationTriggerPanel
                         config={triggerConfigByIntegration[selectedIntegration.id] ?? null}
                         generatedSecret={generatedTriggerSecretByIntegration[selectedIntegration.id] ?? null}
@@ -1941,12 +1963,12 @@ export default function PartnerSettingsPanel({
                       />
                     </div>
                   ) : (
-                    <p style={emptyHintStyle}>
+                    <p className={styles.emptyHint}>
                       Automatische Aktualisierung steht aktuell nur für CRM-Anbindungen bereit.
                     </p>
                   )
                 ) : (
-                  <p style={emptyHintStyle}>
+                  <p className={styles.emptyHint}>
                     Nach dem Anlegen der CRM-Anbindung kannst du hier die automatische Aktualisierung einrichten.
                   </p>
                 )
@@ -1955,13 +1977,13 @@ export default function PartnerSettingsPanel({
           </div>
         </section> : null}
         {section === "kostenmonitor" ? (
-          <section style={sectionStyle}>
-            <h3 style={integrationTitleStyle}>Monitor</h3>
-            <div style={{ ...settingsTabsBarStyle, marginTop: 18, marginBottom: 40 }}>
+          <section className={styles.section}>
+            <h3 className={styles.integrationTitle}>Monitor</h3>
+            <div className={`${styles.tabsBar} mt-3 mb-5`}>
               {showsPortalLlmUsage ? (
                 <button
                   type="button"
-                  style={settingsTabButtonStyle(costMonitorTab === "tokenverbrauch")}
+                  className={settingsTabClass(costMonitorTab === "tokenverbrauch")}
                   onClick={() => setCostMonitorTab("tokenverbrauch")}
                 >
                   Tokenverbrauch
@@ -1969,43 +1991,43 @@ export default function PartnerSettingsPanel({
               ) : null}
               <button
                 type="button"
-                style={settingsTabButtonStyle(costMonitorTab === "portalabo")}
+                className={settingsTabClass(costMonitorTab === "portalabo")}
                 onClick={() => setCostMonitorTab("portalabo")}
               >
                 Portalabo
               </button>
               <button
                 type="button"
-                style={settingsTabButtonStyle(costMonitorTab === "features")}
+                className={settingsTabClass(costMonitorTab === "features")}
                 onClick={() => setCostMonitorTab("features")}
               >
                 Features
               </button>
             </div>
-            <div style={partnerLlmUsageWrapStyle}>
+            <div className={styles.usageWrap}>
               {costMonitorTab === "tokenverbrauch" ? (
-                <div style={partnerLlmUsageHeaderStyle}>
-                  <div style={usageModeSwitchStyle}>
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                  <div className="d-flex align-items-center gap-2">
                     <button
                       type="button"
-                      style={usageModeButtonStyle(llmUsagePeriod === "timeline")}
+                      className={usageModeButtonClass(llmUsagePeriod === "timeline")}
                       onClick={() => setLlmUsagePeriod("timeline")}
                     >
                       Monate
                     </button>
                     <button
                       type="button"
-                      style={usageModeButtonStyle(llmUsagePeriod === "year")}
+                      className={usageModeButtonClass(llmUsagePeriod === "year")}
                       onClick={() => setLlmUsagePeriod("year")}
                     >
                       Jahr
                     </button>
                   </div>
                   {llmUsagePeriod === "timeline" ? (
-                    <div style={usagePeriodGroupStyle}>
+                    <div className="d-flex align-items-center gap-2">
                       <button
                         type="button"
-                        style={buttonGhostStyle}
+                        className={styles.buttonGhost}
                         disabled={
                           busy
                           || !llmUsageBounds.has_usage
@@ -2018,14 +2040,14 @@ export default function PartnerSettingsPanel({
                       <input
                         type="month"
                         aria-label="Monat (Verlauf)"
-                        style={usageCompactInputStyle}
+                        className={styles.usageCompactInput}
                         value={llmUsageMonth}
                         disabled={!llmUsageBounds.has_usage}
                         onChange={(e) => setLlmUsageMonth(e.target.value)}
                       />
                       <button
                         type="button"
-                        style={buttonGhostStyle}
+                        className={styles.buttonGhost}
                         disabled={
                           busy
                           || !llmUsageBounds.has_usage
@@ -2038,11 +2060,11 @@ export default function PartnerSettingsPanel({
                     </div>
                   ) : null}
                   {llmUsagePeriod === "year" ? (
-                    <div style={usagePeriodGroupStyle}>
+                    <div className="d-flex align-items-center gap-2">
                       <input
                         type="number"
                         aria-label="Jahr"
-                        style={usageYearInputStyle}
+                        className={styles.usageYearInput}
                         min={2000}
                         max={2100}
                         value={llmUsageYear}
@@ -2054,7 +2076,7 @@ export default function PartnerSettingsPanel({
                     </div>
                   ) : null}
                   <button
-                    style={buttonStyle}
+                    className={styles.buttonPrimary}
                     disabled={busy}
                     onClick={() =>
                       run("Monitor laden", async () => {
@@ -2068,34 +2090,34 @@ export default function PartnerSettingsPanel({
               ) : null}
               {costMonitorTab === "tokenverbrauch" ? (
                 <>
-                  <div style={{ ...partnerLlmUsageTableWrapStyle, marginTop: 40 }}>
-                    <table style={partnerLlmUsageTableStyle}>
+                  <div className={`${styles.tableWrap} mt-5`}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
-                          <th style={partnerLlmUsageThStyle}>Provider</th>
-                          <th style={partnerLlmUsageThStyle}>Modell</th>
-                          <th style={partnerLlmUsageThStyle}>Input Tokens</th>
-                          <th style={partnerLlmUsageThStyle}>Output Tokens</th>
-                          <th style={partnerLlmUsageThStyle}>Gesamt Tokens</th>
-                          <th style={partnerLlmUsageThStyle}>Preisinfo USD / 1k (Input | Output)</th>
+                          <th>Provider</th>
+                          <th>Modell</th>
+                          <th>Input Tokens</th>
+                          <th>Output Tokens</th>
+                          <th>Gesamt Tokens</th>
+                          <th>Preisinfo USD / 1k (Input | Output)</th>
                         </tr>
                       </thead>
                       <tbody>
                         {llmUsageRows.length === 0 ? (
                           <tr>
-                            <td style={partnerLlmUsageTdStyle} colSpan={6}>
+                            <td colSpan={6}>
                               Noch keine Nutzung im gewählten Monat.
                             </td>
                           </tr>
                         ) : (
                           llmUsageRows.map((row) => (
                             <tr key={`${row.provider}:${row.model}`}>
-                              <td style={partnerLlmUsageTdStyle}>{formatProviderLabel(row.provider)}</td>
-                              <td style={partnerLlmUsageTdStyle}>{row.model}</td>
-                              <td style={partnerLlmUsageTdStyle}>{row.input_tokens}</td>
-                              <td style={partnerLlmUsageTdStyle}>{row.output_tokens}</td>
-                              <td style={partnerLlmUsageTdStyle}>{row.total_tokens}</td>
-                              <td style={partnerLlmUsageTdStyle}>
+                              <td>{formatProviderLabel(row.provider)}</td>
+                              <td>{row.model}</td>
+                              <td>{row.input_tokens}</td>
+                              <td>{row.output_tokens}</td>
+                              <td>{row.total_tokens}</td>
+                              <td>
                                 {typeof row.input_price_usd_per_1k === "number" && typeof row.output_price_usd_per_1k === "number"
                                   ? `${row.input_price_usd_per_1k.toFixed(4)} | ${row.output_price_usd_per_1k.toFixed(4)}`
                                   : "k. A."}
@@ -2106,17 +2128,17 @@ export default function PartnerSettingsPanel({
                       </tbody>
                     </table>
                   </div>
-                  <div style={partnerLlmUsageTotalsStyle}>
+                  <div className={styles.usageTotals}>
                     Nutzung: Input <strong>{llmUsageTotals.input_tokens}</strong>
                     {" | "}
                     Output <strong>{llmUsageTotals.output_tokens}</strong>
                     {" | "}
                     Gesamt <strong>{llmUsageTotals.total_tokens}</strong>
                   </div>
-                  <div style={partnerLlmUsageTotalsStyle}>
+                  <div className={styles.usageTotals}>
                     Geschätzte Kosten gesamt (netto, unverbindlich): <strong>{llmUsageTotals.cost_eur.toFixed(4)} EUR</strong>
                   </div>
-                  <div style={partnerLlmUsageTotalsStyle}>
+                  <div className={styles.usageTotals}>
                     Preisinfo je Modell basiert auf den aktuell gepflegten Providerpreisen.
                     {llmUsageFxRate
                       ? ` Monats-FX (USD→EUR): ${llmUsageFxRate.toFixed(6)}.`
@@ -2125,44 +2147,44 @@ export default function PartnerSettingsPanel({
                 </>
               ) : null}
               {costMonitorTab === "portalabo" ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <p style={partnerLlmUsageTotalsStyle}>
+                <div className="d-grid gap-2">
+                  <p className={styles.usageTotals}>
                     Es werden nur deine aktuell aktiven Kreise angezeigt. Ortslagenexport nutzt derzeit alle Ortslagen je Kreis.
                   </p>
-                  <div style={partnerLlmUsageTableWrapStyle}>
-                    <table style={partnerLlmUsageTableStyle}>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
-                          <th style={partnerLlmUsageThStyle}>Kreis</th>
-                          <th style={partnerLlmUsageThStyle}>Kreis-ID</th>
-                          <th style={partnerLlmUsageThStyle}>Grundpreis EUR / Monat</th>
-                          <th style={partnerLlmUsageThStyle}>Preis je Ortslage EUR</th>
-                          <th style={partnerLlmUsageThStyle}>Ortslagen gesamt EUR</th>
-                          <th style={partnerLlmUsageThStyle}>Ortslagenexport</th>
-                          <th style={partnerLlmUsageThStyle}>Ortslagenexport gesamt EUR</th>
-                          <th style={partnerLlmUsageThStyle}>Gesamtpreis EUR / Monat</th>
+                          <th>Kreis</th>
+                          <th>Kreis-ID</th>
+                          <th>Grundpreis EUR / Monat</th>
+                          <th>Preis je Ortslage EUR</th>
+                          <th>Ortslagen gesamt EUR</th>
+                          <th>Ortslagenexport</th>
+                          <th>Ortslagenexport gesamt EUR</th>
+                          <th>Gesamtpreis EUR / Monat</th>
                         </tr>
                       </thead>
                       <tbody>
                         {portalAboRows.length === 0 ? (
                           <tr>
-                            <td style={partnerLlmUsageTdStyle} colSpan={8}>
+                            <td colSpan={8}>
                               Noch keine aktiven Kreise zugeordnet.
                             </td>
                           </tr>
                         ) : (
                           portalAboRows.map((row) => (
                           <tr key={`portalabo:${row.key}`}>
-                            <td style={partnerLlmUsageTdStyle}>{row.kreis_name}</td>
-                            <td style={partnerLlmUsageTdStyle}>{row.kreis_id}</td>
-                            <td style={partnerLlmUsageTdStyle}>{row.base_price_eur.toFixed(2)}</td>
-                            <td style={partnerLlmUsageTdStyle}>{row.ortslage_price_eur.toFixed(2)}</td>
-                            <td style={partnerLlmUsageTdStyle}>{row.ortslagen_total_price_eur.toFixed(2)}</td>
-                            <td style={partnerLlmUsageTdStyle}>
+                            <td>{row.kreis_name}</td>
+                            <td>{row.kreis_id}</td>
+                            <td>{row.base_price_eur.toFixed(2)}</td>
+                            <td>{row.ortslage_price_eur.toFixed(2)}</td>
+                            <td>{row.ortslagen_total_price_eur.toFixed(2)}</td>
+                            <td>
                               {row.export_ortslagen_count} von {row.ortslagen_count}
                             </td>
-                            <td style={partnerLlmUsageTdStyle}>{row.export_ortslagen_total_price_eur.toFixed(2)}</td>
-                            <td style={partnerLlmUsageTdStyle}>{row.total_price_eur.toFixed(2)}</td>
+                            <td>{row.export_ortslagen_total_price_eur.toFixed(2)}</td>
+                            <td>{row.total_price_eur.toFixed(2)}</td>
                           </tr>
                         ))
                         )}
@@ -2171,10 +2193,10 @@ export default function PartnerSettingsPanel({
                   </div>
                   {portalAboRows.length > 0 ? (
                     <>
-                      <div style={partnerLlmUsageTotalsStyle}>
+                      <div className={styles.usageTotals}>
                         Gesamtpreis über alle Kreise: <strong>{portalAboGrandTotal.toFixed(2)} EUR / Monat</strong>
                       </div>
-                      <div style={partnerLlmUsageTotalsStyle}>
+                      <div className={styles.usageTotals}>
                         Alle Preise netto pro Monat, zzgl. gesetzlicher Umsatzsteuer.
                       </div>
                     </>
@@ -2182,43 +2204,43 @@ export default function PartnerSettingsPanel({
                 </div>
               ) : null}
               {costMonitorTab === "features" ? (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <p style={partnerLlmUsageTotalsStyle}>
+                <div className="d-grid gap-2">
+                  <p className={styles.usageTotals}>
                     Feature-Preise werden pro Partner durch die Administration gepflegt und monatlich abgerechnet.
                   </p>
-                  <div style={partnerLlmUsageTableWrapStyle}>
-                    <table style={partnerLlmUsageTableStyle}>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
                       <thead>
                         <tr>
-                          <th style={partnerLlmUsageThStyle}>Feature</th>
-                          <th style={partnerLlmUsageThStyle}>Status</th>
-                          <th style={partnerLlmUsageThStyle}>Festpreis</th>
-                          <th style={partnerLlmUsageThStyle}>Hinweis</th>
+                          <th>Feature</th>
+                          <th>Status</th>
+                          <th>Festpreis</th>
+                          <th>Hinweis</th>
                         </tr>
                       </thead>
                       <tbody>
                         {featureRows.map((feature) => (
                           <tr key={feature.key}>
-                            <td style={partnerLlmUsageTdStyle}>{feature.label}</td>
-                            <td style={partnerLlmUsageTdStyle}>
-                              <span style={feature.enabled ? featureActiveBadgeStyle : featureInactiveBadgeStyle}>
+                            <td>{feature.label}</td>
+                            <td>
+                              <span className={featureBadgeClass(feature.enabled)}>
                                 {feature.enabled ? "Aktiv" : "Nicht aktiv"}
                               </span>
                             </td>
-                            <td style={partnerLlmUsageTdStyle}>
+                            <td>
                               {feature.monthly_price_eur.toFixed(2)} EUR
                               {feature.billing_unit ? ` (${feature.billing_unit})` : ""}
                             </td>
-                            <td style={partnerLlmUsageTdStyle}>{feature.note}</td>
+                            <td>{feature.note}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                  <div style={partnerLlmUsageTotalsStyle}>
+                  <div className={styles.usageTotals}>
                     Gesamtpreis aktive Features: <strong>{featureGrandTotal.toFixed(2)} EUR / Monat</strong>
                   </div>
-                  <div style={partnerLlmUsageTotalsStyle}>
+                  <div className={styles.usageTotals}>
                     Alle Preise netto pro Monat, zzgl. gesetzlicher Umsatzsteuer.
                   </div>
                 </div>
@@ -2230,505 +2252,3 @@ export default function PartnerSettingsPanel({
     </div>
   );
 }
-
-const inlineWrapStyle: React.CSSProperties = {
-  width: "100%",
-  display: "flex",
-  justifyContent: "stretch",
-};
-
-const contentStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: "none",
-  margin: 0,
-  padding: "0 0 24px",
-};
-
-const statusStyle: React.CSSProperties = {
-  margin: "0 0 14px",
-  border: "1px solid #e2e8f0",
-  background: "#f8fafc",
-  borderRadius: 8,
-  padding: "8px 10px",
-  fontSize: 12,
-  color: "#334155",
-};
-
-const sectionStyle: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 12,
-  padding: 18,
-  marginBottom: 14,
-  background: "#ffffff",
-  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.04)",
-};
-
-const settingsTabsBarStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  marginBottom: 10,
-};
-
-function settingsTabButtonStyle(active: boolean): React.CSSProperties {
-  return {
-    border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
-    background: active ? "#ecfdf5" : "#ffffff",
-    color: active ? "#065f46" : "#0f172a",
-    borderRadius: 999,
-    padding: "8px 12px",
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-}
-
-const h3Style: React.CSSProperties = {
-  marginTop: 0,
-  marginBottom: 10,
-  fontSize: 16,
-};
-
-const integrationTitleStyle: React.CSSProperties = {
-  ...h3Style,
-  fontSize: 22,
-  fontWeight: 800,
-  color: "#0f172a",
-  marginBottom: 6,
-};
-
-const integrationCreateRowStyle: React.CSSProperties = {
-  marginTop: 14,
-  marginBottom: 20,
-};
-
-const grid2Style: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: 8,
-};
-
-const grid3Style: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr",
-  gap: 8,
-};
-
-const integrationLayoutStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "minmax(250px, 320px) minmax(0, 1fr)",
-  gap: 16,
-  alignItems: "start",
-};
-
-const integrationListPaneStyle: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 10,
-  padding: 10,
-  background: "#f8fafc",
-};
-
-const integrationDetailPaneStyle: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 10,
-  padding: 14,
-  background: "#fff",
-};
-
-const integrationListHeaderStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-start",
-  marginBottom: 8,
-};
-
-const integrationListHeadingStyle: React.CSSProperties = {
-  color: "#0f172a",
-  fontWeight: 700,
-};
-
-const integrationListStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 6,
-};
-
-const integrationDetailHeaderStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 8,
-  marginBottom: 16,
-};
-
-const integrationActionRowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  gap: 8,
-  flexWrap: "wrap",
-};
-
-const integrationFlowTabsStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  marginBottom: 20,
-};
-
-function integrationFlowTabButtonStyle(active: boolean): React.CSSProperties {
-  return {
-    border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
-    background: active ? "#ecfdf5" : "#ffffff",
-    color: active ? "#065f46" : "#0f172a",
-    borderRadius: 999,
-    padding: "8px 12px",
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-}
-
-const integrationSecretsSectionStyle: React.CSSProperties = {
-  marginTop: 12,
-  borderTop: "none",
-  paddingTop: 0,
-};
-
-const emptyHintStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: "#64748b",
-};
-
-function integrationListItemStyle(active: boolean): React.CSSProperties {
-  return {
-    border: active ? "1px solid #0f766e" : "1px solid #e2e8f0",
-    background: active ? "#ecfeff" : "#fff",
-    borderRadius: 8,
-    padding: "8px 10px",
-    textAlign: "left",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    gap: 2,
-  };
-}
-
-function secretGridStyle(fieldCount: number): React.CSSProperties {
-  if (fieldCount <= 1) return { display: "grid", gridTemplateColumns: "1fr", gap: 8, width: "100%" };
-  if (fieldCount === 2) return { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" };
-  return { ...grid3Style, width: "100%" };
-}
-
-const fieldWrapStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-};
-
-const fieldWrapLeftStyle: React.CSSProperties = {
-  ...fieldWrapStyle,
-  alignItems: "stretch",
-  textAlign: "left",
-  width: "100%",
-};
-
-const fieldLabelStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: "#334155",
-  fontWeight: 600,
-};
-
-const fieldHintStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: "#64748b",
-};
-
-const inputStyle: React.CSSProperties = {
-  border: "1px solid #cbd5e1",
-  borderRadius: 8,
-  padding: "10px 12px",
-  width: "100%",
-};
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: "none",
-  WebkitAppearance: "none",
-  MozAppearance: "none",
-  backgroundColor: "#fff",
-  paddingRight: 36,
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2364748b' d='M1 1l4 4 4-4'/%3E%3C/svg%3E\")",
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "right 12px center",
-  backgroundSize: "10px 6px",
-};
-
-const secretInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  minWidth: 0,
-  paddingRight: 42,
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-};
-
-const secretInputWrapStyle: React.CSSProperties = {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-};
-
-const secretVisibilityButtonStyle: React.CSSProperties = {
-  position: "absolute",
-  right: 10,
-  top: "50%",
-  transform: "translateY(-50%)",
-  border: "none",
-  background: "transparent",
-  color: "#64748b",
-  padding: 0,
-  width: 20,
-  height: 20,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-};
-
-const inputMutedStyle: React.CSSProperties = {
-  ...inputStyle,
-  color: "#64748b",
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: "1px solid #0f766e",
-  background: "#0f766e",
-  color: "#fff",
-  borderRadius: 8,
-  padding: "8px 12px",
-  cursor: "pointer",
-};
-
-const buttonGreenGhostStyle: React.CSSProperties = {
-  border: "1px solid #16a34a",
-  background: "rgba(22, 163, 74, 0.1)",
-  color: "#166534",
-  borderRadius: 8,
-  padding: "8px 12px",
-  cursor: "pointer",
-  opacity: 0.9,
-};
-
-const buttonGhostStyle: React.CSSProperties = {
-  border: "1px solid #94a3b8",
-  background: "#fff",
-  color: "#0f172a",
-  borderRadius: 8,
-  padding: "8px 12px",
-  cursor: "pointer",
-};
-
-const buttonDangerGhostStyle: React.CSSProperties = {
-  ...buttonGhostStyle,
-  border: "1px solid #dc2626",
-  color: "#991b1b",
-  background: "#fff7f7",
-};
-
-function advancedToggleButtonStyle(open: boolean): React.CSSProperties {
-  return {
-    border: open ? "1px solid #0f766e" : "1px solid #cbd5e1",
-    background: open ? "#ecfdf5" : "#f8fafc",
-    color: open ? "#065f46" : "#334155",
-    borderRadius: 8,
-    padding: "8px 10px",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 700,
-    textAlign: "left",
-  };
-}
-
-function integrationToggleButtonStyle(isActive: boolean): React.CSSProperties {
-  if (!isActive) return buttonGhostStyle;
-  return {
-    ...buttonGhostStyle,
-    border: "1px solid #dc2626",
-    color: "#991b1b",
-    background: "#fff7f7",
-  };
-}
-
-const secretActionsWrapStyle: React.CSSProperties = {
-  marginTop: 40,
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  textAlign: "left",
-  width: "100%",
-};
-
-const partnerLlmUsageWrapStyle: React.CSSProperties = {
-  marginTop: 14,
-  display: "grid",
-  gap: 10,
-};
-
-const partnerLlmUsageHeaderStyle: React.CSSProperties = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: 8,
-};
-
-const usageModeSwitchStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-function usageModeButtonStyle(active: boolean): React.CSSProperties {
-  return {
-    border: active ? "1px solid #111827" : "1px solid #cbd5e1",
-    background: "#ffffff",
-    color: "#111827",
-    borderRadius: 999,
-    padding: "8px 12px",
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: "pointer",
-  };
-}
-
-const usagePeriodGroupStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-const usageCompactInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  width: "auto",
-  minWidth: 170,
-};
-
-const usageYearInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  width: 120,
-};
-
-const partnerLlmUsageTotalsStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "#334155",
-};
-
-const partnerLlmUsageTableWrapStyle: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 10,
-  overflow: "hidden",
-};
-
-const partnerLlmUsageTableStyle: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "collapse",
-};
-
-const partnerLlmUsageThStyle: React.CSSProperties = {
-  textAlign: "left",
-  fontSize: 12,
-  color: "#334155",
-  background: "#f8fafc",
-  borderBottom: "1px solid #e2e8f0",
-  padding: "8px 10px",
-};
-
-const partnerLlmUsageTdStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "#0f172a",
-  borderBottom: "1px solid #f1f5f9",
-  padding: "8px 10px",
-};
-
-const featureActiveBadgeStyle: React.CSSProperties = {
-  display: "inline-block",
-  border: "1px solid #86efac",
-  background: "#f0fdf4",
-  color: "#166534",
-  borderRadius: 999,
-  padding: "2px 8px",
-  fontSize: 11,
-  fontWeight: 700,
-};
-
-const featureInactiveBadgeStyle: React.CSSProperties = {
-  display: "inline-block",
-  border: "1px solid #cbd5e1",
-  background: "#f8fafc",
-  color: "#475569",
-  borderRadius: 999,
-  padding: "2px 8px",
-  fontSize: 11,
-  fontWeight: 700,
-};
-
-const integrationMetaSubStyle: React.CSSProperties = {
-  color: "#64748b",
-  fontSize: 11,
-};
-
-const integrationIntroCardStyle: React.CSSProperties = {
-  border: "1px solid #dbeafe",
-  background: "#eff6ff",
-  borderRadius: 10,
-  padding: "12px 14px",
-  marginTop: 24,
-  marginBottom: 40,
-  display: "grid",
-  gap: 8,
-};
-
-const integrationIntroHeadlineStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  fontWeight: 700,
-  color: "#1e3a8a",
-};
-
-const integrationIntroTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: "#334155",
-  lineHeight: 1.45,
-};
-
-const integrationIntroListStyle: React.CSSProperties = {
-  margin: 0,
-  paddingLeft: 20,
-  display: "grid",
-  gap: 4,
-};
-
-const integrationIntroListItemStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: "#334155",
-  lineHeight: 1.45,
-};
-
-const privacyHintStyle: React.CSSProperties = {
-  marginTop: 12,
-  border: "1px solid #e2e8f0",
-  background: "#f8fafc",
-  borderRadius: 8,
-  padding: "8px 10px",
-  fontSize: 12,
-  color: "#475569",
-};
-
-const secretPrivacyHintStyle: React.CSSProperties = {
-  marginTop: 0,
-  marginBottom: 8,
-  fontSize: 12,
-  color: "#475569",
-};
