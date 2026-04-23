@@ -655,8 +655,6 @@
 }
 
 .reportWorkflowTopField {
-  display: grid;
-  margin-left: auto;
   min-width: 320px;
   flex: 0 1 420px;
 }
@@ -760,45 +758,6 @@
   color: #1d4ed8;
 }
 
-.reportClassText {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #475569;
-}
-
-.reportClassCycle {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #0f172a;
-  font-weight: 600;
-}
-
-.reportClassStats {
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  color: #475569;
-}
-
-.reportClassStatLine {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.reportClassCost {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #0f172a;
-}
-
 .reportCostInfoTrigger {
   width: 16px;
   height: 16px;
@@ -831,14 +790,6 @@
   color: #475569;
   font-weight: 500;
   z-index: 30;
-}
-
-.reportPromptLabel {
-  display: grid;
-  gap: 6px;
-  font-size: 11px;
-  color: #334155;
-  font-weight: 600;
 }
 
 .reportPromptTextarea {
@@ -938,12 +889,6 @@
   margin-bottom: 6px;
 }
 
-.reportRunReportRow {
-  font-size: 12px;
-  color: #334155;
-  margin-bottom: 3px;
-}
-
 .reportRunReportErrors {
   margin-top: 8px;
   padding-top: 8px;
@@ -960,22 +905,12 @@
   gap: 16px;
 }
 
-.reportAreaListCard {
-  padding: 0 14px;
-  display: grid;
-  gap: 10px;
-  align-self: start;
-}
-
 .reportAreaListRow {
   border: 1px solid #dbe4ea;
   border-radius: 12px;
   background-color: #ffffff;
   padding: 12px;
-  display: grid;
-  gap: 6px;
   cursor: pointer;
-  text-align: left;
 }
 
 .reportAreaListRowActive {
@@ -1093,12 +1028,6 @@
   opacity: 1;
 }
 
-.reportApprovalHint {
-  font-size: 12px;
-  color: #64748b;
-  text-align: right;
-}
-
 .reportSaveIndicator {
   position: fixed;
   bottom: 30px;
@@ -1128,32 +1057,6 @@
   padding: 18px;
 }
 
-.reportPublishTitle {
-  margin: 0;
-  font-size: 18px;
-  color: #0f172a;
-}
-
-.reportPublishText {
-  margin: 0;
-  font-size: 14px;
-  color: #334155;
-  line-height: 1.45;
-}
-
-.reportPublishProgress {
-  margin: 0;
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 700;
-}
-
-.reportPublishError {
-  margin: 0;
-  font-size: 13px;
-  color: #b91c1c;
-}
-
 .reportPublishCloseButton {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -1171,30 +1074,12 @@
   margin-top: 14px;
 }
 
-.mandatoryMediaBottomTitle {
-  margin: 0;
-  font-size: 15px;
-  color: #1e293b;
-}
-
-.mandatoryMediaBottomGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
 .mandatoryMediaCard {
   background-color: #f8fafc;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   height: fit-content;
   padding: 12px;
-}
-
-.mandatoryMediaCardTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e293b;
 }
 
 .mandatoryMediaStatePill {
@@ -1235,12 +1120,6 @@
   background-color: #ffffff;
 }
 
-.mandatoryMediaMeta {
-  font-size: 11px;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
 .mandatoryMediaUploadButton {
   margin-top: 10px;
   display: inline-flex;
@@ -1263,12 +1142,6 @@
   cursor: not-allowed;
 }
 
-.mandatoryMediaHint {
-  margin-top: 8px;
-  font-size: 11px;
-  color: #475569;
-}
-
 .mandatoryMediaError {
   margin-top: 8px;
   font-size: 11px;
@@ -1289,10 +1162,6 @@
   .reportAreaGrid {
     grid-template-columns: 1fr;
   }
-
-  .reportAreaListCard {
-    padding: 0;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1303,13 +1172,11 @@
     flex: 1 1 100%;
   }
 
-  .reportInlineSelect,
-  .mandatoryMediaBottomGrid {
+  .reportInlineSelect {
     width: 100%;
   }
 
-  .reportClassGrid,
-  .mandatoryMediaBottomGrid {
+  .reportClassGrid {
     grid-template-columns: 1fr;
   }
 

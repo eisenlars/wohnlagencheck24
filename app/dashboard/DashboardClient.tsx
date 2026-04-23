@@ -2108,7 +2108,7 @@ export default function DashboardClient({
           </div>
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
-          <div className={`${dashboardStyles.regionWorkspaceRoot} position-relative w-100`}>
+          <div className="position-relative w-100">
             <header className={dashboardStyles.regionHeaderSticky}>
               {!hideTextsHeaderInActivationFlow ? (
                 <div className="mb-1">
@@ -2208,7 +2208,7 @@ export default function DashboardClient({
                       className={
                         isAwaitingAdminApproval
                           ? dashboardStyles.awaitingApprovalCardShell
-                          : `${dashboardStyles.reviewPanelStrong} ${hideTextsHeaderInActivationFlow ? dashboardStyles.reviewPanelFull : ''}`
+                          : dashboardStyles.reviewPanelStrong
                       }
                     >
                       {isAwaitingAdminApproval ? (
@@ -2234,11 +2234,11 @@ export default function DashboardClient({
                         <>
                           {!hideTextsHeaderInActivationFlow ? (
                             <>
-                              <div className={dashboardStyles.reviewPanelTitle}>Aktivierung dieses Gebiets</div>
-                              <div className={dashboardStyles.reviewPanelText}>
+                              <div className="fw-bold text-dark mb-1">Aktivierung dieses Gebiets</div>
+                              <div className="small text-secondary m-0">
                                 Voraussetzung für die Freigabe:
                               </div>
-                              <ul className={dashboardStyles.reviewPanelList}>
+                              <ul className="small text-secondary ps-3 my-2 lh-base">
                                 <li>
                                   Marktüberblick:
                                   {' '}
@@ -2295,15 +2295,15 @@ export default function DashboardClient({
                             >
                               {mandatoryProgressLoading ? (
                                 <>
-                                  <div className={dashboardStyles.progressHead}>
-                                    <span className={dashboardStyles.progressLabelSkeleton}>Fortschritt Pflichtangaben</span>
-                                    <strong className={dashboardStyles.progressValueSkeleton}>--/--</strong>
+                                  <div className="d-flex justify-content-between align-items-center small text-secondary mb-1">
+                                    <span className="text-secondary">Fortschritt Pflichtangaben</span>
+                                    <strong className="text-secondary opacity-75">--/--</strong>
                                   </div>
                                   <div className={dashboardStyles.progressSkeleton} />
                                 </>
                               ) : (
                                 <>
-                                  <div className={dashboardStyles.progressHead}>
+                                  <div className="d-flex justify-content-between align-items-center small text-secondary mb-1">
                                     <span>Fortschritt Pflichtangaben</span>
                                     <strong>{mandatoryProgress.completed}/{mandatoryProgress.total}</strong>
                                   </div>
@@ -2326,7 +2326,7 @@ export default function DashboardClient({
                             </button>
                           </div>
                           {!hideTextsHeaderInActivationFlow ? (
-                            <div className={dashboardStyles.reviewPanelText}>
+                            <div className="small text-secondary m-0">
                               Nach vollständiger Eingabe einfach auf <strong>Freigabe anfordern</strong> klicken.
                             </div>
                           ) : null}

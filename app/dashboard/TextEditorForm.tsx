@@ -1831,25 +1831,26 @@ export default function TextEditorForm({
       }}
       renderMediaBottom={activeTab === 'makler' ? (
         <div className={`${workspaceStyles.mandatoryMediaBottomWrap} d-grid gap-3`}>
-          <h4 className={workspaceStyles.mandatoryMediaBottomTitle}>Makler-Bilder (Pflicht)</h4>
-          <div className={workspaceStyles.mandatoryMediaBottomGrid}>
+          <h4 className="m-0 fs-6 text-dark">Makler-Bilder (Pflicht)</h4>
+          <div className="row row-cols-1 row-cols-md-2 g-3">
             {MAKLER_MEDIA_KEYS.map((key) => {
               const spec = MANDATORY_MEDIA_SPECS[key];
               const mediaEntry = getMediaEntry(key);
               return (
-                <MandatoryMediaUploadCard
-                  key={`${selectedAreaConfig?.area_id}:${key}`}
-                  label={spec.label}
-                  assetKey={spec.key}
-                  maxWidth={spec.maxWidth}
-                  maxHeight={spec.maxHeight}
-                  maxUploadBytes={spec.maxUploadBytes}
-                  currentUrl={String(mediaEntry?.optimized_content ?? '')}
-                  hasOverride={Boolean(mediaEntry?.optimized_content)}
-                  uploading={mediaState[key]?.uploading ?? false}
-                  error={mediaState[key]?.error ?? null}
-                  onUpload={uploadMandatoryMedia}
-                />
+                <div className="col" key={`${selectedAreaConfig?.area_id}:${key}`}>
+                  <MandatoryMediaUploadCard
+                    label={spec.label}
+                    assetKey={spec.key}
+                    maxWidth={spec.maxWidth}
+                    maxHeight={spec.maxHeight}
+                    maxUploadBytes={spec.maxUploadBytes}
+                    currentUrl={String(mediaEntry?.optimized_content ?? '')}
+                    hasOverride={Boolean(mediaEntry?.optimized_content)}
+                    uploading={mediaState[key]?.uploading ?? false}
+                    error={mediaState[key]?.error ?? null}
+                    onUpload={uploadMandatoryMedia}
+                  />
+                </div>
               );
             })}
           </div>
@@ -2238,7 +2239,7 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
   return (
     <div className={workspaceStyles.mandatoryMediaCard}>
       <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
-        <div className={workspaceStyles.mandatoryMediaCardTitle}>{label}</div>
+        <div className="small fw-bold text-dark">{label}</div>
         <span className={`${workspaceStyles.mandatoryMediaStatePill} ${hasOverride ? workspaceStyles.mandatoryMediaStatePillDone : workspaceStyles.mandatoryMediaStatePillOpen}`}>
           {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
         </span>
@@ -2248,10 +2249,10 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
       ) : (
         <div className={workspaceStyles.mandatoryMediaEmpty}>Noch kein Upload vorhanden.</div>
       )}
-      <div className={workspaceStyles.mandatoryMediaMeta}>
+      <div className="small text-secondary mb-1">
         Ziel: {maxWidth} × {maxHeight} px
       </div>
-      <div className={workspaceStyles.mandatoryMediaMeta}>Format: WebP · max. {maxKb} KB</div>
+      <div className="small text-secondary mb-1">Format: WebP · max. {maxKb} KB</div>
       <label htmlFor={inputId} className={`${workspaceStyles.mandatoryMediaUploadButton} ${uploading ? workspaceStyles.mandatoryMediaUploadButtonDisabled : ''}`}>
         {uploading ? 'Upload läuft...' : 'Bild auswählen'}
         <input
@@ -2268,7 +2269,7 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
           }}
         />
       </label>
-      {!uploading ? <div className={workspaceStyles.mandatoryMediaHint}>Datei wird automatisch skaliert und komprimiert.</div> : null}
+      {!uploading ? <div className="mt-2 small text-secondary">Datei wird automatisch skaliert und komprimiert.</div> : null}
       {error ? <div className={workspaceStyles.mandatoryMediaError}>{error}</div> : null}
     </div>
   );

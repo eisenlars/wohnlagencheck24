@@ -150,7 +150,7 @@ export default function ReportTextEditor({
         {showTopLlmCard ? (
           <div className={workspaceStyles.reportWorkflowTopCard}>
             <div className="d-flex justify-content-end align-items-end flex-wrap gap-3 w-100">
-              <label className={workspaceStyles.reportWorkflowTopField}>
+              <label className={`${workspaceStyles.reportWorkflowTopField} d-grid ms-auto`}>
                 <select
                   value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
                   onChange={(e) => onSelectLlmIntegration(e.target.value)}
@@ -200,16 +200,16 @@ export default function ReportTextEditor({
                   <div className="d-flex align-items-center justify-content-between gap-3">
                     <span className={`${workspaceStyles.reportClassBadge} ${reportClassBadgeClass(card.classKey)}`}>{card.title}</span>
                   </div>
-                  <p className={workspaceStyles.reportClassText}>Texttyp: {card.description}</p>
-                  <p className={workspaceStyles.reportClassCycle}>Zyklus: {card.cycle}</p>
-                  <div className={workspaceStyles.reportClassStats}>
-                    <span className={workspaceStyles.reportClassStatLine}>
+                  <p className="m-0 small text-secondary lh-base">Texttyp: {card.description}</p>
+                  <p className="m-0 small lh-base text-dark fw-semibold">Zyklus: {card.cycle}</p>
+                  <div className="d-grid gap-1 small text-secondary">
+                    <span className="d-flex flex-wrap gap-3 align-items-center">
                       Gebiete: {card.areaMultiplier} Texte: {card.totalTexts} Tokens ca.: {card.totalTokens.toLocaleString('de-DE')}
                     </span>
                   </div>
-                  <div className={workspaceStyles.reportClassCost}>
-                    <span className={workspaceStyles.reportClassStatLine}>USD ca.: {card.estimatedCostUsd}</span>
-                    <span className={workspaceStyles.reportClassStatLine}>EUR ca.: {card.estimatedCostEur}</span>
+                  <div className="d-flex flex-wrap gap-3 align-items-center small fw-bold text-dark">
+                    <span className="d-flex flex-wrap gap-3 align-items-center">USD ca.: {card.estimatedCostUsd}</span>
+                    <span className="d-flex flex-wrap gap-3 align-items-center">EUR ca.: {card.estimatedCostEur}</span>
                     <span className="position-relative d-inline-flex align-items-center gap-1">
                       <button
                         type="button"
@@ -229,7 +229,7 @@ export default function ReportTextEditor({
                       ) : null}
                     </span>
                   </div>
-                  <label className={workspaceStyles.reportPromptLabel}>
+                  <label className="d-grid gap-1 small fw-semibold text-secondary">
                     Standardprompt (anpassbar)
                     <textarea
                       value={card.prompt}
@@ -274,13 +274,13 @@ export default function ReportTextEditor({
             {globalBulkReport ? (
               <div className={workspaceStyles.reportRunReport}>
                 <div className={workspaceStyles.reportRunReportTitle}>Laufbericht</div>
-                <div className={workspaceStyles.reportRunReportRow}>
+                <div className="small text-secondary mb-1">
                   <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
                 </div>
-                <div className={workspaceStyles.reportRunReportRow}>
+                <div className="small text-secondary mb-1">
                   <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
                 </div>
-                <div className={workspaceStyles.reportRunReportRow}>
+                <div className="small text-secondary mb-1">
                   <strong>Fehler:</strong> {globalBulkReport.failed.length}
                 </div>
                 {globalBulkReport.failed.length > 0 ? (
@@ -303,7 +303,7 @@ export default function ReportTextEditor({
 
         <div className={showScopeAreaSidebar ? workspaceStyles.reportAreaGrid : undefined}>
           {showScopeAreaSidebar ? (
-            <aside className={workspaceStyles.reportAreaListCard}>
+            <aside className="d-grid gap-2 align-self-start px-0 px-lg-3">
               <div className="d-grid gap-2">
                 {visibleScopeAreaItems.map((item) => {
                   const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
@@ -312,7 +312,7 @@ export default function ReportTextEditor({
                     <button
                       key={item.area_id}
                       type="button"
-                      className={`${workspaceStyles.reportAreaListRow} ${active ? workspaceStyles.reportAreaListRowActive : ''}`}
+                      className={`${workspaceStyles.reportAreaListRow} ${active ? workspaceStyles.reportAreaListRowActive : ''} d-grid gap-1 text-start`}
                       onClick={() => onSelectScopeArea(item.area_id)}
                     >
                       <div className="d-flex align-items-center justify-content-between gap-2">
@@ -358,7 +358,7 @@ export default function ReportTextEditor({
                     >
                       {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
                     </button>
-                    <span className={workspaceStyles.reportApprovalHint}>
+                    <span className="small text-secondary text-end">
                       Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
                     </span>
                   </div>
@@ -373,12 +373,12 @@ export default function ReportTextEditor({
       {publishModalOpen ? (
         <div className={`${workspaceStyles.reportPublishOverlay} d-flex align-items-center justify-content-center p-3`}>
           <div className={`${workspaceStyles.reportPublishModal} d-grid gap-3`}>
-            <h3 className={workspaceStyles.reportPublishTitle}>Deutsche Freigabe laeuft</h3>
-            <p className={workspaceStyles.reportPublishText}>{publishStatus}</p>
-            <p className={workspaceStyles.reportPublishProgress}>
+            <h3 className="m-0 fs-5 text-dark">Deutsche Freigabe laeuft</h3>
+            <p className="m-0 small text-secondary lh-base">{publishStatus}</p>
+            <p className="m-0 small text-dark fw-bold">
               Fortschritt: {publishDone}/{publishTotal}
             </p>
-            {publishError ? <p className={workspaceStyles.reportPublishError}>{publishError}</p> : null}
+            {publishError ? <p className="m-0 small text-danger">{publishError}</p> : null}
             <div className="d-flex justify-content-end">
               <button
                 type="button"
