@@ -104,6 +104,35 @@ function NewImageBadge() {
   );
 }
 
+function MarketSectionIcon({ type, accent = false }: { type: "offers" | "requests"; accent?: boolean }) {
+  const iconColor = accent ? "#ffffff" : "#486b7a";
+  const circleBg = accent ? "rgba(255,255,255,0.14)" : "#ffffff";
+
+  return (
+    <span
+      className="d-inline-flex align-items-center justify-content-center rounded-circle mb-2"
+      style={{ width: 58, height: 58, background: circleBg, color: iconColor }}
+      aria-hidden="true"
+    >
+      {type === "offers" ? (
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3.5 11.2 12 4l8.5 7.2" />
+          <path d="M5.5 10.2V20h13v-9.8" />
+          <path d="M9.5 20v-6h5v6" />
+          <path d="M16.5 7.8V5h2v4.5" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="10.5" cy="10.5" r="5.5" />
+          <path d="m15 15 4.5 4.5" />
+          <path d="M8.2 10.8h4.6" />
+          <path d="M10.5 8.5v4.6" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
 function MarketOfferCard(props: {
   offer: Offer;
   detailHref: string;
@@ -441,7 +470,10 @@ export function ImmobilienmaklerSection({
             <div className="d-flex flex-column gap-4">
               {hasFeaturedOffers ? (
                 <div className="rounded-4 bg-light p-3">
-                  <h3 className="h5 mb-3 text-center">Angebote</h3>
+                  <div className="text-center mb-3">
+                    <MarketSectionIcon type="offers" />
+                    <h3 className="h3 mb-0">Angebote</h3>
+                  </div>
                   <div className="row g-3">
                     {featuredBuyOffer ? (
                       <div className="col-12 col-lg-6">
@@ -472,7 +504,10 @@ export function ImmobilienmaklerSection({
 
               {hasFeaturedRequests ? (
                 <div className="rounded-4 p-3 text-white" style={{ background: "#486b7a" }}>
-                  <h3 className="h5 mb-3 text-center text-white">Gesuche</h3>
+                  <div className="text-center mb-3">
+                    <MarketSectionIcon type="requests" accent />
+                    <h3 className="h3 mb-0 text-white">Gesuche</h3>
+                  </div>
                   <div className="row g-3">
                     {featuredBuyRequest ? (
                       <div className="col-12 col-lg-6">
