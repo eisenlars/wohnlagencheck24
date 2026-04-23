@@ -470,7 +470,7 @@ export function ImmobilienmaklerSection({
             <div className="d-flex flex-column gap-4">
               {hasFeaturedOffers ? (
                 <div className="rounded-4 bg-light p-3">
-                  <div className="text-center mb-3">
+                  <div className="text-center mb-4">
                     <MarketSectionIcon type="offers" />
                     <h3 className="h3 mb-0">Angebote</h3>
                   </div>
@@ -504,7 +504,7 @@ export function ImmobilienmaklerSection({
 
               {hasFeaturedRequests ? (
                 <div className="rounded-4 p-3 text-white" style={{ background: "#486b7a" }}>
-                  <div className="text-center mb-3">
+                  <div className="text-center mb-4">
                     <MarketSectionIcon type="requests" accent />
                     <h3 className="h3 mb-0 text-white">Gesuche</h3>
                   </div>
