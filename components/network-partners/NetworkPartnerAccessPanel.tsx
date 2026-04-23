@@ -1,6 +1,5 @@
 'use client';
 
-import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 
 import type { NetworkPartnerUserRecord } from '@/lib/network-partners/types';
@@ -15,23 +14,14 @@ type UsersPayload = {
   error?: string;
 };
 
-const statusCardStyle: CSSProperties = {
-  display: 'grid',
-  gap: 10,
-  padding: 16,
-  borderRadius: 16,
-  border: '1px solid #e2e8f0',
-  background: '#fff',
-};
-
-function formatStatus(user: NetworkPartnerUserRecord | null): { label: string; tone: string; background: string; border: string } {
+function formatStatus(user: NetworkPartnerUserRecord | null): { label: string; className: string } {
   if (!user) {
-    return { label: 'Kein Zugang angelegt', tone: '#92400e', background: '#fffbeb', border: '1px solid #fde68a' };
+    return { label: 'Kein Zugang angelegt', className: 'text-warning bg-warning-subtle border border-warning-subtle' };
   }
   if (user.activation_pending) {
-    return { label: 'Einladung ausstehend', tone: '#92400e', background: '#fffbeb', border: '1px solid #fde68a' };
+    return { label: 'Einladung ausstehend', className: 'text-warning bg-warning-subtle border border-warning-subtle' };
   }
-  return { label: 'Zugang aktiviert', tone: '#166534', background: '#dcfce7', border: '1px solid #bbf7d0' };
+  return { label: 'Zugang aktiviert', className: 'text-success bg-success-subtle border border-success-subtle' };
 }
 
 export default function NetworkPartnerAccessPanel({
@@ -87,33 +77,26 @@ export default function NetworkPartnerAccessPanel({
   const status = formatStatus(accessUser);
 
   return (
-    <section style={{ display: 'grid', gap: 18 }}>
-      {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
-      {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
+    <section className="d-grid gap-3">
+      {message ? <p className="m-0 text-success fw-semibold">{message}</p> : null}
+      {error ? <p className="m-0 text-danger fw-semibold">{error}</p> : null}
 
-      <article style={statusCardStyle}>
+      <article className="d-grid gap-2 p-3 rounded-4 border bg-white">
         {loading ? (
-          <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
+          <p className="m-0 text-secondary">Lädt...</p>
         ) : (
           <>
-            <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Login-Status</h2>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  borderRadius: 999,
-                  padding: '6px 10px',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: status.tone,
-                  background: status.background,
-                  border: status.border,
-                }}
-              >
+            <h2 className="m-0 fs-5 text-dark">Zugang & Einladung</h2>
+            <p className="m-0 text-secondary lh-base">
+              Einladung, Aktivierung und letzter Login des Zugangs zum Netzwerkpartner-Bereich.
+            </p>
+            <div className="d-flex justify-content-end gap-3 align-items-center flex-wrap">
+              <span className={`badge rounded-pill fw-bold px-3 py-2 ${status.className}`}>
                 {status.label}
               </span>
             </div>
 
-            <div style={{ display: 'grid', gap: 6, color: '#334155' }}>
+            <div className="d-grid gap-1 text-secondary">
               <span><strong>E-Mail:</strong> {accessUser?.email ?? contactEmail ?? 'Nicht hinterlegt'}</span>
               {accessUser?.created_at ? (
                 <span><strong>Angelegt:</strong> {new Date(accessUser.created_at).toLocaleString('de-DE')}</span>
@@ -124,15 +107,15 @@ export default function NetworkPartnerAccessPanel({
             </div>
 
             {!accessUser ? (
-              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+              <p className="m-0 text-secondary lh-base">
                 Für diesen Partner wurde noch kein Login-Zugang erzeugt. Das sollte normalerweise bereits beim Anlegen passiert sein.
               </p>
             ) : accessUser.activation_pending ? (
-              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+              <p className="m-0 text-secondary lh-base">
                 Hinweis: Die Einladung wurde versendet, aber der Zugang wurde vom Partner noch nicht aktiviert. Wenn sein Link ablaufen sollte, kann hier ein neuer Link ausgelöst werden.
               </p>
             ) : (
-              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+              <p className="m-0 text-secondary lh-base">
                 Der Zugang ist aktiv. Wenn das Passwort vergessen wurde, läuft die Wiederherstellung direkt über den Login des Netzwerkpartners.
               </p>
             )}
@@ -164,17 +147,7 @@ export default function NetworkPartnerAccessPanel({
                     setResendingId(null);
                   }
                 }}
-                style={{
-                  width: 'fit-content',
-                  borderRadius: 10,
-                  border: '2px solid #0f766e',
-                  background: '#fff',
-                  color: '#0f766e',
-                  padding: '10px 14px',
-                  fontWeight: 700,
-                  cursor: resendingId === (accessUser?.id ?? 'missing') ? 'not-allowed' : 'pointer',
-                  opacity: resendingId === (accessUser?.id ?? 'missing') ? 0.65 : 1,
-                }}
+                className="btn btn-outline-success fw-bold align-self-start px-3 py-2"
               >
                 {resendingId === (accessUser?.id ?? 'missing')
                   ? 'Versendet...'

@@ -3175,6 +3175,20 @@ export default function InternationalizationManager({ config, availableLocales, 
     return { visual: 'translated', label: 'Übersetzt' };
   }
 
+  function getRequestStatusBadgeClass(status: PropertyComputedStatus): string {
+    if (status === 'translated') return 'badge rounded-pill text-success bg-success-subtle border border-success-subtle fw-bold px-3 py-2';
+    if (status === 'in_progress') return 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle fw-bold px-3 py-2';
+    return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
+  }
+
+  function getRequestFilterButtonClass(active: boolean): string {
+    return `btn btn-sm rounded-pill fw-semibold flex-fill ${active ? 'btn-secondary' : 'btn-outline-secondary'}`;
+  }
+
+  function getRequestListRowClass(active: boolean): string {
+    return `btn w-100 text-start rounded-3 border p-2 d-flex flex-column gap-1 position-relative ${active ? 'bg-light border-secondary' : 'bg-white border-secondary-subtle'}`;
+  }
+
   function renderRequestFieldPair(
     item: RequestTranslationItem,
     definition: RequestFieldDefinition,
@@ -3189,39 +3203,41 @@ export default function InternationalizationManager({ config, availableLocales, 
     const effectivePrompt = customPrompt.trim() || standardPrompt;
 
     return (
-      <div key={`${item.request_id}-${definition.key}`} style={propertyFieldRowStyle}>
-        <div style={propertyFieldRowHeadStyle}>
-          <div style={propertyFieldTitleStyle}>{definition.label}</div>
+      <div key={`${item.request_id}-${definition.key}`} className="border rounded-4 bg-white p-3 d-grid gap-3">
+        <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+          <div className="fw-bold text-dark">{definition.label}</div>
         </div>
-        <div style={propertyFieldPairGridStyle}>
-          <div style={propertyFieldColumnStyle}>
-            <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
+        <div className="row g-3">
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Deutsch</div>
             {definition.multiline ? (
               <textarea
-                style={propertyReadonlyTextareaStyle}
+                className="form-control bg-light text-secondary"
                 value={sourceValue}
                 readOnly
+                rows={6}
               />
             ) : (
               <input
-                style={propertyReadonlyInputStyle}
+                className="form-control bg-light text-secondary"
                 value={sourceValue}
                 readOnly
               />
             )}
           </div>
-          <div style={propertyFieldColumnStyle}>
-            <div style={propertyFieldColumnLabelStyle}>Übersetzung</div>
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
             {definition.multiline ? (
               <textarea
-                style={propertyEditableTextareaStyle}
+                className="form-control"
                 value={targetValue}
                 placeholder={definition.placeholder}
                 onChange={(e) => updateRequestField(item.request_id, definition.targetKey, e.target.value)}
+                rows={6}
               />
             ) : (
               <input
-                style={propertyEditableInputStyle}
+                className="form-control"
                 value={targetValue}
                 placeholder={definition.placeholder}
                 onChange={(e) => updateRequestField(item.request_id, definition.targetKey, e.target.value)}
@@ -3229,10 +3245,10 @@ export default function InternationalizationManager({ config, availableLocales, 
             )}
           </div>
         </div>
-        <div style={requestFieldActionRowStyle}>
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <button
             type="button"
-            style={propertyFieldAiButtonStyle}
+            className="btn btn-sm btn-outline-primary fw-semibold"
             onClick={() => void runRequestFieldAi(item, definition, effectivePrompt)}
             disabled={requestSaving || llmOptions.length === 0 || isBusy}
           >
@@ -3240,7 +3256,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           </button>
           <button
             type="button"
-            style={requestPromptToggleStyle}
+            className="btn btn-sm btn-outline-secondary fw-semibold"
             onClick={() => {
               setRequestPromptOpenMap((prev) => ({
                 ...prev,
@@ -3252,11 +3268,11 @@ export default function InternationalizationManager({ config, availableLocales, 
           </button>
         </div>
         {showPrompt ? (
-          <div style={promptPanelStyle}>
-            <div style={promptLabelStyle}>Standard-Prompt</div>
-            <div style={promptContentStyle}>{standardPrompt}</div>
-            <label style={promptInputLabelStyle}>
-              Eigener Prompt (optional)
+          <div className="border rounded-3 p-3 bg-light d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Standard-Prompt</div>
+            <div className="small text-secondary lh-base">{standardPrompt}</div>
+            <label className="form-label small fw-semibold text-dark mb-0 d-grid gap-1">
+              <span>Eigener Prompt (optional)</span>
               <textarea
                 value={customPrompt}
                 onChange={(e) => {
@@ -3266,7 +3282,8 @@ export default function InternationalizationManager({ config, availableLocales, 
                     [fieldKey]: next,
                   }));
                 }}
-                style={promptInputStyle}
+                className="form-control form-control-sm"
+                rows={4}
                 placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
               />
             </label>
@@ -4597,15 +4614,16 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
       </div>
       ) : activeDomain === 'gesuche' && activeDomainMeta.enabled ? (
-      <div style={editorCardStyle}>
-        {requestStatus && requestStatusTone === 'error' ? <div style={statusErrorBoxStyle}>{requestStatus}</div> : null}
-        <div style={blogGridStyle}>
-          <aside style={blogListCardStyle}>
-            <div style={blogListHeadStyle}>
-              <h3 style={sectionTabsIntroTitleStyle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
+      <div className="bg-white border rounded-4 p-3 p-xl-4">
+        {requestStatus && requestStatusTone === 'error' ? <div className="alert alert-danger mb-3">{requestStatus}</div> : null}
+        <div className="row g-3 g-xl-4 align-items-start">
+          <aside className="col-12 col-xl-4">
+            <div className="bg-light border rounded-4 p-3">
+            <div className="d-flex align-items-center justify-content-between gap-2 mb-3">
+              <h3 className="m-0 fs-5 fw-bold text-dark">{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
               <button
                 type="button"
-                style={requestDebugInfoButtonStyle}
+                className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1"
                 onClick={() => setRequestDebugOpen(true)}
                 disabled={!requestLoadDebug}
                 aria-label="Debug-Informationen anzeigen"
@@ -4617,145 +4635,147 @@ export default function InternationalizationManager({ config, availableLocales, 
               placeholder="Suchen..."
               value={requestListSearch}
               onChange={(event) => setRequestListSearch(event.target.value)}
-              style={requestI18nSearchInputStyle}
+              className="form-control form-control-sm"
             />
-            <div style={requestI18nFilterRowStyle}>
-              <button type="button" onClick={() => setRequestListFilter('all')} style={requestI18nFilterButtonStyle(requestListFilter === 'all')}>Alle</button>
-              <button type="button" onClick={() => setRequestListFilter('haus')} style={requestI18nFilterButtonStyle(requestListFilter === 'haus')}>Haus</button>
-              <button type="button" onClick={() => setRequestListFilter('wohnung')} style={requestI18nFilterButtonStyle(requestListFilter === 'wohnung')}>Wohnung</button>
+            <div className="d-flex gap-2 flex-wrap my-3">
+              <button type="button" onClick={() => setRequestListFilter('all')} className={getRequestFilterButtonClass(requestListFilter === 'all')}>Alle</button>
+              <button type="button" onClick={() => setRequestListFilter('haus')} className={getRequestFilterButtonClass(requestListFilter === 'haus')}>Haus</button>
+              <button type="button" onClick={() => setRequestListFilter('wohnung')} className={getRequestFilterButtonClass(requestListFilter === 'wohnung')}>Wohnung</button>
             </div>
             {requestItems.length === 0 ? (
-              <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Gesuche vorhanden.</div>
+              <div className="border rounded-3 p-3 small text-secondary bg-white">Für diesen Partner sind aktuell keine Gesuche vorhanden.</div>
             ) : filteredRequestItems.length === 0 ? (
-              <div style={requestI18nListEmptyStyle}>Keine Gesuche gefunden.</div>
+              <div className="small text-secondary">Keine Gesuche gefunden.</div>
             ) : (
-              <div style={blogListWrapStyle}>
+              <div className="d-flex flex-column gap-2">
                 {filteredRequestItems.map((item) => {
-                  const translated = REQUEST_FIELD_DEFINITIONS.some((definition) => getRequestFieldText(item, definition.targetKey).trim().length > 0);
                   const requestMetaLabel = `${formatRequestModeLabel(item.request_type || '—')} · ${formatRequestObjectTypeLabel(item.object_type || null)} · ${item.region_label || 'Ohne Zielregion'}`;
+                  const computedStatus = getComputedRequestStatus(item);
                   return (
                     <button
                       key={item.request_id}
                       type="button"
-                      style={requestI18nListRowStyle(selectedRequestItem?.request_id === item.request_id)}
+                      className={getRequestListRowClass(selectedRequestItem?.request_id === item.request_id)}
                       onClick={() => setSelectedRequestId(item.request_id)}
                     >
-                      <span style={requestI18nTitleRowStyle}>
-                        <span style={requestI18nTitleTextStyle}>{item.title || 'Ohne Titel'}</span>
+                      <span className="d-flex align-items-start justify-content-between gap-2 fw-semibold">
+                        <span className="text-truncate">{item.title || 'Ohne Titel'}</span>
                         <span
                           aria-hidden="true"
-                          style={requestI18nStatusDotStyle(getComputedRequestStatus(item).visual === 'translated')}
+                          className={`d-inline-block rounded-circle flex-shrink-0 mt-1 p-1 ${computedStatus.visual === 'translated' ? 'bg-success' : 'bg-danger'}`}
                         />
                       </span>
-                      <span style={requestI18nMetaLineStyle}>{requestMetaLabel}</span>
+                      <span className="small text-secondary fw-bold text-uppercase">{requestMetaLabel}</span>
                     </button>
                   );
                 })}
               </div>
             )}
+            </div>
           </aside>
 
-          <div style={blogEditorWrapStyle}>
+          <div className="col-12 col-xl-8">
             {selectedRequestItem ? (
-              <>
-                <div style={requestOverviewCardStyle}>
-                  <div style={requestOverviewHeadStyle}>
-                    <div style={blogColumnHeadStyle}>Überblick</div>
-                    <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
+              <div className="d-grid gap-4">
+                <div className="border rounded-4 bg-light p-3 d-grid gap-3">
+                  <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                    <div className="small text-secondary text-uppercase fw-bold">Überblick</div>
+                    <span className={getRequestStatusBadgeClass(getComputedRequestStatus(selectedRequestItem).visual)}>
                       {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
                     </span>
                   </div>
 
-                  <div style={requestOverviewMetaGridStyle}>
-                    <div style={requestOverviewMetaItemStyle}>
-                      <div style={requestOverviewMetaLabelStyle}>Gesuch-ID</div>
-                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.external_id || selectedRequestItem.request_id}</div>
+                  <div className="row g-3">
+                    <div className="col-12 col-lg-4 d-grid gap-1">
+                      <div className="small text-secondary text-uppercase fw-bold">Gesuch-ID</div>
+                      <div className="small text-dark fw-semibold lh-base">{selectedRequestItem.external_id || selectedRequestItem.request_id}</div>
                     </div>
-                    <div style={requestOverviewMetaItemStyle}>
-                      <div style={requestOverviewMetaLabelStyle}>Quelle</div>
-                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.source || 'Nicht gesetzt'}</div>
+                    <div className="col-12 col-lg-4 d-grid gap-1">
+                      <div className="small text-secondary text-uppercase fw-bold">Quelle</div>
+                      <div className="small text-dark fw-semibold lh-base">{selectedRequestItem.source || 'Nicht gesetzt'}</div>
                     </div>
-                    <div style={requestOverviewMetaItemStyle}>
-                      <div style={requestOverviewMetaLabelStyle}>Aktualisiert</div>
-                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.source_updated_at ? new Date(selectedRequestItem.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}</div>
+                    <div className="col-12 col-lg-4 d-grid gap-1">
+                      <div className="small text-secondary text-uppercase fw-bold">Aktualisiert</div>
+                      <div className="small text-dark fw-semibold lh-base">{selectedRequestItem.source_updated_at ? new Date(selectedRequestItem.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}</div>
                     </div>
                   </div>
 
-                  <div style={requestOverviewNoteCardStyle}>
-                    <span style={estimateLabelStyle}>CRM-Notiz</span>
-                    <div style={requestOverviewNoteTextStyle}>
+                  <div className="border rounded-3 bg-white p-3 d-grid gap-2">
+                    <span className="small text-secondary text-uppercase fw-bold">CRM-Notiz</span>
+                    <div className="small text-secondary lh-base text-break">
                       {selectedRequestItem.source_note || 'Keine CRM-Notiz vorhanden.'}
                     </div>
                   </div>
                 </div>
 
-                <div style={propertyTabBarStyle}>
+                <div className="d-flex flex-wrap gap-2 my-2">
                   <button
                     type="button"
-                    style={tabButtonStyle(requestEditorTab === 'texts')}
+                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${requestEditorTab === 'texts' ? 'btn-secondary' : 'btn-outline-secondary'}`}
                     onClick={() => setRequestEditorTab('texts')}
                   >
-                    <span style={propertyTabLabelStyle}>Texte</span>
+                    Texte
                   </button>
                   <button
                     type="button"
-                    style={tabButtonStyle(requestEditorTab === 'seo')}
+                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${requestEditorTab === 'seo' ? 'btn-secondary' : 'btn-outline-secondary'}`}
                     onClick={() => setRequestEditorTab('seo')}
                   >
-                    <span style={propertyTabLabelStyle}>SEO / GEO</span>
+                    SEO / GEO
                   </button>
                 </div>
 
-                <div style={propertyFieldStackStyle}>
+                <div className="d-grid gap-3">
                   {requestVisibleFieldDefinitions.map((definition) => renderRequestFieldPair(selectedRequestItem, definition))}
                 </div>
 
-                <div style={requestOverviewFooterStyle}>
+                <div className="d-flex justify-content-end">
                   <button
                     type="button"
-                    style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                    className={`btn fw-bold px-4 py-2 ${requestHasEdits && !requestSaving ? 'btn-success' : 'btn-secondary disabled'}`}
                     onClick={() => void saveSelectedRequestItem()}
                     disabled={!requestHasEdits || requestSaving}
                   >
                     {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <div style={blogEmptyDetailStyle}>Wähle links ein Gesuch, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+              <div className="border rounded-4 p-4 small text-secondary bg-light">Wähle links ein Gesuch, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
         {requestDebugOpen && requestLoadDebug ? (
           <div
-            style={requestDebugModalOverlayStyle}
+            className="modal d-block bg-dark bg-opacity-25"
+            tabIndex={-1}
             onClick={() => setRequestDebugOpen(false)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') setRequestDebugOpen(false);
             }}
           >
             <div
-              style={requestDebugModalCardStyle}
+              className="modal-dialog modal-dialog-centered"
               role="dialog"
               aria-modal="true"
               aria-labelledby="request-debug-title"
               onClick={(event) => event.stopPropagation()}
             >
-              <div style={requestDebugModalHeadStyle}>
-                <strong id="request-debug-title" style={requestDebugModalTitleStyle}>Gesuche Debug</strong>
-                <button
-                  type="button"
-                  style={requestDebugModalCloseStyle}
-                  onClick={() => setRequestDebugOpen(false)}
-                  aria-label="Debug-Modal schließen"
-                >
-                  ×
-                </button>
-              </div>
-              <div style={requestDebugModalBodyStyle}>
-                <div>requests={requestLoadDebug.requests}</div>
-                <div>overrides={requestLoadDebug.overrides}</div>
-                <div>translations={requestLoadDebug.translations}</div>
+              <div className="modal-content rounded-4 border-0 shadow">
+                <div className="modal-header">
+                  <strong id="request-debug-title" className="modal-title fs-6">Gesuche Debug</strong>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setRequestDebugOpen(false)}
+                    aria-label="Debug-Modal schließen"
+                  />
+                </div>
+                <div className="modal-body d-grid gap-2 small text-secondary">
+                  <div>requests={requestLoadDebug.requests}</div>
+                  <div>overrides={requestLoadDebug.overrides}</div>
+                  <div>translations={requestLoadDebug.translations}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -5013,26 +5033,6 @@ const promptToggleStyle: React.CSSProperties = {
   padding: 0,
 };
 
-const requestFieldActionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 10,
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-};
-
-const requestPromptToggleStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  backgroundColor: 'rgb(255, 255, 255)',
-  border: '1px solid rgb(72, 107, 122)',
-  color: 'rgb(72, 107, 122)',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: '9px 16px',
-  borderRadius: 8,
-};
-
 const promptPanelStyle: React.CSSProperties = {
   marginTop: 10,
   border: '1px solid #e2e8f0',
@@ -5266,231 +5266,6 @@ const blogSummaryItemStyle: React.CSSProperties = {
   borderRadius: 12,
   border: '1px solid #dbeafe',
   background: '#ffffff',
-};
-
-const requestOverviewCardStyle: React.CSSProperties = {
-  border: '1px solid #dbe5ea',
-  borderRadius: 14,
-  background: '#f8fafc',
-  padding: '16px',
-  display: 'grid',
-  gap: 12,
-};
-
-const requestOverviewHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 12,
-  alignItems: 'flex-start',
-  flexWrap: 'wrap',
-};
-
-const requestOverviewActionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
-const requestOverviewMetaGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: 10,
-};
-
-const requestOverviewMetaItemStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 4,
-};
-
-const requestOverviewMetaLabelStyle: React.CSSProperties = {
-  fontSize: 10,
-  color: 'rgb(148, 163, 184)',
-  textTransform: 'uppercase',
-  fontWeight: 700,
-  marginBottom: 4,
-};
-
-const requestOverviewMetaValueStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: 'rgb(15, 23, 42)',
-  fontWeight: 600,
-  lineHeight: 1.45,
-};
-
-const requestOverviewNoteCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #dbeafe',
-  background: '#ffffff',
-};
-
-const requestOverviewNoteTextStyle: React.CSSProperties = {
-  fontSize: 13,
-  lineHeight: 1.55,
-  color: '#334155',
-  whiteSpace: 'pre-wrap',
-};
-
-const requestOverviewFooterStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-};
-
-const requestI18nSearchInputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 10px',
-  borderRadius: 8,
-  border: '1px solid rgb(226, 232, 240)',
-  fontSize: 13,
-};
-
-const requestI18nFilterRowStyle: React.CSSProperties = {
-  display: 'flex',
-  rowGap: 8,
-  columnGap: 8,
-  flexWrap: 'wrap',
-  marginTop: 10,
-  marginBottom: 12,
-};
-
-const requestI18nFilterButtonStyle = (active: boolean): React.CSSProperties => ({
-  flex: '1 1 0%',
-  padding: '6px 8px',
-  borderRadius: 999,
-  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
-  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
-  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-});
-
-const requestI18nListRowStyle = (active: boolean): React.CSSProperties => ({
-  width: '100%',
-  textAlign: 'left',
-  padding: 10,
-  borderRadius: 10,
-  border: '1px solid rgb(226, 232, 240)',
-  backgroundColor: active ? 'rgb(241, 245, 249)' : 'rgb(255, 255, 255)',
-  cursor: 'pointer',
-  display: 'flex',
-  flexDirection: 'column',
-  rowGap: 4,
-  columnGap: 4,
-  minHeight: 76,
-  justifyContent: 'center',
-});
-
-const requestI18nTitleRowStyle: React.CSSProperties = {
-  fontWeight: 600,
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  rowGap: 10,
-  columnGap: 10,
-};
-
-const requestI18nTitleTextStyle: React.CSSProperties = {
-  fontWeight: 600,
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  lineHeight: 1.35,
-};
-
-const requestI18nStatusDotStyle = (active: boolean): React.CSSProperties => ({
-  width: 10,
-  height: 10,
-  borderRadius: 999,
-  backgroundColor: active ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)',
-  flex: '0 0 auto',
-  marginTop: 3,
-});
-
-const requestI18nMetaLineStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: 'rgb(100, 116, 139)',
-  fontWeight: 700,
-  textTransform: 'uppercase',
-};
-
-const requestI18nListEmptyStyle: React.CSSProperties = {
-  color: '#94a3b8',
-  fontSize: 13,
-};
-
-const requestDebugInfoButtonStyle: React.CSSProperties = {
-  width: 24,
-  height: 24,
-  borderRadius: 999,
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  color: '#486b7a',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 0,
-};
-
-const requestDebugModalOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(15, 23, 42, 0.28)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-  padding: 20,
-};
-
-const requestDebugModalCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 340,
-  borderRadius: 14,
-  border: '1px solid #dbe5ea',
-  background: '#ffffff',
-  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-  padding: 16,
-  display: 'grid',
-  gap: 12,
-};
-
-const requestDebugModalHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-};
-
-const requestDebugModalTitleStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: '#0f172a',
-};
-
-const requestDebugModalCloseStyle: React.CSSProperties = {
-  border: 'none',
-  background: 'transparent',
-  color: '#64748b',
-  fontSize: 20,
-  lineHeight: 1,
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const requestDebugModalBodyStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  fontSize: 13,
-  color: '#334155',
 };
 
 const blogColumnGridStyle: React.CSSProperties = {

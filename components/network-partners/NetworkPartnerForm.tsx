@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 
 import type { NetworkPartnerRecord, NetworkPartnerStatus } from '@/lib/network-partners/types';
@@ -12,7 +12,6 @@ type NetworkPartnerFormValues = {
   contact_phone: string;
   website_url: string;
   status: NetworkPartnerStatus;
-  managed_editing_enabled: boolean;
 };
 
 type NetworkPartnerFormProps = {
@@ -20,25 +19,6 @@ type NetworkPartnerFormProps = {
   submitLabel: string;
   onSubmit: (values: NetworkPartnerFormValues) => Promise<void>;
   helperText?: string;
-  showManagedEditingField?: boolean;
-};
-
-const inputStyle: CSSProperties = {
-  width: '100%',
-  border: '1px solid #cbd5e1',
-  borderRadius: 10,
-  padding: '10px 12px',
-  fontSize: 14,
-  color: '#0f172a',
-  background: '#fff',
-};
-
-const labelStyle: CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  fontSize: 13,
-  fontWeight: 600,
-  color: '#334155',
 };
 
 export default function NetworkPartnerForm({
@@ -46,7 +26,6 @@ export default function NetworkPartnerForm({
   submitLabel,
   onSubmit,
   helperText,
-  showManagedEditingField = true,
 }: NetworkPartnerFormProps) {
   const [companyName, setCompanyName] = useState(initialValues?.company_name ?? '');
   const [legalName, setLegalName] = useState(initialValues?.legal_name ?? '');
@@ -54,7 +33,6 @@ export default function NetworkPartnerForm({
   const [contactPhone, setContactPhone] = useState(initialValues?.contact_phone ?? '');
   const [websiteUrl, setWebsiteUrl] = useState(initialValues?.website_url ?? '');
   const [status, setStatus] = useState<NetworkPartnerStatus>(initialValues?.status ?? 'active');
-  const [managedEditingEnabled, setManagedEditingEnabled] = useState(Boolean(initialValues?.managed_editing_enabled));
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -64,7 +42,6 @@ export default function NetworkPartnerForm({
     setContactPhone(initialValues?.contact_phone ?? '');
     setWebsiteUrl(initialValues?.website_url ?? '');
     setStatus(initialValues?.status ?? 'active');
-    setManagedEditingEnabled(Boolean(initialValues?.managed_editing_enabled));
   }, [initialValues]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -78,7 +55,6 @@ export default function NetworkPartnerForm({
         contact_phone: contactPhone,
         website_url: websiteUrl,
         status,
-        managed_editing_enabled: managedEditingEnabled,
       });
       if (!initialValues?.id) {
         setCompanyName('');
@@ -87,7 +63,6 @@ export default function NetworkPartnerForm({
         setContactPhone('');
         setWebsiteUrl('');
         setStatus('active');
-        setManagedEditingEnabled(false);
       }
     } finally {
       setSubmitting(false);
@@ -95,51 +70,71 @@ export default function NetworkPartnerForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
-      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-        <label style={labelStyle}>
-          Unternehmensname
-          <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} style={inputStyle} required />
+    <form onSubmit={handleSubmit} className="d-grid gap-3">
+      <section className="d-grid gap-3">
+        <div className="d-grid gap-1">
+          <h3 className="m-0 fs-6 text-dark">Unternehmen</h3>
+        </div>
+        <label className="d-grid gap-2 small fw-semibold text-secondary">
+          <span>Unternehmensname</span>
+          <input value={companyName} onChange={(event) => setCompanyName(event.target.value)} className="form-control" required />
         </label>
-        <label style={labelStyle}>
-          Rechtlicher Name
-          <input value={legalName} onChange={(event) => setLegalName(event.target.value)} style={inputStyle} />
+      </section>
+
+      <section className="d-grid gap-3">
+        <div className="d-grid gap-1">
+          <h3 className="m-0 fs-6 text-dark">Verantwortliche Person</h3>
+          <p className="m-0 small text-secondary lh-base">
+            Vorname und Nachname werden aktuell gemeinsam in einem Feld gepflegt.
+          </p>
+        </div>
+        <label className="d-grid gap-2 small fw-semibold text-secondary">
+          <span>Name</span>
+          <input
+            value={legalName}
+            onChange={(event) => setLegalName(event.target.value)}
+            className="form-control"
+            placeholder="Vorname Nachname"
+          />
         </label>
-        <label style={labelStyle}>
-          Kontakt-E-Mail
-          <input value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          Kontakt-Telefon
-          <input value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} style={inputStyle} />
-        </label>
-        <label style={labelStyle}>
-          Website
-          <input value={websiteUrl} onChange={(event) => setWebsiteUrl(event.target.value)} style={inputStyle} />
-        </label>
-        <label style={labelStyle}>
-          Status
-          <select value={status} onChange={(event) => setStatus(event.target.value as NetworkPartnerStatus)} style={inputStyle}>
+      </section>
+
+      <section className="d-grid gap-3">
+        <div className="d-grid gap-1">
+          <h3 className="m-0 fs-6 text-dark">Kontakt</h3>
+        </div>
+        <div className="row g-3">
+          <label className="col-12 col-lg-4 d-grid gap-2 small fw-semibold text-secondary">
+            <span>E-Mail</span>
+            <input value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} className="form-control" required />
+          </label>
+          <label className="col-12 col-lg-4 d-grid gap-2 small fw-semibold text-secondary">
+            <span>Telefon</span>
+            <input value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} className="form-control" />
+          </label>
+          <label className="col-12 col-lg-4 d-grid gap-2 small fw-semibold text-secondary">
+            <span>Website</span>
+            <input value={websiteUrl} onChange={(event) => setWebsiteUrl(event.target.value)} className="form-control" />
+          </label>
+        </div>
+      </section>
+
+      <section className="d-grid gap-3">
+        <div className="d-grid gap-1">
+          <h3 className="m-0 fs-6 text-dark">Status</h3>
+        </div>
+        <label className="d-grid gap-2 small fw-semibold text-secondary">
+          <span>Partnerstatus</span>
+          <select value={status} onChange={(event) => setStatus(event.target.value as NetworkPartnerStatus)} className="form-select">
             <option value="active">Aktiv</option>
             <option value="paused">Pausiert</option>
             <option value="inactive">Inaktiv</option>
           </select>
         </label>
-      </div>
-
-      {showManagedEditingField ? (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#334155', fontSize: 13, fontWeight: 600 }}>
-          <input
-            type="checkbox"
-            checked={managedEditingEnabled}
-            onChange={(event) => setManagedEditingEnabled(event.target.checked)}
-          />
-          Portal-Partner darf Inhalte des Netzwerkpartners direkt bearbeiten
-        </label>
-      ) : null}
+      </section>
 
       {helperText ? (
-        <p style={{ margin: 0, color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
+        <p className="m-0 small text-secondary lh-base">
           {helperText}
         </p>
       ) : null}
@@ -147,17 +142,7 @@ export default function NetworkPartnerForm({
       <button
         type="submit"
         disabled={submitting}
-        style={{
-          width: 'fit-content',
-          borderRadius: 10,
-          border: '1px solid #0f766e',
-          background: '#0f766e',
-          color: '#fff',
-          padding: '10px 14px',
-          fontWeight: 700,
-          cursor: submitting ? 'not-allowed' : 'pointer',
-          opacity: submitting ? 0.65 : 1,
-        }}
+        className="btn btn-success fw-bold align-self-start px-3 py-2"
       >
         {submitting ? 'Speichert...' : submitLabel}
       </button>
