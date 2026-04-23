@@ -173,7 +173,10 @@ function MarketRequestCard(props: {
   const isAccent = tone === "accent";
 
   return (
-    <article className={`card rounded-4 h-100 overflow-hidden ${isAccent ? "border border-warning bg-transparent text-white" : "border-0 bg-light"}`}>
+    <article
+      className={`card border-0 rounded-4 h-100 overflow-hidden ${isAccent ? "text-white" : "bg-light"}`}
+      style={isAccent ? { background: "#557888" } : undefined}
+    >
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
@@ -294,20 +297,34 @@ export function ImmobilienmaklerSection({
 
   return (
     <div className="d-flex flex-column gap-4">
-      <section className="row g-3">
-        {gallery.map((src) => (
-          <div key={src} className="col-12 col-md-6">
-            <div className="ratio ratio-4x3 overflow-hidden rounded-4 bg-light">
-              <Image
-                src={src}
-                alt={`Immobilienmakler ${kreisName}`}
-                fill
-                sizes="(min-width: 768px) 50vw, 100vw"
-                className="object-fit-cover"
-              />
+      <section className="position-relative">
+        <div className="row g-3">
+          {gallery.map((src) => (
+            <div key={src} className="col-12 col-md-6">
+              <div className="ratio ratio-4x3 overflow-hidden rounded-4 bg-light">
+                <Image
+                  src={src}
+                  alt={`Immobilienmakler ${kreisName}`}
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-fit-cover"
+                />
+              </div>
             </div>
+          ))}
+        </div>
+        <div className="position-absolute top-50 start-50 translate-middle">
+          <div className="bg-white shadow rounded-4 p-3 p-md-4">
+            <Image
+              src={imageSrc}
+              alt={`Logo ${name}`}
+              width={220}
+              height={110}
+              className="object-fit-contain"
+              style={{ maxWidth: "42vw", height: "auto" }}
+            />
           </div>
-        ))}
+        </div>
       </section>
 
       <section>
@@ -424,7 +441,7 @@ export function ImmobilienmaklerSection({
             <div className="d-flex flex-column gap-4">
               {hasFeaturedOffers ? (
                 <div className="rounded-4 bg-light p-3">
-                  <h3 className="h5 mb-3">Angebote</h3>
+                  <h3 className="h5 mb-3 text-center">Angebote</h3>
                   <div className="row g-3">
                     {featuredBuyOffer ? (
                       <div className="col-12 col-lg-6">
@@ -455,7 +472,7 @@ export function ImmobilienmaklerSection({
 
               {hasFeaturedRequests ? (
                 <div className="rounded-4 p-3 text-white" style={{ background: "#486b7a" }}>
-                  <h3 className="h5 mb-3">Gesuche</h3>
+                  <h3 className="h5 mb-3 text-center text-white">Gesuche</h3>
                   <div className="row g-3">
                     {featuredBuyRequest ? (
                       <div className="col-12 col-lg-6">
