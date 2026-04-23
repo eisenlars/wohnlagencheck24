@@ -7,6 +7,7 @@ import type { Report } from "@/lib/data";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
 import type { RegionalReference } from "@/lib/referenzen";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
+import { RegionImageGallery } from "@/components/immobilienmarkt/RegionImageGallery";
 import type { Offer } from "@/lib/angebote";
 import type { RegionalRequest } from "@/lib/gesuche";
 import { buildNewMarketingBadge } from "@/lib/offer-marketing-flags";
@@ -367,21 +368,7 @@ export function ImmobilienmaklerSection({
                 ) : null}
               </div>
               <div className="col-12 col-lg-7">
-                <div className="row g-2">
-                  {regionalGallery.map((item) => (
-                    <div key={item.src} className="col-12 col-md-4">
-                      <div className="ratio ratio-4x3 overflow-hidden rounded-4 bg-light">
-                        <Image
-                          src={item.src}
-                          alt={item.alt}
-                          fill
-                          sizes="(min-width: 992px) 18vw, (min-width: 768px) 33vw, 100vw"
-                          className="object-fit-cover"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <RegionImageGallery items={regionalGallery} />
               </div>
             </div>
           </div>
@@ -392,7 +379,7 @@ export function ImmobilienmaklerSection({
         {benefits.length ? (
           <div className="col-12 col-lg-5">
             <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-4 p-lg-5">
+              <div className="card-body p-3 p-lg-4">
                 <h2>Leistungen & Vorteile</h2>
                 <ul className="text-body-secondary mb-0 ps-3">
                   {benefits.map((item) => (
@@ -406,7 +393,7 @@ export function ImmobilienmaklerSection({
 
         <div className={benefits.length ? "col-12 col-lg-7" : "col-12"}>
           <div className="card border-0 shadow-sm rounded-4">
-            <div className="card-body p-4 p-lg-5">
+            <div className="card-body p-3 p-lg-4">
               <h2>Makler anfragen</h2>
               <p className="text-body-secondary">
                 Teilen Sie uns hier Ihre Eckdaten mit. Wir finden eine maßgeschneiderte Lösung für Ihr Anliegen.
@@ -424,18 +411,15 @@ export function ImmobilienmaklerSection({
       {hasMarketItems ? (
         <section className="card border-0 shadow-sm rounded-4">
           <div className="card-body p-3 p-lg-4">
-            <div className="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+            <div className="mb-3">
               <div>
                 <p className="small text-uppercase text-body-secondary fw-semibold mb-2">Aktuell aus der Region</p>
-                <h2 className="mb-0">Objekte und Gesuche im Markt</h2>
+                <h2 className="mb-0">Neue Objekte und Gesuche im {kreisName}</h2>
               </div>
-              <p className="text-body-secondary mb-0">
-                Ausgewählte Live-Inhalte aus {kreisName}.
-              </p>
             </div>
             <div className="d-flex flex-column gap-4">
               {featuredBuyOffer || featuredBuyRequest ? (
-                <div>
+                <div className="rounded-4 bg-light p-3">
                   <h3 className="h5 mb-3">Kaufen</h3>
                   <div className="row g-3">
                     {featuredBuyOffer ? (
@@ -466,7 +450,7 @@ export function ImmobilienmaklerSection({
               ) : null}
 
               {featuredRentOffer || featuredRentRequest ? (
-                <div>
+                <div className="rounded-4 bg-light p-3">
                   <h3 className="h5 mb-3">Mieten</h3>
                   <div className="row g-3">
                     {featuredRentOffer ? (
