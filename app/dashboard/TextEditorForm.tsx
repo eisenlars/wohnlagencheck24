@@ -2072,27 +2072,13 @@ function TextEditorField({
           </div>
           <div className="col-12 col-xl-5 d-flex justify-content-xl-end">
             {showSourceState ? (
-              <div className="d-flex align-items-center justify-content-between gap-2 w-100">
+              <div className="d-flex align-items-center justify-content-xl-end gap-2 w-100">
                 <span className="small text-secondary fw-semibold">
                   Quelle:{' '}
                   <span className={hasOverride ? 'text-success fw-bold' : 'text-secondary fw-bold'}>
                     {hasOverride ? 'Individuell angepasst' : 'System'}
                   </span>
                 </span>
-                {hasOverride ? (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1"
-                    title="Systemtext nutzen"
-                    aria-label="Systemtext nutzen"
-                    onClick={async () => {
-                      await onResetToSystem(sectionKey);
-                      setLocalValue(null);
-                    }}
-                  >
-                    ↺
-                  </button>
-                ) : null}
               </div>
             ) : null}
           </div>
@@ -2193,8 +2179,22 @@ function TextEditorField({
           ) : !isIndividual ? (
             <div className="col-12 col-xl-5">
               <div className="bg-light border rounded-3 h-100 d-flex flex-column">
-                <div className="small text-secondary text-uppercase fw-bold border-bottom px-3 py-2">
-                  Original Basis-Text (System)
+                <div className="d-flex align-items-center justify-content-between gap-2 border-bottom px-3 py-2">
+                  <div className="small text-secondary text-uppercase fw-bold">
+                    Original Basis-Text (System)
+                  </div>
+                  {hasOverride ? (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary fw-semibold"
+                      onClick={async () => {
+                        await onResetToSystem(sectionKey);
+                        setLocalValue(null);
+                      }}
+                    >
+                      Standardtext nutzen
+                    </button>
+                  ) : null}
                 </div>
                 <div className="small text-secondary lh-base p-3 flex-grow-1 text-break">
                   {rawText || 'Keine System-Vorlage vorhanden.'}
