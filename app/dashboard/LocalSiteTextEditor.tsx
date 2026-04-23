@@ -168,123 +168,123 @@ export default function LocalSiteTextEditor({
         </section>
       ) : null}
 
-      <section className="bg-white border rounded-4 p-3 p-xl-4">
-        <div className="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
-          <h3 className="m-0 fs-5 fw-bold text-dark">Bereich wählen</h3>
-          <div className="d-flex align-items-center gap-2">
-            <label className="small fw-semibold text-secondary" htmlFor="local-site-bulk-scope">
-              KI-Scope
+      <section className={`${workspaceStyles.reportPanelCard} mb-0`}>
+        <div className="d-grid gap-2">
+          <div className="d-flex align-items-center gap-3 flex-wrap">
+            <h3 className={workspaceStyles.reportSectionTitle}>Bereich wählen -&gt;</h3>
+            <label className={workspaceStyles.reportInlineField} htmlFor="local-site-bulk-scope">
+              <select
+                id="local-site-bulk-scope"
+                value={bulkScope}
+                onChange={(e) => onChangeBulkScope(e.target.value as BulkScope)}
+                className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportInlineSelect}`}
+                disabled={isBulkRewriting || isOrtslage}
+              >
+                <option value="kreis">Nur Kreis</option>
+                <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
+              </select>
             </label>
-            <select
-              id="local-site-bulk-scope"
-              value={bulkScope}
-              onChange={(e) => onChangeBulkScope(e.target.value as BulkScope)}
-              className="form-select form-select-sm fw-semibold"
-              disabled={isBulkRewriting || isOrtslage}
-            >
-              <option value="kreis">Nur Kreis</option>
-              <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
-            </select>
           </div>
         </div>
 
-        <div className="row g-3">
+        <div className={workspaceStyles.reportClassGrid}>
           {classCards.map((card) => (
-            <div key={card.classKey} className="col-12 col-lg-4">
-              <article
-                className={`h-100 border rounded-4 p-3 d-flex flex-column gap-2 ${card.active ? 'bg-light border-secondary' : 'bg-white'}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelectClass(card.classKey)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') onSelectClass(card.classKey);
-                }}
-              >
-                <div className="d-flex align-items-center justify-content-between gap-2">
-                  <span className="badge rounded-pill text-bg-secondary px-3 py-2">{card.title}</span>
-                  {card.running ? (
-                    <span className="badge rounded-pill text-bg-info">
-                      {classBulkProgress?.done ?? 0}/{classBulkProgress?.total ?? 0}
+            <div
+              key={card.classKey}
+              className={`${workspaceStyles.reportClassCard} ${card.active ? workspaceStyles.reportClassCardActive : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectClass(card.classKey)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') onSelectClass(card.classKey);
+              }}
+            >
+              <div className="d-flex align-items-center justify-content-between gap-3">
+                <span className={`${workspaceStyles.reportClassBadge} ${localSiteClassBadgeClass(card.classKey)}`}>{card.title}</span>
+              </div>
+              <p className="m-0 small text-secondary lh-base">Texttyp: {card.description}</p>
+              <p className="m-0 small lh-base text-dark fw-semibold">Zyklus: {card.cycle}</p>
+              <div className="d-grid gap-1 small text-secondary">
+                <span className="d-flex flex-wrap gap-3 align-items-center">
+                  Gebiete: {card.areaMultiplier} Texte: {card.totalTexts} Tokens ca.: {card.totalTokens.toLocaleString('de-DE')}
+                </span>
+              </div>
+              <div className="d-flex flex-wrap gap-3 align-items-center small fw-bold text-dark">
+                <span className="d-flex flex-wrap gap-3 align-items-center">USD ca.: {card.estimatedCostUsd}</span>
+                <span className="d-flex flex-wrap gap-3 align-items-center">EUR ca.: {card.estimatedCostEur}</span>
+                <span className="position-relative d-inline-flex align-items-center gap-1">
+                  <button
+                    type="button"
+                    className={workspaceStyles.reportCostInfoTrigger}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleCostInfo(card.classKey);
+                    }}
+                    aria-label="Hinweis zur Kostenberechnung"
+                  >
+                    i
+                  </button>
+                  {card.costInfoOpen ? (
+                    <span className={workspaceStyles.reportCostInfoPopover}>
+                      Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
                     </span>
                   ) : null}
-                </div>
-                <p className="m-0 small text-secondary">{card.description}</p>
-                <p className="m-0 small text-secondary">Zyklus: {card.cycle}</p>
-                <div className="small text-dark fw-semibold">
-                  Gebiete: {card.areaMultiplier} Texte: {card.totalTexts} Tokens ca.: {card.totalTokens.toLocaleString('de-DE')}
-                </div>
-                <div className="d-flex align-items-center gap-2 flex-wrap small text-secondary">
-                  <span>USD ca.: {card.estimatedCostUsd}</span>
-                  <span>EUR ca.: {card.estimatedCostEur}</span>
-                  <span className="position-relative d-inline-flex">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onToggleCostInfo(card.classKey);
-                      }}
-                      aria-label="Hinweis zur Kostenberechnung"
-                    >
-                      i
-                    </button>
-                    {card.costInfoOpen ? (
-                      <span className="position-absolute top-100 start-0 mt-2 bg-white border rounded-3 shadow p-2 small text-secondary z-3">
-                        Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
-                      </span>
-                    ) : null}
-                  </span>
-                </div>
-                <label className="form-label small fw-semibold text-dark mb-0 d-flex flex-column gap-1">
-                  <span>Standardprompt (anpassbar)</span>
-                  <textarea
-                    value={card.prompt}
-                    onChange={(event) => onChangeGlobalPrompt(card.classKey, event.target.value)}
-                    className="form-control form-control-sm"
-                    rows={4}
-                    placeholder={card.defaultPrompt}
-                  />
-                </label>
-                <div className="d-flex align-items-center gap-2 flex-wrap mt-auto">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary fw-semibold"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onScrollToTopicSection();
-                    }}
-                  >
-                    Einzeltexte
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-secondary fw-semibold"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (!card.active) {
-                        onSelectClass(card.classKey);
-                        return;
-                      }
-                      onRunBulkClass(card.classKey);
-                    }}
-                    disabled={card.disabled}
-                  >
-                    {card.running ? `${card.title} wird optimiert (${classBulkProgress?.done ?? 0}/${classBulkProgress?.total ?? 0})` : 'Alle Texte KI-optimieren'}
-                  </button>
-                </div>
-              </article>
+                </span>
+              </div>
+              <label className="d-grid gap-1 small fw-semibold text-secondary">
+                Standardprompt (anpassbar)
+                <textarea
+                  value={card.prompt}
+                  onChange={(event) => onChangeGlobalPrompt(card.classKey, event.target.value)}
+                  className={workspaceStyles.reportPromptTextarea}
+                  placeholder={card.defaultPrompt}
+                />
+              </label>
+              <div className="d-flex justify-content-between align-items-center gap-2">
+                <button
+                  type="button"
+                  className={`${workspaceStyles.reportAnchorLink} ${localSiteClassLinkClass(card.classKey)}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onScrollToTopicSection();
+                  }}
+                >
+                  Einzeltexte
+                </button>
+                <button
+                  type="button"
+                  className={`${workspaceStyles.reportClassActionButton} ${localSiteClassActionClass(card.classKey)}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (!card.active) {
+                      onSelectClass(card.classKey);
+                      return;
+                    }
+                    onRunBulkClass(card.classKey);
+                  }}
+                  disabled={card.disabled}
+                >
+                  {card.running ? `${card.title} wird optimiert (${classBulkProgress?.done ?? 0}/${classBulkProgress?.total ?? 0})` : 'Alle Texte KI-optimieren'}
+                </button>
+              </div>
             </div>
           ))}
         </div>
 
         {globalBulkReport ? (
-          <div className="border rounded-3 bg-light p-3 mt-3 small text-secondary">
-            <div className="fw-bold text-dark mb-2">Laufbericht</div>
-            <div><strong>Verarbeitet:</strong> {globalBulkReport.processed.length}</div>
-            <div><strong>Übersprungen:</strong> {globalBulkReport.skipped.length}</div>
-            <div><strong>Fehler:</strong> {globalBulkReport.failed.length}</div>
+          <div className={workspaceStyles.reportRunReport}>
+            <div className={workspaceStyles.reportRunReportTitle}>Laufbericht</div>
+            <div className="small text-secondary mb-1">
+              <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
+            </div>
+            <div className="small text-secondary mb-1">
+              <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
+            </div>
+            <div className="small text-secondary mb-1">
+              <strong>Fehler:</strong> {globalBulkReport.failed.length}
+            </div>
             {globalBulkReport.failed.length > 0 ? (
-              <div className="border-top border-secondary-subtle mt-2 pt-2 text-danger d-grid gap-1">
+              <div className={workspaceStyles.reportRunReportErrors}>
                 {globalBulkReport.failed.slice(0, 8).map((item) => (
                   <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
                 ))}
@@ -410,3 +410,24 @@ export default function LocalSiteTextEditor({
     </div>
   );
 }
+
+const localSiteClassBadgeClass = (classKey: LocalSiteClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassBadgeDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassBadgeMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassBadgeProfile;
+  return workspaceStyles.reportClassBadgeGeneral;
+};
+
+const localSiteClassLinkClass = (classKey: LocalSiteClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassLinkDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassLinkMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassLinkProfile;
+  return workspaceStyles.reportClassLinkGeneral;
+};
+
+const localSiteClassActionClass = (classKey: LocalSiteClassKey): string => {
+  if (classKey === 'data_driven') return workspaceStyles.reportClassActionDataDriven;
+  if (classKey === 'market_expert') return workspaceStyles.reportClassActionMarketExpert;
+  if (classKey === 'profile') return workspaceStyles.reportClassActionProfile;
+  return workspaceStyles.reportClassActionGeneral;
+};

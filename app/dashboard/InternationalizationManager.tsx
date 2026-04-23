@@ -3815,144 +3815,137 @@ export default function InternationalizationManager({ config, availableLocales, 
 
 	      {activeDomain === 'immobilienmarkt' ? (
 	      <div className="d-grid gap-3">
-	      <div className="bg-white border rounded-4 p-3 p-xl-4">
-	        <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+	      <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
+	        <div className="d-grid gap-2">
 	          <div className="d-flex align-items-center gap-3 flex-wrap">
-	            <h3 className="m-0 fs-5 fw-bold text-dark">Bereich wählen -&gt;</h3>
-	            <div className="d-flex align-items-center gap-2 flex-wrap">
-	              <label className="d-grid gap-1 small fw-semibold text-secondary">
-	                <select
-	                  className="form-select form-select-sm"
-	                  value={channel}
-	                  onChange={(e) => setChannel(e.target.value as I18nChannel)}
-	                >
-	                  {I18N_CHANNEL_OPTIONS.map((item) => (
-	                    <option key={item.value} value={item.value}>
-	                      {item.label}
-	                    </option>
-	                  ))}
-	                </select>
-	              </label>
-	              <label className="d-grid gap-1 small fw-semibold text-secondary">
-	                <select
-	                  className="form-select form-select-sm"
-	                  value={scope}
-	                  onChange={(e) => setScope(e.target.value as I18nScope)}
-	                >
-	                  {I18N_SCOPE_OPTIONS.map((item) => (
-	                    <option key={item.value} value={item.value} disabled={item.value === 'kreis_ortslagen' && !isDistrict}>
-	                      {item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}
-	                    </option>
-	                  ))}
-	                </select>
-	              </label>
-	              {status ? (
-	                <div className={`small fw-semibold lh-sm ${statusTone === 'error' ? 'text-danger' : 'text-success'}`}>{status}</div>
-	              ) : (
-	                <div className="small fw-bold text-dark lh-sm">Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
-	              )}
-	            </div>
+	            <h3 className={workspaceStyles.reportSectionTitle}>Bereich wählen -&gt;</h3>
+	            <label className={workspaceStyles.reportInlineField}>
+	              <select
+	                className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportInlineSelect}`}
+	                value={channel}
+	                onChange={(e) => setChannel(e.target.value as I18nChannel)}
+	              >
+	                {I18N_CHANNEL_OPTIONS.map((item) => (
+	                  <option key={item.value} value={item.value}>
+	                    {item.label}
+	                  </option>
+	                ))}
+	              </select>
+	            </label>
+	            <label className={workspaceStyles.reportInlineField}>
+	              <select
+	                className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportInlineSelect}`}
+	                value={scope}
+	                onChange={(e) => setScope(e.target.value as I18nScope)}
+	              >
+	                {I18N_SCOPE_OPTIONS.map((item) => (
+	                  <option key={item.value} value={item.value} disabled={item.value === 'kreis_ortslagen' && !isDistrict}>
+	                    {item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}
+	                  </option>
+	                ))}
+	              </select>
+	            </label>
 	          </div>
+	          {status ? (
+	            <div className={`small fw-semibold lh-sm ${statusTone === 'error' ? 'text-danger' : 'text-success'}`}>{status}</div>
+	          ) : (
+	            <div className="small fw-bold text-dark lh-sm">Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
+	          )}
 	        </div>
 
-	        <div className="row g-3">
+	        <div className={workspaceStyles.reportClassGrid}>
 	          {workflowClasses.map((displayClass) => {
 	            const stats = classSummary[displayClass];
 	            const active = activeClass === displayClass;
 	            const buttonDisabled = loading || saving || (active && selectedWorkflowKeys.length === 0);
 	            return (
-	              <div key={displayClass} className={channel === 'local_site' ? 'col-12 col-lg-4' : 'col-12 col-xl-6'}>
-	                <div
-	                  role="button"
-	                  tabIndex={0}
-	                  className={`btn w-100 h-100 text-start border rounded-4 p-3 d-grid gap-3 ${active ? 'bg-light border-secondary shadow-sm' : 'bg-white border-secondary-subtle'}`}
-	                  onClick={() => setActiveClass(displayClass)}
-	                  onKeyDown={(e) => {
-	                    if (e.key !== 'Enter' && e.key !== ' ') return;
-	                    e.preventDefault();
-	                    setActiveClass(displayClass);
-	                  }}
-	                >
-	                  <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-	                    <span className="badge rounded-pill text-bg-secondary px-3 py-2">{displayTextClassLabel(displayClass)}</span>
-	                    <span className="fs-5 fw-bold text-dark">{stats.total}</span>
-	                  </div>
-	                  <p className="small text-secondary lh-base m-0">{i18nWorkflowClassDescription(displayClass)}</p>
-	                  <p className="small text-dark fw-semibold lh-base m-0">{i18nWorkflowClassCycle(displayClass)}</p>
-	                  <div className="d-flex flex-column gap-1 small text-secondary">
-	                    <div className="d-flex gap-3 flex-wrap">
-	                      <span>Uebersetzt: {stats.translated}</span>
-	                      <span>DE-Fallback: {stats.fallback}</span>
-	                      <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
-	                    </div>
-	                    {stats.stale > 0 ? (
-	                      <div>Veraltet: {stats.stale}</div>
-	                    ) : null}
-	                  </div>
-	                  <div className="d-flex align-items-center gap-2 flex-wrap small text-secondary position-relative">
-	                    <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
-	                    <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
-	                    <span className="position-relative">
-	                      <button
-	                        type="button"
-	                        className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1 px-2"
-	                        onClick={(e) => {
-	                          e.stopPropagation();
-	                          setCostInfoOpenClass((prev) => (prev === displayClass ? null : displayClass));
-	                        }}
-	                        aria-label="Hinweis zur Kostenberechnung"
-	                      >
-	                        i
-	                      </button>
-	                      {costInfoOpenClass === displayClass ? (
-	                        <span className="position-absolute top-100 end-0 z-3 mt-2 border rounded-3 bg-white shadow p-3 small text-secondary lh-base">
-	                          Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
-	                        </span>
-	                      ) : null}
-	                    </span>
-	                  </div>
-	                  <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-	                    Standardprompt (anpassbar)
-	                    <textarea
-	                      value={getWorkflowPrompt(displayClass)}
-	                      onChange={(e) => {
-	                        const next = e.target.value;
-	                        setWorkflowPromptDrafts((prev) => ({
-	                          ...prev,
-	                          [workflowPromptStorageKey(displayClass)]: next,
-	                        }));
-	                      }}
-	                      className="form-control"
-	                      rows={5}
-	                      placeholder={getI18nStandardPrompt(displayClass, locale)}
-	                    />
-	                  </label>
-	                  <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+	              <div
+	                key={displayClass}
+	                role="button"
+	                tabIndex={0}
+	                className={`${workspaceStyles.reportClassCard} ${active ? workspaceStyles.reportClassCardActive : ''}`}
+	                onClick={() => setActiveClass(displayClass)}
+	                onKeyDown={(e) => {
+	                  if (e.key !== 'Enter' && e.key !== ' ') return;
+	                  e.preventDefault();
+	                  setActiveClass(displayClass);
+	                }}
+	              >
+	                <div className="d-flex align-items-center justify-content-between gap-3">
+	                  <span className={`${workspaceStyles.reportClassBadge} ${i18nWorkflowBadgeClass(displayClass)}`}>{displayTextClassLabel(displayClass)}</span>
+	                </div>
+	                <p className="m-0 small text-secondary lh-base">Texttyp: {i18nWorkflowClassDescription(displayClass)}</p>
+	                <p className="m-0 small lh-base text-dark fw-semibold">Zyklus: {i18nWorkflowClassCycle(displayClass)}</p>
+	                <div className="d-grid gap-1 small text-secondary">
+	                  <span className="d-flex flex-wrap gap-3 align-items-center">
+	                    Texte: {stats.total} Uebersetzt: {stats.translated} DE-Fallback: {stats.fallback} Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}
+	                  </span>
+	                  {stats.stale > 0 ? (
+	                    <span className="d-flex flex-wrap gap-3 align-items-center">Veraltet: {stats.stale}</span>
+	                  ) : null}
+	                </div>
+	                <div className="d-flex flex-wrap gap-3 align-items-center small fw-bold text-dark">
+	                  <span className="d-flex flex-wrap gap-3 align-items-center">USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
+	                  <span className="d-flex flex-wrap gap-3 align-items-center">EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+	                  <span className="position-relative d-inline-flex align-items-center gap-1">
 	                    <button
 	                      type="button"
-	                      className="btn btn-link p-0 fw-semibold text-decoration-none"
+	                      className={workspaceStyles.reportCostInfoTrigger}
 	                      onClick={(e) => {
 	                        e.stopPropagation();
-	                        scrollToTopicSection();
+	                        setCostInfoOpenClass((prev) => (prev === displayClass ? null : displayClass));
 	                      }}
+	                      aria-label="Hinweis zur Kostenberechnung"
 	                    >
-	                      Einzeltexte
+	                      i
 	                    </button>
-	                    <button
-	                      type="button"
-	                      className={`btn btn-sm fw-bold ${buttonDisabled ? 'btn-secondary disabled' : 'btn-outline-secondary'}`}
-	                      onClick={() => {
-	                        if (!active) {
-	                          setActiveClass(displayClass);
-	                          return;
-	                        }
-	                        setWorkflowConfirmOpen(true);
-	                      }}
-	                      disabled={buttonDisabled}
-	                    >
-	                      {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Alle Texte KI-übersetzen'}
-	                    </button>
-	                  </div>
+	                    {costInfoOpenClass === displayClass ? (
+	                      <span className={workspaceStyles.reportCostInfoPopover}>
+	                        Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
+	                      </span>
+	                    ) : null}
+	                  </span>
+	                </div>
+	                <label className="d-grid gap-1 small fw-semibold text-secondary">
+	                  Standardprompt (anpassbar)
+	                  <textarea
+	                    value={getWorkflowPrompt(displayClass)}
+	                    onChange={(e) => {
+	                      const next = e.target.value;
+	                      setWorkflowPromptDrafts((prev) => ({
+	                        ...prev,
+	                        [workflowPromptStorageKey(displayClass)]: next,
+	                      }));
+	                    }}
+	                    className={workspaceStyles.reportPromptTextarea}
+	                    placeholder={getI18nStandardPrompt(displayClass, locale)}
+	                  />
+	                </label>
+	                <div className="d-flex justify-content-between align-items-center gap-2">
+	                  <button
+	                    type="button"
+	                    className={`${workspaceStyles.reportAnchorLink} ${i18nWorkflowLinkClass(displayClass)}`}
+	                    onClick={(e) => {
+	                      e.stopPropagation();
+	                      scrollToTopicSection();
+	                    }}
+	                  >
+	                    Einzeltexte
+	                  </button>
+	                  <button
+	                    type="button"
+	                    className={`${workspaceStyles.reportClassActionButton} ${i18nWorkflowActionClass(displayClass)}`}
+	                    onClick={() => {
+	                      if (!active) {
+	                        setActiveClass(displayClass);
+	                        return;
+	                      }
+	                      setWorkflowConfirmOpen(true);
+	                    }}
+	                    disabled={buttonDisabled}
+	                  >
+	                    {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Alle Texte KI-übersetzen'}
+	                  </button>
 	                </div>
 	              </div>
 	            );
@@ -4692,3 +4685,24 @@ export default function InternationalizationManager({ config, availableLocales, 
     </>
   );
 }
+
+const i18nWorkflowBadgeClass = (displayClass: DisplayTextClass): string => {
+  if (displayClass === 'data_driven') return workspaceStyles.reportClassBadgeDataDriven;
+  if (displayClass === 'market_expert') return workspaceStyles.reportClassBadgeMarketExpert;
+  if (displayClass === 'profile') return workspaceStyles.reportClassBadgeProfile;
+  return workspaceStyles.reportClassBadgeGeneral;
+};
+
+const i18nWorkflowLinkClass = (displayClass: DisplayTextClass): string => {
+  if (displayClass === 'data_driven') return workspaceStyles.reportClassLinkDataDriven;
+  if (displayClass === 'market_expert') return workspaceStyles.reportClassLinkMarketExpert;
+  if (displayClass === 'profile') return workspaceStyles.reportClassLinkProfile;
+  return workspaceStyles.reportClassLinkGeneral;
+};
+
+const i18nWorkflowActionClass = (displayClass: DisplayTextClass): string => {
+  if (displayClass === 'data_driven') return workspaceStyles.reportClassActionDataDriven;
+  if (displayClass === 'market_expert') return workspaceStyles.reportClassActionMarketExpert;
+  if (displayClass === 'profile') return workspaceStyles.reportClassActionProfile;
+  return workspaceStyles.reportClassActionGeneral;
+};
