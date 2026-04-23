@@ -52,7 +52,7 @@ type GesuchePageProps = {
 };
 
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, detailBasePath, pagination, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, formatProfile, locale, availabilityNotice } = props;
+  const { heading, requests, mode, detailBasePath, pagination, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
   const [filter, setFilter] = useState<"all" | "haus" | "wohnung">("all");
   const kaufPath = `${basePath}/immobiliengesuche`;

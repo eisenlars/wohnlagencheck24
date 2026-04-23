@@ -41,10 +41,11 @@ type NetworkBookingsWorkspaceProps = {
   areas?: AreaOption[];
 };
 
+const EMPTY_AREA_OPTIONS: AreaOption[] = [];
+
 export default function NetworkBookingsWorkspace({
   networkPartnerId,
-  networkPartnerName,
-  areas: providedAreas = [],
+  areas: providedAreas = EMPTY_AREA_OPTIONS,
 }: NetworkBookingsWorkspaceProps) {
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
@@ -126,7 +127,7 @@ export default function NetworkBookingsWorkspace({
     return () => {
       active = false;
     };
-  }, [fetchPageData]);
+  }, [fetchPageData, providedAreas]);
 
   const selectableNetworkPartners = useMemo(() => {
     if (!networkPartnerId) return networkPartners;
@@ -204,11 +205,6 @@ export default function NetworkBookingsWorkspace({
       };
     });
   }, [areas]);
-
-  const activeBookingCount = useMemo(
-    () => bookings.filter((booking) => booking.status === 'active').length,
-    [bookings],
-  );
 
   const selectedBooking = useMemo(
     () => bookings.find((booking) => booking.id === selectedBookingId) ?? null,

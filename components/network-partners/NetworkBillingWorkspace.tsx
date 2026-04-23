@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import BillingOverview from '@/components/network-partners/BillingOverview';
 import type { NetworkBillingOverview, NetworkBillingRunResponse, NetworkBillingRunResult } from '@/lib/network-partners/types';
@@ -20,7 +20,6 @@ type NetworkBillingWorkspaceProps = {
 
 export default function NetworkBillingWorkspace({
   networkPartnerId,
-  networkPartnerName,
 }: NetworkBillingWorkspaceProps) {
   const [overview, setOverview] = useState<NetworkBillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,28 +77,6 @@ export default function NetworkBillingWorkspace({
       active = false;
     };
   }, [loadOverview]);
-
-  const headlineTotals = useMemo(() => {
-    if (!overview) {
-      return {
-        monthlyGross: 0,
-        monthlyFee: 0,
-        monthlyNet: 0,
-      };
-    }
-    return overview.booking_projection.reduce(
-      (acc, row) => ({
-        monthlyGross: Number((acc.monthlyGross + row.monthly_price_eur).toFixed(2)),
-        monthlyFee: Number((acc.monthlyFee + row.portal_fee_eur).toFixed(2)),
-        monthlyNet: Number((acc.monthlyNet + row.partner_net_eur).toFixed(2)),
-      }),
-      { monthlyGross: 0, monthlyFee: 0, monthlyNet: 0 },
-    );
-  }, [overview]);
-
-  function formatCurrency(value: number): string {
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value ?? 0);
-  }
 
   async function handleRunBilling() {
     setRunLoading(true);

@@ -44,7 +44,6 @@ type NetworkContentWorkspaceProps = {
 
 export default function NetworkContentWorkspace({
   networkPartnerId,
-  networkPartnerName,
   areas: providedAreas = [],
 }: NetworkContentWorkspaceProps) {
   const [contentItems, setContentItems] = useState<NetworkContentRecord[]>([]);

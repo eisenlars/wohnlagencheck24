@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
@@ -1143,9 +1144,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                               <div className="d-flex flex-column gap-2">
                                 {effectiveRequestImagePreview?.imageUrl ? (
                                   <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
-                                    <img
+                                    <Image
                                       src={effectiveRequestImagePreview.imageUrl}
                                       alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                      fill
+                                      sizes="(min-width: 1200px) 32vw, 100vw"
+                                      unoptimized
                                       className="w-100 h-100 object-fit-cover"
                                     />
                                   </div>
@@ -1165,9 +1169,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                                             onClick={() => setPendingRequestImageSelectionId(item.id)}
                                           >
                                             <span className="ratio ratio-4x3 rounded-2 overflow-hidden bg-secondary-subtle">
-                                              <img
+                                              <Image
                                                 src={item.thumbnail_url || item.image_url}
                                                 alt={item.alt_template || item.title}
+                                                fill
+                                                sizes="(min-width: 768px) 12vw, 45vw"
+                                                unoptimized
                                                 className="w-100 h-100 object-fit-cover"
                                               />
                                             </span>
@@ -1227,9 +1234,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 {effectiveRequestImagePreview?.imageUrl ? (
                                   <div className="d-flex flex-column gap-2">
                                     <div className="ratio ratio-16x9 rounded-3 overflow-hidden border bg-secondary-subtle">
-                                      <img
+                                      <Image
                                         src={effectiveRequestImagePreview.imageUrl}
                                         alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                        fill
+                                        sizes="(min-width: 1200px) 32vw, 100vw"
+                                        unoptimized
                                         className="w-100 h-100 object-fit-cover"
                                       />
                                     </div>

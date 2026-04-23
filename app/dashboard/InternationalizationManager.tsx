@@ -174,6 +174,49 @@ type BlogTranslationItem = {
   translation_is_stale: boolean;
 };
 
+type BlogBaseline = {
+  translated_headline: string;
+  translated_subline: string;
+  translated_body_md: string;
+  translation_status: BlogTranslationStatus;
+};
+
+type BlogFieldDefinition = {
+  key: string;
+  label: string;
+  sourceKey: keyof BlogTranslationItem;
+  targetKey: keyof BlogBaseline;
+  multiline?: boolean;
+  rows?: number;
+  placeholder?: string;
+};
+
+const BLOG_FIELD_DEFINITIONS: BlogFieldDefinition[] = [
+  {
+    key: 'headline',
+    label: 'Headline',
+    sourceKey: 'headline',
+    targetKey: 'translated_headline',
+    placeholder: 'Headline in der Zielsprache',
+  },
+  {
+    key: 'subline',
+    label: 'Subline',
+    sourceKey: 'subline',
+    targetKey: 'translated_subline',
+    placeholder: 'Subline in der Zielsprache',
+  },
+  {
+    key: 'body_md',
+    label: 'Markdown-Text',
+    sourceKey: 'body_md',
+    targetKey: 'translated_body_md',
+    multiline: true,
+    rows: 12,
+    placeholder: 'Markdown-Text in der Zielsprache',
+  },
+];
+
 type PropertyOfferSourceRow = {
   id: string;
   partner_id: string;
@@ -1182,12 +1225,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [baselineByKey, setBaselineByKey] = useState<Record<string, string>>({});
   const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
   const [blogItems, setBlogItems] = useState<BlogTranslationItem[]>([]);
-  const [blogBaselineByPostId, setBlogBaselineByPostId] = useState<Record<string, {
-    translated_headline: string;
-    translated_subline: string;
-    translated_body_md: string;
-    translation_status: BlogTranslationStatus;
-  }>>({});
+  const [blogBaselineByPostId, setBlogBaselineByPostId] = useState<Record<string, BlogBaseline>>({});
   const [blogLoading, setBlogLoading] = useState(false);
   const [blogSaving, setBlogSaving] = useState(false);
   const [blogStatus, setBlogStatus] = useState<string | null>(null);
@@ -2613,16 +2651,12 @@ export default function InternationalizationManager({ config, availableLocales, 
     const baseline = blogBaselineByPostId[selectedBlogItem.post_id];
     if (!baseline) {
       return (
-        selectedBlogItem.translated_headline.trim().length > 0
-        || selectedBlogItem.translated_subline.trim().length > 0
-        || selectedBlogItem.translated_body_md.trim().length > 0
+        BLOG_FIELD_DEFINITIONS.some((definition) => getBlogFieldText(selectedBlogItem, definition.targetKey).trim().length > 0)
         || selectedBlogItem.translation_status !== 'draft'
       );
     }
     return (
-      selectedBlogItem.translated_headline !== baseline.translated_headline
-      || selectedBlogItem.translated_subline !== baseline.translated_subline
-      || selectedBlogItem.translated_body_md !== baseline.translated_body_md
+      BLOG_FIELD_DEFINITIONS.some((definition) => getBlogFieldText(selectedBlogItem, definition.targetKey) !== baseline[definition.targetKey])
       || selectedBlogItem.translation_status !== baseline.translation_status
     );
   }, [blogBaselineByPostId, selectedBlogItem]);
@@ -2913,6 +2947,74 @@ export default function InternationalizationManager({ config, availableLocales, 
     if (stale) return 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle fw-bold px-3 py-2';
     if (translated) return 'badge rounded-pill text-success bg-success-subtle border border-success-subtle fw-bold px-3 py-2';
     return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
+  }
+
+  function getBlogFieldText(item: BlogTranslationItem, key: keyof BlogTranslationItem): string {
+    const value = item[key];
+    return typeof value === 'string' ? value : '';
+  }
+
+  function updateBlogField(
+    postId: string,
+    key: keyof BlogBaseline,
+    nextValue: string,
+  ) {
+    setBlogItems((prev) => prev.map((item) => (
+      item.post_id !== postId
+        ? item
+        : {
+            ...item,
+            [key]: nextValue,
+          }
+    )));
+  }
+
+  function hasBlogTranslatedContent(item: BlogTranslationItem): boolean {
+    return BLOG_FIELD_DEFINITIONS.some((definition) => getBlogFieldText(item, definition.targetKey).trim().length > 0);
+  }
+
+  function renderBlogFieldPair(
+    item: BlogTranslationItem,
+    definition: BlogFieldDefinition,
+  ) {
+    const sourceValue = getBlogFieldText(item, definition.sourceKey);
+    const targetValue = getBlogFieldText(item, definition.targetKey);
+    const rows = definition.rows ?? 4;
+
+    return (
+      <div key={`${item.post_id}-${definition.key}`} className="border rounded-4 bg-white p-3 d-grid gap-3">
+        <div className="fw-bold text-dark">{definition.label}</div>
+        <div className="row g-3">
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Deutsch</div>
+            {definition.multiline ? (
+              <textarea className="form-control bg-light text-secondary" value={sourceValue} readOnly rows={rows} />
+            ) : (
+              <input className="form-control bg-light text-secondary" value={sourceValue} readOnly />
+            )}
+          </div>
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
+            {definition.multiline ? (
+              <textarea
+                className="form-control"
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateBlogField(item.post_id, definition.targetKey, e.target.value)}
+                rows={rows}
+              />
+            ) : (
+              <input
+                className="form-control"
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateBlogField(item.post_id, definition.targetKey, e.target.value)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   function getReferenceFieldText(item: ReferenceTranslationItem, key: keyof ReferenceTranslationItem): string {
@@ -3922,11 +4024,7 @@ export default function InternationalizationManager({ config, availableLocales, 
               ) : (
                 <div className="d-flex flex-column gap-2">
                   {blogItems.map((item) => {
-                    const translated = Boolean(
-                      item.translated_headline.trim()
-                      || item.translated_subline.trim()
-                      || item.translated_body_md.trim(),
-                    );
+                    const translated = hasBlogTranslatedContent(item);
                     return (
                       <button
                         key={item.post_id}
@@ -3962,11 +4060,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                       Übersetze Headline, Subline und den Markdown-Text dieses Beitrags separat. Der deutsche Blog-Workflow bleibt im Bereich „Blog“.
                     </p>
                   </div>
-                  <span className={getI18nTranslationBadgeClass(selectedBlogItem.translation_is_stale, Boolean(
-                    selectedBlogItem.translated_headline.trim()
-                    || selectedBlogItem.translated_subline.trim()
-                    || selectedBlogItem.translated_body_md.trim(),
-                  ))}>
+                  <span className={getI18nTranslationBadgeClass(selectedBlogItem.translation_is_stale, hasBlogTranslatedContent(selectedBlogItem))}>
                     {selectedBlogItem.translation_is_stale ? 'Quelle geändert' : selectedBlogItem.translation_status}
                   </span>
                 </div>
@@ -3992,114 +4086,57 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </div>
                 </div>
 
-                <div className="row g-3">
-                  <div className="col-12 col-xl-6">
-                    <div className="border rounded-4 bg-light p-3 h-100 d-grid gap-3">
-                      <div className="small text-secondary text-uppercase fw-bold">Deutsch (Quelle)</div>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Headline
-                        <input className="form-control bg-white text-secondary" value={selectedBlogItem.headline} readOnly />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Subline
-                        <input className="form-control bg-white text-secondary" value={selectedBlogItem.subline} readOnly />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Markdown-Text
-                        <textarea className="form-control bg-white text-secondary" value={selectedBlogItem.body_md} readOnly rows={12} />
-                      </label>
-                    </div>
-                  </div>
+                <div className="d-grid gap-3">
+                  {BLOG_FIELD_DEFINITIONS.map((definition) => renderBlogFieldPair(selectedBlogItem, definition))}
+                </div>
 
-                  <div className="col-12 col-xl-6">
-                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-3">
-                      <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Headline
-                        <input
-                          className="form-control"
-                          value={selectedBlogItem.translated_headline}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setBlogItems((prev) => prev.map((item) => (
-                              item.post_id === selectedBlogItem.post_id ? { ...item, translated_headline: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Subline
-                        <input
-                          className="form-control"
-                          value={selectedBlogItem.translated_subline}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setBlogItems((prev) => prev.map((item) => (
-                              item.post_id === selectedBlogItem.post_id ? { ...item, translated_subline: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Markdown-Text
-                        <textarea
-                          className="form-control"
-                          value={selectedBlogItem.translated_body_md}
-                          rows={12}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setBlogItems((prev) => prev.map((item) => (
-                              item.post_id === selectedBlogItem.post_id ? { ...item, translated_body_md: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Status
-                        <select
-                          className="form-select"
-                          value={selectedBlogItem.translation_status}
-                          onChange={(e) => {
-                            const next = e.target.value as BlogTranslationStatus;
-                            setBlogItems((prev) => prev.map((item) => (
-                              item.post_id === selectedBlogItem.post_id ? { ...item, translation_status: next } : item
-                            )));
-                          }}
-                        >
-                          <option value="draft">Entwurf</option>
-                          <option value="approved">Freigegeben</option>
-                          <option value="needs_review">Prüfen</option>
-                        </select>
-                      </label>
-                      <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary fw-semibold"
-                          onClick={() => {
-                            setBlogItems((prev) => prev.map((item) => (
-                              item.post_id === selectedBlogItem.post_id
-                                ? {
-                                    ...item,
-                                    translated_headline: item.headline,
-                                    translated_subline: item.subline,
-                                    translated_body_md: item.body_md,
-                                  }
-                                : item
-                            )));
-                          }}
-                          disabled={blogSaving}
-                        >
-                          Deutsch übernehmen
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn fw-bold px-4 py-2 ${blogHasEdits && !blogSaving ? 'btn-success' : 'btn-secondary disabled'}`}
-                          onClick={() => void saveSelectedBlogItem()}
-                          disabled={!blogHasEdits || blogSaving}
-                        >
-                          {blogSaving ? 'Speichern …' : 'Blog-Übersetzung speichern'}
-                        </button>
-                      </div>
+                <div className="border rounded-4 bg-light p-3">
+                  <div className="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                    <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                      Status
+                      <select
+                        className="form-select"
+                        value={selectedBlogItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary fw-semibold"
+                        onClick={() => {
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id
+                              ? {
+                                  ...item,
+                                  translated_headline: item.headline,
+                                  translated_subline: item.subline,
+                                  translated_body_md: item.body_md,
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={blogSaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn fw-bold px-4 py-2 ${blogHasEdits && !blogSaving ? 'btn-success' : 'btn-secondary disabled'}`}
+                        onClick={() => void saveSelectedBlogItem()}
+                        disabled={!blogHasEdits || blogSaving}
+                      >
+                        {blogSaving ? 'Speichern …' : 'Blog-Übersetzung speichern'}
+                      </button>
                     </div>
                   </div>
                 </div>

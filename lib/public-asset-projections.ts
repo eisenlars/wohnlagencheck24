@@ -229,13 +229,6 @@ function parseRegionTargetKeys(payload: Record<string, unknown>): string[] {
   return raw.map((entry) => asText(entry).toLowerCase()).filter(Boolean);
 }
 
-function buildRegionTargetKey(city: string | null, district: string | null): string | null {
-  const normalizedCity = asText(city);
-  const normalizedDistrict = asText(district);
-  if (!normalizedCity) return null;
-  return `${normalizedCity.toLowerCase()}::${normalizedDistrict.toLowerCase()}`;
-}
-
 function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
   return asText(value).toLowerCase() === "strict_local" ? "strict_local" : "partner_wide";
 }
@@ -496,75 +489,6 @@ async function loadOfferAreaCandidatesForPartner(
   }
 
   return Array.from(new Map([...directRows, ...derivedRows].map((row) => [row.id, row])).values());
-}
-
-async function loadRequestMatchKeysByVisibleAreaId(
-  admin: AdminClient,
-  visibleAreaConfigs: PartnerAreaConfigRow[],
-): Promise<Map<string, Set<string>>> {
-  const districtRows = visibleAreaConfigs.filter((row) => asText(row.area_id).split("-").length <= 3);
-  const districtSlugs = districtRows.map((row) => asText(row.areas?.slug)).filter(Boolean) as string[];
-  const childAreaRowsByParentSlug = new Map<string, Array<{ name: string }>>();
-
-  if (districtSlugs.length > 0) {
-    const { data, error } = await admin
-      .from("areas")
-      .select("name, parent_slug")
-      .in("parent_slug", districtSlugs)
-      .order("name", { ascending: true });
-    if (error) throw new Error(`areas request child lookup failed: ${error.message}`);
-
-    for (const row of (data ?? []) as Array<Record<string, unknown>>) {
-      const parentSlug = asText(row.parent_slug);
-      const name = asText(row.name);
-      if (!parentSlug || !name) continue;
-      const bucket = childAreaRowsByParentSlug.get(parentSlug) ?? [];
-      bucket.push({ name });
-      childAreaRowsByParentSlug.set(parentSlug, bucket);
-    }
-  }
-
-  const districtBySlug = new Map(
-    districtRows
-      .map((row) => [asText(row.areas?.slug), row] as const)
-      .filter(([slug]) => Boolean(slug)),
-  );
-
-  const matchKeysByAreaId = new Map<string, Set<string>>();
-  for (const row of visibleAreaConfigs) {
-    const areaId = asText(row.area_id);
-    if (!areaId) continue;
-
-    const areaName = asNullableText(row.areas?.name);
-    const areaSlug = asText(row.areas?.slug);
-    const parentSlug = asText(row.areas?.parent_slug);
-    const parentDistrict = parentSlug ? districtBySlug.get(parentSlug) ?? null : null;
-    const parentName = asNullableText(parentDistrict?.areas?.name);
-
-    const keys = new Set<string>();
-    const directKey = buildRegionTargetKey(areaName, null);
-    if (directKey) keys.add(directKey);
-
-    if (parentName && areaName) {
-      const parentScopedKey = buildRegionTargetKey(parentName, areaName);
-      if (parentScopedKey) keys.add(parentScopedKey);
-    }
-
-    if (areaId.split("-").length <= 3 && areaName) {
-      const districtKey = buildRegionTargetKey(areaName, null);
-      if (districtKey) keys.add(districtKey);
-      for (const child of childAreaRowsByParentSlug.get(areaSlug) ?? []) {
-        const childDirectKey = buildRegionTargetKey(child.name, null);
-        if (childDirectKey) keys.add(childDirectKey);
-        const districtScopedKey = buildRegionTargetKey(areaName, child.name);
-        if (districtScopedKey) keys.add(districtScopedKey);
-      }
-    }
-
-    matchKeysByAreaId.set(areaId, keys);
-  }
-
-  return matchKeysByAreaId;
 }
 
 function buildOfferMatchAreaIdsByVisibleAreaId(

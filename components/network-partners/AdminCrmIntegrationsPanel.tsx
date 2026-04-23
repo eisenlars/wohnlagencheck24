@@ -252,13 +252,6 @@ function getStatusColor(summary: IntegrationSyncSummary | null): string {
   return "#b91c1c";
 }
 
-function getPreviewStatusColor(summary: IntegrationPreviewSummary | null): string {
-  if (!summary) return "#0f172a";
-  if (summary.status === "ok") return "#15803d";
-  if (summary.status === "warning") return "#b45309";
-  return "#b91c1c";
-}
-
 function getResourceResultLabel(
   summary: IntegrationSyncSummary | null,
   resource: CrmResourceKey,
@@ -931,7 +924,6 @@ export default function AdminCrmIntegrationsPanel({
 
   const isRunningThisResource = syncSummary?.status === "running";
   const statusColor = getStatusColor(syncSummary);
-  const previewStatusColor = getPreviewStatusColor(previewSummary);
   const hasSyncDetails = Boolean(syncSummary);
   const hasPreviewPayload = Boolean(previewSummary);
   const hasSyncPayload = Boolean(syncSummary);

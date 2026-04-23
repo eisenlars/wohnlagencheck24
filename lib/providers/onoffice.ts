@@ -16,7 +16,7 @@ import type {
 } from "@/lib/providers/types";
 import { normalizeOfferMarketingBadges } from "@/lib/offer-marketing-flags";
 import { extractReferenceChallengeCategories } from "@/lib/reference-challenges";
-import { cleanRequestRegionTargetLabel, isRadiusContextSegment } from "@/lib/request-region-targets";
+import { cleanRequestRegionTargetLabel } from "@/lib/request-region-targets";
 
 type OnOfficeRecord = {
   id?: number | string;
@@ -449,46 +449,6 @@ function toRegionTarget(cityRaw: string, districtRaw?: string | null): RegionTar
   const label = district ? `${city} ${district}` : city;
   const key = `${city.toLowerCase()}::${(district ?? "").toLowerCase()}`;
   return { city, district, label, key };
-}
-
-function parseRegionTargetsFromHint(hint: unknown, fallbackCity?: string | null): RegionTarget[] {
-  const raw = String(hint ?? "").trim();
-  const out: RegionTarget[] = [];
-  const seen = new Set<string>();
-
-  const add = (target: RegionTarget | null) => {
-    if (!target) return;
-    if (seen.has(target.key)) return;
-    seen.add(target.key);
-    out.push(target);
-  };
-
-  if (raw) {
-    const normalized = raw
-      .replace(/\boder\b/gi, ",")
-      .replace(/\bund\b/gi, ",")
-      .replace(/\//g, ",")
-      .replace(/\s{2,}/g, " ");
-    const parts = normalized
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean);
-
-    for (const part of parts) {
-      if (isRadiusContextSegment(part)) continue;
-      const tokens = part.split(/\s+/).filter(Boolean);
-      if (tokens.length >= 2) add(toRegionTarget(tokens[0], tokens.slice(1).join(" ")));
-      else {
-        const fallback = String(fallbackCity ?? "").trim();
-        if (fallback && fallback.toLowerCase() !== part.toLowerCase()) add(toRegionTarget(fallback, part));
-        else add(toRegionTarget(part, null));
-      }
-    }
-  }
-
-  const fallback = String(fallbackCity ?? "").trim();
-  if (out.length === 0 && fallback) add(toRegionTarget(fallback, null));
-  return out;
 }
 
 function buildDetailUrl(template: string | null, elements: Record<string, unknown>): string | null {

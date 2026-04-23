@@ -122,18 +122,6 @@ function toInitialValues(initialValue?: IntegrationRecord | null): IntegrationFo
   };
 }
 
-function readResourceEnabled(settings: Record<string, unknown>, key: 'offers' | 'requests' | 'references') {
-  const resources =
-    settings.resources && typeof settings.resources === 'object' && !Array.isArray(settings.resources)
-      ? (settings.resources as Record<string, unknown>)
-      : {};
-  const resource =
-    resources[key] && typeof resources[key] === 'object' && !Array.isArray(resources[key])
-      ? (resources[key] as Record<string, unknown>)
-      : {};
-  return typeof resource.enabled === 'boolean' ? resource.enabled : key !== 'references';
-}
-
 export default function IntegrationForm({
   title,
   submitLabel,

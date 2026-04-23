@@ -3501,7 +3501,7 @@ export default function AdminClient() {
     marketExplanationStandardBundeslandSlug,
     marketExplanationStandardLocale,
     marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
+    marketExplanationStandardSelection,
   ]);
 
   useEffect(() => {
@@ -3509,7 +3509,7 @@ export default function AdminClient() {
     if (marketExplanationMode !== "static") return;
     if (marketExplanationStaticLoadedRef.current) return;
     void loadMarketExplanationStaticTextsEvent();
-  }, [activeView, marketExplanationMode, loadMarketExplanationStaticTextsEvent]);
+  }, [activeView, marketExplanationMode]);
 
   useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
