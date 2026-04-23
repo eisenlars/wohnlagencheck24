@@ -472,6 +472,104 @@ type ReferenceTranslationItem = {
   translation_is_stale: boolean;
 };
 
+type ReferenceBaseline = {
+  translated_seo_title: string;
+  translated_seo_description: string;
+  translated_seo_h1: string;
+  translated_short_description: string;
+  translated_long_description: string;
+  translated_location_text: string;
+  translated_features_text: string;
+  translated_highlights: string[];
+  translated_image_alt_texts: string[];
+  translation_status: BlogTranslationStatus;
+};
+
+type ReferenceFieldDefinition = {
+  key: string;
+  label: string;
+  sourceKey: keyof ReferenceTranslationItem;
+  targetKey: keyof ReferenceBaseline;
+  multiline?: boolean;
+  list?: boolean;
+  placeholder?: string;
+};
+
+const REFERENCE_FIELD_DEFINITIONS: ReferenceFieldDefinition[] = [
+  {
+    key: 'seo_title',
+    label: 'SEO-Titel',
+    sourceKey: 'source_seo_title',
+    targetKey: 'translated_seo_title',
+    placeholder: 'SEO-Titel in der Zielsprache',
+  },
+  {
+    key: 'seo_description',
+    label: 'Meta-Description',
+    sourceKey: 'source_seo_description',
+    targetKey: 'translated_seo_description',
+    multiline: true,
+    placeholder: 'Meta-Description in der Zielsprache',
+  },
+  {
+    key: 'seo_h1',
+    label: 'H1',
+    sourceKey: 'source_seo_h1',
+    targetKey: 'translated_seo_h1',
+    placeholder: 'H1 in der Zielsprache',
+  },
+  {
+    key: 'short_description',
+    label: 'Kurzbeschreibung',
+    sourceKey: 'source_short_description',
+    targetKey: 'translated_short_description',
+    multiline: true,
+    placeholder: 'Kurzbeschreibung in der Zielsprache',
+  },
+  {
+    key: 'long_description',
+    label: 'Langbeschreibung',
+    sourceKey: 'source_long_description',
+    targetKey: 'translated_long_description',
+    multiline: true,
+    placeholder: 'Langbeschreibung in der Zielsprache',
+  },
+  {
+    key: 'location_text',
+    label: 'Lage',
+    sourceKey: 'source_location_text',
+    targetKey: 'translated_location_text',
+    multiline: true,
+    placeholder: 'Lagetext in der Zielsprache',
+  },
+  {
+    key: 'features_text',
+    label: 'Ausstattung',
+    sourceKey: 'source_features_text',
+    targetKey: 'translated_features_text',
+    multiline: true,
+    placeholder: 'Ausstattung in der Zielsprache',
+  },
+  {
+    key: 'highlights',
+    label: 'Highlights',
+    sourceKey: 'source_highlights',
+    targetKey: 'translated_highlights',
+    multiline: true,
+    list: true,
+    placeholder: 'Eine Zeile pro Highlight',
+  },
+  {
+    key: 'image_alt_texts',
+    label: 'Bild-Alt-Texte',
+    sourceKey: 'source_image_alt_texts',
+    targetKey: 'translated_image_alt_texts',
+    multiline: true,
+    list: true,
+    placeholder: 'Eine Zeile pro Bild-Alt-Text',
+  },
+];
+
 type RequestSourceRow = {
   id: string;
   partner_id: string;
@@ -1122,18 +1220,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [requestPromptOpenMap, setRequestPromptOpenMap] = useState<Record<string, boolean>>({});
   const [requestCustomPromptMap, setRequestCustomPromptMap] = useState<Record<string, string>>({});
   const [referenceItems, setReferenceItems] = useState<ReferenceTranslationItem[]>([]);
-  const [referenceBaselineById, setReferenceBaselineById] = useState<Record<string, {
-    translated_seo_title: string;
-    translated_seo_description: string;
-    translated_seo_h1: string;
-    translated_short_description: string;
-    translated_long_description: string;
-    translated_location_text: string;
-    translated_features_text: string;
-    translated_highlights: string[];
-    translated_image_alt_texts: string[];
-    translation_status: BlogTranslationStatus;
-  }>>({});
+  const [referenceBaselineById, setReferenceBaselineById] = useState<Record<string, ReferenceBaseline>>({});
   const [referenceLoading, setReferenceLoading] = useState(false);
   const [referenceSaving, setReferenceSaving] = useState(false);
   const [referenceStatus, setReferenceStatus] = useState<string | null>(null);
@@ -2582,28 +2669,16 @@ export default function InternationalizationManager({ config, availableLocales, 
     const baseline = referenceBaselineById[selectedReferenceItem.reference_id];
     if (!baseline) {
       return (
-        selectedReferenceItem.translated_seo_title.trim().length > 0
-        || selectedReferenceItem.translated_seo_description.trim().length > 0
-        || selectedReferenceItem.translated_seo_h1.trim().length > 0
-        || selectedReferenceItem.translated_short_description.trim().length > 0
-        || selectedReferenceItem.translated_long_description.trim().length > 0
-        || selectedReferenceItem.translated_location_text.trim().length > 0
-        || selectedReferenceItem.translated_features_text.trim().length > 0
-        || selectedReferenceItem.translated_highlights.length > 0
-        || selectedReferenceItem.translated_image_alt_texts.length > 0
+        REFERENCE_FIELD_DEFINITIONS.some((definition) => getReferenceFieldText(selectedReferenceItem, definition.targetKey).trim().length > 0)
         || selectedReferenceItem.translation_status !== 'draft'
       );
     }
     return (
-      selectedReferenceItem.translated_seo_title !== baseline.translated_seo_title
-      || selectedReferenceItem.translated_seo_description !== baseline.translated_seo_description
-      || selectedReferenceItem.translated_seo_h1 !== baseline.translated_seo_h1
-      || selectedReferenceItem.translated_short_description !== baseline.translated_short_description
-      || selectedReferenceItem.translated_long_description !== baseline.translated_long_description
-      || selectedReferenceItem.translated_location_text !== baseline.translated_location_text
-      || selectedReferenceItem.translated_features_text !== baseline.translated_features_text
-      || JSON.stringify(selectedReferenceItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
-      || JSON.stringify(selectedReferenceItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
+      REFERENCE_FIELD_DEFINITIONS.some((definition) => {
+        const baselineValue = baseline[definition.targetKey];
+        const baselineText = Array.isArray(baselineValue) ? baselineValue.join('\n') : baselineValue;
+        return getReferenceFieldText(selectedReferenceItem, definition.targetKey) !== baselineText;
+      })
       || selectedReferenceItem.translation_status !== baseline.translation_status
     );
   }, [referenceBaselineById, selectedReferenceItem]);
@@ -2838,6 +2913,90 @@ export default function InternationalizationManager({ config, availableLocales, 
     if (stale) return 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle fw-bold px-3 py-2';
     if (translated) return 'badge rounded-pill text-success bg-success-subtle border border-success-subtle fw-bold px-3 py-2';
     return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
+  }
+
+  function getReferenceFieldText(item: ReferenceTranslationItem, key: keyof ReferenceTranslationItem): string {
+    const value = item[key];
+    if (Array.isArray(value)) return value.join('\n');
+    return typeof value === 'string' ? value : '';
+  }
+
+  function updateReferenceField(
+    referenceId: string,
+    key: keyof ReferenceBaseline,
+    nextValue: string,
+    isList = false,
+  ) {
+    setReferenceItems((prev) => prev.map((item) => {
+      if (item.reference_id !== referenceId) return item;
+      return {
+        ...item,
+        [key]: isList
+          ? nextValue.split('\n').map((value) => value.trim()).filter(Boolean)
+          : nextValue,
+      };
+    }));
+  }
+
+  function hasReferenceTranslatedContent(item: ReferenceTranslationItem): boolean {
+    return REFERENCE_FIELD_DEFINITIONS.some((definition) => getReferenceFieldText(item, definition.targetKey).trim().length > 0);
+  }
+
+  function renderReferenceFieldPair(
+    item: ReferenceTranslationItem,
+    definition: ReferenceFieldDefinition,
+  ) {
+    const sourceValue = getReferenceFieldText(item, definition.sourceKey);
+    const targetValue = getReferenceFieldText(item, definition.targetKey);
+
+    return (
+      <div key={`${item.reference_id}-${definition.key}`} className="border rounded-4 bg-white p-3 d-grid gap-3">
+        <div>
+          <div className="fw-bold text-dark">{definition.label}</div>
+          {definition.list ? (
+            <div className="small text-secondary">Eine Zeile entspricht genau einem Eintrag.</div>
+          ) : null}
+        </div>
+        <div className="row g-3">
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Deutsch</div>
+            {definition.multiline || definition.list ? (
+              <textarea
+                className="form-control bg-light text-secondary"
+                value={sourceValue}
+                readOnly
+                rows={4}
+              />
+            ) : (
+              <input
+                className="form-control bg-light text-secondary"
+                value={sourceValue}
+                readOnly
+              />
+            )}
+          </div>
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
+            {definition.multiline || definition.list ? (
+              <textarea
+                className="form-control"
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateReferenceField(item.reference_id, definition.targetKey, e.target.value, Boolean(definition.list))}
+                rows={4}
+              />
+            ) : (
+              <input
+                className="form-control"
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateReferenceField(item.reference_id, definition.targetKey, e.target.value, false)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   function getPropertyFieldPrompt(definition: PropertyFieldDefinition): string {
@@ -4153,17 +4312,7 @@ export default function InternationalizationManager({ config, availableLocales, 
               ) : (
                 <div className="d-flex flex-column gap-2">
                   {referenceItems.map((item) => {
-                    const translated = Boolean(
-                      item.translated_seo_title.trim()
-                      || item.translated_seo_description.trim()
-                      || item.translated_seo_h1.trim()
-                      || item.translated_short_description.trim()
-                      || item.translated_long_description.trim()
-                      || item.translated_location_text.trim()
-                      || item.translated_features_text.trim()
-                      || item.translated_highlights.length > 0
-                      || item.translated_image_alt_texts.length > 0,
-                    );
+                    const translated = hasReferenceTranslatedContent(item);
                     return (
                       <button
                         key={item.reference_id}
@@ -4199,17 +4348,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                       Übersetze hier die Referenztexte, die aktuell über die deutschen Override-Felder ausgespielt werden. Die deutsche Bearbeitung bleibt im Bereich „Referenzen“.
                     </p>
                   </div>
-                  <span className={getI18nTranslationBadgeClass(selectedReferenceItem.translation_is_stale, Boolean(
-                    selectedReferenceItem.translated_seo_title.trim()
-                    || selectedReferenceItem.translated_seo_description.trim()
-                    || selectedReferenceItem.translated_seo_h1.trim()
-                    || selectedReferenceItem.translated_short_description.trim()
-                    || selectedReferenceItem.translated_long_description.trim()
-                    || selectedReferenceItem.translated_location_text.trim()
-                    || selectedReferenceItem.translated_features_text.trim()
-                    || selectedReferenceItem.translated_highlights.length > 0
-                    || selectedReferenceItem.translated_image_alt_texts.length > 0,
-                  ))}>
+                  <span className={getI18nTranslationBadgeClass(selectedReferenceItem.translation_is_stale, hasReferenceTranslatedContent(selectedReferenceItem))}>
                     {selectedReferenceItem.translation_is_stale ? 'Quelle geändert' : selectedReferenceItem.translation_status}
                   </span>
                 </div>
@@ -4235,228 +4374,63 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </div>
                 </div>
 
-                <div className="row g-3">
-                  <div className="col-12 col-xl-6">
-                    <div className="border rounded-4 bg-light p-3 h-100 d-grid gap-3">
-                      <div className="small text-secondary text-uppercase fw-bold">Deutsch (Quelle)</div>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        SEO-Titel
-                        <input className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_title} readOnly />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Meta-Description
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_description} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        H1
-                        <input className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_h1} readOnly />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Kurzbeschreibung
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_short_description} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Langbeschreibung
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_long_description} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Lage
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_location_text} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Ausstattung
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_features_text} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Highlights
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_highlights.join('\n')} readOnly rows={4} />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Bild-Alt-Texte
-                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_image_alt_texts.join('\n')} readOnly rows={4} />
-                      </label>
-                    </div>
-                  </div>
+                <div className="d-grid gap-3">
+                  {REFERENCE_FIELD_DEFINITIONS.map((definition) => renderReferenceFieldPair(selectedReferenceItem, definition))}
+                </div>
 
-                  <div className="col-12 col-xl-6">
-                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-3">
-                      <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        SEO-Titel
-                        <input
-                          className="form-control"
-                          value={selectedReferenceItem.translated_seo_title}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_title: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Meta-Description
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_seo_description}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_description: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        H1
-                        <input
-                          className="form-control"
-                          value={selectedReferenceItem.translated_seo_h1}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_h1: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Kurzbeschreibung
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_short_description}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_short_description: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Langbeschreibung
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_long_description}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_long_description: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Lage
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_location_text}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_location_text: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Ausstattung
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_features_text}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_features_text: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Highlights
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_highlights.join('\n')}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_highlights: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Bild-Alt-Texte
-                        <textarea
-                          className="form-control"
-                          value={selectedReferenceItem.translated_image_alt_texts.join('\n')}
-                          rows={4}
-                          onChange={(e) => {
-                            const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_image_alt_texts: next } : item
-                            )));
-                          }}
-                        />
-                      </label>
-                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
-                        Status
-                        <select
-                          className="form-select"
-                          value={selectedReferenceItem.translation_status}
-                          onChange={(e) => {
-                            const next = e.target.value as BlogTranslationStatus;
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translation_status: next } : item
-                            )));
-                          }}
-                        >
-                          <option value="draft">Entwurf</option>
-                          <option value="approved">Freigegeben</option>
-                          <option value="needs_review">Prüfen</option>
-                        </select>
-                      </label>
-                      <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary fw-semibold"
-                          onClick={() => {
-                            setReferenceItems((prev) => prev.map((item) => (
-                              item.reference_id === selectedReferenceItem.reference_id
-                                ? {
-                                    ...item,
-                                    translated_seo_title: item.source_seo_title,
-                                    translated_seo_description: item.source_seo_description,
-                                    translated_seo_h1: item.source_seo_h1,
-                                    translated_short_description: item.source_short_description,
-                                    translated_long_description: item.source_long_description,
-                                    translated_location_text: item.source_location_text,
-                                    translated_features_text: item.source_features_text,
-                                    translated_highlights: [...item.source_highlights],
-                                    translated_image_alt_texts: [...item.source_image_alt_texts],
-                                  }
-                                : item
-                            )));
-                          }}
-                          disabled={referenceSaving}
-                        >
-                          Deutsch übernehmen
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn fw-bold px-4 py-2 ${referenceHasEdits && !referenceSaving ? 'btn-success' : 'btn-secondary disabled'}`}
-                          onClick={() => void saveSelectedReferenceItem()}
-                          disabled={!referenceHasEdits || referenceSaving}
-                        >
-                          {referenceSaving ? 'Speichern …' : 'Referenz-Übersetzung speichern'}
-                        </button>
-                      </div>
+                <div className="border rounded-4 bg-light p-3">
+                  <div className="d-flex align-items-end justify-content-between gap-3 flex-wrap">
+                    <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                      Status
+                      <select
+                        className="form-select"
+                        value={selectedReferenceItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary fw-semibold"
+                        onClick={() => {
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id
+                              ? {
+                                  ...item,
+                                  translated_seo_title: item.source_seo_title,
+                                  translated_seo_description: item.source_seo_description,
+                                  translated_seo_h1: item.source_seo_h1,
+                                  translated_short_description: item.source_short_description,
+                                  translated_long_description: item.source_long_description,
+                                  translated_location_text: item.source_location_text,
+                                  translated_features_text: item.source_features_text,
+                                  translated_highlights: [...item.source_highlights],
+                                  translated_image_alt_texts: [...item.source_image_alt_texts],
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={referenceSaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn fw-bold px-4 py-2 ${referenceHasEdits && !referenceSaving ? 'btn-success' : 'btn-secondary disabled'}`}
+                        onClick={() => void saveSelectedReferenceItem()}
+                        disabled={!referenceHasEdits || referenceSaving}
+                      >
+                        {referenceSaving ? 'Speichern …' : 'Referenz-Übersetzung speichern'}
+                      </button>
                     </div>
                   </div>
                 </div>
