@@ -3374,12 +3374,12 @@ export default function InternationalizationManager({ config, availableLocales, 
           </div>
         </div>
       ) : null}
-      <section style={wrapStyle}>
-        <div style={topCardStyle}>
-          <div style={controlsStyle}>
-            <div style={controlsLeftStyle}>
-              <label style={fieldStyle}>
-                <select style={inputStyle} value={locale} onChange={(e) => setLocale(e.target.value)}>
+      <section className="d-grid gap-3">
+        <div className="text-bg-secondary border border-secondary rounded-3 p-3">
+          <div className="row g-3 align-items-end justify-content-between">
+            <div className="col-12 col-md-auto">
+              <label className="d-grid gap-2 small fw-semibold text-white">
+                <select className="form-select" value={locale} onChange={(e) => setLocale(e.target.value)}>
                   {locales.map((item) => (
                     <option key={item} value={item}>{normalizeLocaleLabel(item)}</option>
                   ))}
@@ -3387,10 +3387,10 @@ export default function InternationalizationManager({ config, availableLocales, 
               </label>
             </div>
 
-            <div style={controlsRightStyle}>
-              <label style={{ ...fieldStyle, minWidth: 320 }}>
+            <div className="col-12 col-md-5 col-xl-4">
+              <label className="d-grid gap-2 small fw-semibold text-white">
                 <select
-                  style={inputStyle}
+                  className="form-select"
                   value={selectedLlmOptionId}
                   onChange={(e) => setSelectedLlmOptionId(e.target.value)}
                   disabled={llmOptions.length === 0 || loading || saving}
@@ -3405,23 +3405,22 @@ export default function InternationalizationManager({ config, availableLocales, 
           </div>
         </div>
 
-        <div style={domainTabGridStyle}>
+        <div className="row g-3">
           {productDomains.map((domain) => (
-            <button
-              key={domain.id}
-              type="button"
-              style={domainTabStyle(activeDomain === domain.id)}
-              onClick={() => setActiveDomain(domain.id)}
-            >
-              <div style={domainTabTopStyle}>
-                <strong style={domainTabTitleStyle}>{domain.label}</strong>
+            <div key={domain.id} className="col-12 col-sm-6 col-xl-3">
+              <button
+                type="button"
+                className={`btn w-100 rounded-4 p-3 text-start d-flex align-items-center justify-content-between gap-2 ${activeDomain === domain.id ? 'btn-warning border-dark-subtle' : 'btn-light border shadow-sm'}`}
+                onClick={() => setActiveDomain(domain.id)}
+              >
+                <strong className="fs-6 text-dark">{domain.label}</strong>
                 <span
-                  style={domainTabStatusDotStyle(domain.enabled)}
+                  className={`rounded-circle p-1 ${domain.enabled ? 'bg-success' : 'bg-danger'}`}
                   aria-label={domain.enabled ? `${domain.label} verfügbar` : `${domain.label} nicht verfügbar`}
                   title={domain.enabled ? 'Verfügbar' : 'Nicht verfügbar'}
                 />
-              </div>
-            </button>
+              </button>
+            </div>
           ))}
         </div>
 
@@ -4861,77 +4860,6 @@ export default function InternationalizationManager({ config, availableLocales, 
   );
 }
 
-const wrapStyle: React.CSSProperties = {
-  background: 'transparent',
-  padding: 0,
-  display: 'grid',
-  gap: 14,
-};
-
-const topCardStyle: React.CSSProperties = {
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: 12,
-  background: 'rgb(72, 107, 122)',
-  padding: 14,
-  display: 'grid',
-  gap: 10,
-};
-
-const controlsStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  flexWrap: 'wrap',
-  gap: 12,
-  alignItems: 'flex-end',
-};
-
-const controlsLeftStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-end',
-  gap: 10,
-  flexWrap: 'wrap',
-  flex: '1 1 auto',
-};
-
-const controlsRightStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  alignItems: 'flex-end',
-  gap: 10,
-  marginLeft: 'auto',
-  flexWrap: 'wrap',
-  flex: '0 0 auto',
-};
-
-const fieldStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  fontSize: 12,
-  color: '#334155',
-  fontWeight: 600,
-};
-
-const inputStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 10,
-  padding: '9px 12px',
-  paddingRight: 30,
-  height: 42,
-  fontSize: 13,
-  lineHeight: 1.3,
-  color: '#0f172a',
-  backgroundColor: '#fff',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  boxShadow: 'none',
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-  backgroundSize: '12px',
-};
-
 const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
   border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
   borderRadius: 10,
@@ -5116,46 +5044,6 @@ const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({
   border: manualCheck ? '1px solid #fcd34d' : '1px solid #86efac',
   background: manualCheck ? '#fffbeb' : '#f0fdf4',
   color: manualCheck ? '#92400e' : '#166534',
-});
-
-const domainTabGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 12,
-};
-
-const domainTabStyle = (active: boolean): React.CSSProperties => ({
-  borderRadius: 16,
-  border: active ? '1px solid rgba(15, 23, 42, 0.18)' : '1px solid #e2e8f0',
-  background: active ? 'rgb(255, 224, 0)' : '#fff',
-  padding: '14px 16px',
-  display: 'grid',
-  gap: 6,
-  textAlign: 'left',
-  boxShadow: active ? 'none' : '0 10px 24px rgba(15, 23, 42, 0.06)',
-  cursor: 'pointer',
-});
-
-const domainTabTopStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
-const domainTabTitleStyle: React.CSSProperties = {
-  fontSize: 15,
-  color: '#0f172a',
-};
-
-const domainTabStatusDotStyle = (enabled: boolean): React.CSSProperties => ({
-  borderRadius: 999,
-  width: 10,
-  height: 10,
-  flex: '0 0 auto',
-  background: enabled ? '#16a34a' : '#dc2626',
-  boxShadow: enabled ? '0 0 0 4px rgba(22, 163, 74, 0.12)' : '0 0 0 4px rgba(220, 38, 38, 0.1)',
 });
 
 const domainPlaceholderCardStyle: React.CSSProperties = {
