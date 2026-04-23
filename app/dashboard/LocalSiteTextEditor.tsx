@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import workspaceStyles from './styles/workspace.module.css';
 
 type LocalSiteAreaConfig = {
   area_id: string;
@@ -142,24 +143,26 @@ export default function LocalSiteTextEditor({
   return (
     <div className="w-100 d-flex flex-column gap-3">
       {showTopLlmCard ? (
-        <section className="border border-success-subtle rounded-3 p-3 bg-success-subtle">
-          <div className="row g-3 align-items-center">
-            <div className="col-12 col-xl-4 ms-xl-auto">
-              <select
-                value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
-                onChange={(e) => onSelectLlmIntegration(e.target.value)}
-                className="form-select fw-semibold"
-                aria-label="KI-Modell auswählen"
-                disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
-              >
-                {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                {llmIntegrations.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
-                  </option>
-                ))}
-              </select>
+        <section className="mb-3">
+          <div className={workspaceStyles.workspaceTopControlCard}>
+            <div className={workspaceStyles.workspaceTopControlRow}>
+              <div className={workspaceStyles.workspaceTopControlFieldModel}>
+                <select
+                  value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
+                  onChange={(e) => onSelectLlmIntegration(e.target.value)}
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
+                  aria-label="KI-Modell auswählen"
+                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
+                >
+                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                  {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                  {llmIntegrations.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </section>

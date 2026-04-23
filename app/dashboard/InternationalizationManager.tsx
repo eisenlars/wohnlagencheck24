@@ -28,6 +28,7 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel } from '@/lib/request-labels';
+import workspaceStyles from './styles/workspace.module.css';
 type AreaConfig = {
   area_id: string;
   areas?: {
@@ -3759,11 +3760,15 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
       ) : null}
       <section className="d-grid gap-3">
-        <div className="text-bg-secondary border border-secondary rounded-3 p-3">
-          <div className="row g-3 align-items-end justify-content-between">
-            <div className="col-12 col-md-auto">
-              <label className="d-grid gap-2 small fw-semibold text-white">
-                <select className="form-select" value={locale} onChange={(e) => setLocale(e.target.value)}>
+        <div className={workspaceStyles.workspaceTopControlCard}>
+          <div className={workspaceStyles.workspaceTopControlRow}>
+            <div className={workspaceStyles.workspaceTopControlField}>
+              <label className={workspaceStyles.workspaceTopControlLabel}>
+                <select
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
+                  value={locale}
+                  onChange={(e) => setLocale(e.target.value)}
+                >
                   {locales.map((item) => (
                     <option key={item} value={item}>{normalizeLocaleLabel(item)}</option>
                   ))}
@@ -3771,10 +3776,10 @@ export default function InternationalizationManager({ config, availableLocales, 
               </label>
             </div>
 
-            <div className="col-12 col-md-5 col-xl-4">
-              <label className="d-grid gap-2 small fw-semibold text-white">
+            <div className={workspaceStyles.workspaceTopControlFieldModel}>
+              <label className={workspaceStyles.workspaceTopControlLabel}>
                 <select
-                  className="form-select"
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                   value={selectedLlmOptionId}
                   onChange={(e) => setSelectedLlmOptionId(e.target.value)}
                   disabled={llmOptions.length === 0 || loading || saving}

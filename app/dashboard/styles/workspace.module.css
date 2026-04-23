@@ -647,23 +647,62 @@
   background-color: #f8fafc;
 }
 
-.reportWorkflowTopCard {
-  border-radius: 18px;
-  background: #486b7a;
-  padding: 18px 20px;
-  margin-bottom: 16px;
+.workspaceTopControlCard {
+  border: 1px solid #d8e4ea;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #eef5f7 0%, #f8fbfc 100%);
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
 }
 
-.reportWorkflowTopField {
+.workspaceTopControlRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.workspaceTopControlField {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+  flex: 0 1 320px;
+}
+
+.workspaceTopControlFieldWide {
+  flex: 1 1 420px;
+  min-width: 280px;
+}
+
+.workspaceTopControlFieldModel {
+  flex: 0 1 360px;
   min-width: 320px;
-  flex: 0 1 420px;
+  margin-left: auto;
 }
 
-.reportWorkflowTopSelect {
+.workspaceTopControlLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #486b7a;
+  letter-spacing: 0.02em;
+}
+
+.workspaceTopControlSelect {
   width: 100%;
   min-height: 42px;
   height: 42px;
   font-size: 13px;
+  border-color: #cbd5e1;
+}
+
+.workspaceTopControlHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #486b7a;
+  align-self: center;
 }
 
 .reportPanelCard {
@@ -1165,7 +1204,9 @@
 }
 
 @media (max-width: 640px) {
-  .reportWorkflowTopField,
+  .workspaceTopControlField,
+  .workspaceTopControlFieldWide,
+  .workspaceTopControlFieldModel,
   .reportInlineField {
     width: 100%;
     min-width: 0;

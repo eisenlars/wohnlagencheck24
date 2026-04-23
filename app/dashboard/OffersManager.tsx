@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import workspaceStyles from './styles/workspace.module.css';
 
 type OfferRow = {
   id: string;
@@ -1094,25 +1095,25 @@ export default function OffersManager(props: Props) {
     <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
         <section className="mb-2">
-          <div className="border border-success-subtle rounded-3 p-3 d-flex flex-column gap-3 mb-2 bg-success-subtle">
-            <div className="row g-3 align-items-center">
-              <div className="col-12 col-xl">
+          <div className={workspaceStyles.workspaceTopControlCard}>
+            <div className={workspaceStyles.workspaceTopControlRow}>
+              <div className={workspaceStyles.workspaceTopControlFieldWide}>
                 <select
                   value={visibilityMode}
                   onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
                   disabled={visibilityBusy}
-                  className="form-select fw-semibold"
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                 >
                   <option value="partner_wide">Regionale Ausspielung für Angebote partnerweit (zeigt alle Angebote des Partners im Gebiet)</option>
                   <option value="strict_local">Regionale Ausspielung für Angebote nur lokal (nutzt nur lokal gematchte Angebote)</option>
                 </select>
               </div>
-              <div className="col-12 col-xl-4 ms-xl-auto">
+              <div className={workspaceStyles.workspaceTopControlFieldModel}>
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
                   <select
                     value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                     onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                    className="form-select fw-semibold"
+                    className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                     aria-label="KI-Modell auswählen"
                     disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                   >
@@ -1124,7 +1125,7 @@ export default function OffersManager(props: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className="small text-success-emphasis">Keine aktive LLM-Integration</span>
+                  <span className={workspaceStyles.workspaceTopControlHint}>Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>

@@ -1,9 +1,34 @@
+.workspaceHeaderBase {
+  background: #f8fafc;
+  padding: 20px 0 32px;
+  width: 100%;
+}
+
 .regionHeaderSticky {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f8fafc;
-  padding: 20px 0 40px;
+}
+
+.workspaceHeaderIntro {
+  display: grid;
+  gap: 6px;
+}
+
+.workspaceHeaderContext {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.workspaceHeaderContextCompact {
+  margin-top: 0;
+}
+
+.workspaceHeaderRegionMeta {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
 }
 
 .mainTitle {
@@ -15,13 +40,14 @@
 }
 
 .headerDescription {
-  margin: 6px 0 0;
+  margin: 0;
   font-size: 14px;
   color: #64748b;
+  line-height: 1.55;
 }
 
 .hiddenTextsHeaderSpacer {
-  height: 40px;
+  height: 44px;
 }
 
 .regionTitle {
@@ -33,8 +59,7 @@
 }
 
 .regionStatus {
-  margin-top: 10px;
-  margin-bottom: 14px;
+  margin: 0;
   display: inline-flex;
   align-items: center;
   padding: 5px 10px;
@@ -70,7 +95,7 @@
 }
 
 .headerDistrictSelector {
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .headerDistrictTab {
@@ -848,14 +873,6 @@
   line-height: 1.4;
 }
 
-.settingsHeaderWrap {
-  background: #f8fafc;
-  max-width: none;
-  padding: 20px 0 14px;
-  position: relative;
-  width: 100%;
-}
-
 .emptyState {
   color: #94a3b8;
   height: 100%;
@@ -914,12 +931,21 @@
 }
 
 @media (max-width: 768px) {
+  .workspaceHeaderBase {
+    padding: 16px 0 24px;
+  }
+
   .regionHeaderSticky {
-    padding: 16px 0 28px;
+    top: 0;
   }
 
   .mainTitle {
     font-size: 26px;
+  }
+
+  .workspaceHeaderContext {
+    margin-top: 14px;
+    gap: 12px;
   }
 
   .reviewPanelMandatoryNotice {

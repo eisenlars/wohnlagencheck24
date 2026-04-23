@@ -2085,8 +2085,8 @@ export default function DashboardClient({
           </div>
         ) : activeMainTab === 'settings' ? (
           <div className="w-100">
-            <header className={dashboardStyles.settingsHeaderWrap}>
-              <div className="mb-1">
+            <header className={`${dashboardStyles.workspaceHeaderBase} ${dashboardStyles.regionHeaderSticky}`}>
+              <div className={dashboardStyles.workspaceHeaderIntro}>
                 <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
                 <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
               </div>
@@ -2095,8 +2095,8 @@ export default function DashboardClient({
           </div>
         ) : activeMainTab === 'network_partners' ? (
           <div className="w-100">
-            <header className={dashboardStyles.settingsHeaderWrap}>
-              <div className="mb-1">
+            <header className={`${dashboardStyles.workspaceHeaderBase} ${dashboardStyles.regionHeaderSticky}`}>
+              <div className={dashboardStyles.workspaceHeaderIntro}>
                 <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
                 <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
               </div>
@@ -2124,22 +2124,22 @@ export default function DashboardClient({
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
           <div className="position-relative w-100">
-            <header className={dashboardStyles.regionHeaderSticky}>
+            <header className={`${dashboardStyles.workspaceHeaderBase} ${dashboardStyles.regionHeaderSticky}`}>
               {!hideTextsHeaderInActivationFlow ? (
-                <div className="mb-1">
+                <div className={dashboardStyles.workspaceHeaderIntro}>
                   <h1 className={dashboardStyles.mainTitle}>{headerConfig.title}</h1>
                   <p className={dashboardStyles.headerDescription}>{headerConfig.description}</p>
                 </div>
               ) : null}
               {(headerConfig.isRegionBased || headerConfig.showDistrictSelector) && effectiveAreaConfig ? (
-                <div className={hideTextsHeaderInActivationFlow ? undefined : 'mt-3'}>
+                <div className={`${dashboardStyles.workspaceHeaderContext} ${hideTextsHeaderInActivationFlow ? dashboardStyles.workspaceHeaderContextCompact : ''}`}>
                   {hideTextsHeaderInActivationFlow ? <div className={dashboardStyles.hiddenTextsHeaderSpacer} /> : null}
                   {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
-                    <h2 className={dashboardStyles.regionTitle}>{effectiveRegionHeaderTitle}</h2>
-                  ) : null}
-                  {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
-                    <div className={`${dashboardStyles.regionStatus} ${activationToneClass(resolveActivationStatusKey(effectiveAreaConfig))}`}>
-                      {formatActivationStatusLabel(effectiveAreaConfig)}
+                    <div className={dashboardStyles.workspaceHeaderRegionMeta}>
+                      <h2 className={dashboardStyles.regionTitle}>{effectiveRegionHeaderTitle}</h2>
+                      <div className={`${dashboardStyles.regionStatus} ${activationToneClass(resolveActivationStatusKey(effectiveAreaConfig))}`}>
+                        {formatActivationStatusLabel(effectiveAreaConfig)}
+                      </div>
                     </div>
                   ) : null}
                   {headerConfig.showDistrictSelector && scopedMainDistricts.length > 0 ? (

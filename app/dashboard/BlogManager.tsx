@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import workspaceStyles from './styles/workspace.module.css';
 
 type PartnerArea = {
   id?: string;
@@ -358,24 +359,26 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
 
   return (
     <div className="w-100">
-      <section className="border border-success-subtle rounded-3 p-3 mb-3 bg-success-subtle">
-        <div className="row g-3 align-items-center">
-          <div className="col-12 col-xl-4 ms-xl-auto">
-            <select
-              value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-              onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-              className="form-select fw-semibold"
-              aria-label="KI-Modell auswählen"
-              disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-            >
-              {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-              {llmOptionsLoaded && llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-              {llmOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+      <section className="mb-3">
+        <div className={workspaceStyles.workspaceTopControlCard}>
+          <div className={workspaceStyles.workspaceTopControlRow}>
+            <div className={workspaceStyles.workspaceTopControlFieldModel}>
+              <select
+                value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+                onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
+                aria-label="KI-Modell auswählen"
+                disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+              >
+                {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                {llmOptionsLoaded && llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                {llmOptions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </section>

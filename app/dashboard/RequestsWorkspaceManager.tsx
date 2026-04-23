@@ -829,25 +829,25 @@ export default function RequestsWorkspaceManager(props: Props) {
     <div className="d-flex flex-column gap-2">
       {visibilityConfig ? (
         <section className="mb-2">
-          <div className="border border-success rounded-3 p-3 d-flex flex-column gap-3 mb-2 bg-secondary">
-            <div className="row g-3 align-items-center">
-              <label className="col-12 col-xl">
+          <div className={workspaceStyles.workspaceTopControlCard}>
+            <div className={workspaceStyles.workspaceTopControlRow}>
+              <label className={workspaceStyles.workspaceTopControlFieldWide}>
                 <select
                   value={visibilityMode}
                   onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
                   disabled={visibilityBusy}
-                  className="form-select fw-semibold"
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                 >
                   <option value="partner_wide">Regionale Ausspielung für Gesuche partnerweit (zeigt alle Gesuche des Partners im Gebiet)</option>
                   <option value="strict_local">Regionale Ausspielung für Gesuche nur lokal (nutzt nur lokal gematchte Gesuche)</option>
                 </select>
               </label>
-              <div className="col-12 col-xl-4">
+              <div className={workspaceStyles.workspaceTopControlFieldModel}>
                 {llmOptions.length > 0 || !llmOptionsLoaded ? (
                   <select
                     value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                     onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                    className="form-select fw-semibold"
+                    className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                     aria-label="KI-Modell auswählen"
                     disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                   >
@@ -859,7 +859,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     ))}
                   </select>
                 ) : (
-                  <span className="small text-light">Keine aktive LLM-Integration</span>
+                  <span className={workspaceStyles.workspaceTopControlHint}>Keine aktive LLM-Integration</span>
                 )}
               </div>
             </div>

@@ -148,13 +148,13 @@ export default function ReportTextEditor({
     <div className="w-100">
       <div className={showTopLlmCard || showGlobalClassActions ? 'd-grid gap-3' : undefined}>
         {showTopLlmCard ? (
-          <div className={workspaceStyles.reportWorkflowTopCard}>
-            <div className="d-flex justify-content-end align-items-end flex-wrap gap-3 w-100">
-              <label className={`${workspaceStyles.reportWorkflowTopField} d-grid ms-auto`}>
+          <div className={workspaceStyles.workspaceTopControlCard}>
+            <div className={workspaceStyles.workspaceTopControlRow}>
+              <label className={workspaceStyles.workspaceTopControlFieldModel}>
                 <select
                   value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
                   onChange={(e) => onSelectLlmIntegration(e.target.value)}
-                  className={`${workspaceStyles.workspaceControlSelect} ${workspaceStyles.reportWorkflowTopSelect}`}
+                  className={`form-select fw-semibold ${workspaceStyles.workspaceTopControlSelect}`}
                   aria-label="KI-Modell auswählen"
                   disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
                 >
