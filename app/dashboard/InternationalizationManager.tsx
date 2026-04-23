@@ -7,7 +7,6 @@ import { createClient } from '@/utils/supabase/client';
 import {
   resolveDisplayTextClass,
   displayTextClassLabel,
-  displayTextBadgeStyle,
   type DisplayTextClass,
 } from '@/lib/text-display-class';
 import {
@@ -29,49 +28,6 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel } from '@/lib/request-labels';
-import {
-  workflowActionButtonStyle,
-  workflowAreaContentStackStyle,
-  workflowAreaContentWrapStyle,
-  workflowAreaGridStyle,
-  workflowAreaHeadlineStyle,
-  workflowAreaListCardStyle,
-  workflowAreaListRowStyle,
-  workflowAreaListRowTopStyle,
-  workflowAreaListWrapStyle,
-  workflowAreaMetaLineStyle,
-  workflowAreaTypeBadgeStyle,
-  workflowAnchorLinkStyle,
-  workflowClassActionRowStyle as classCardActionRowStyle,
-  workflowClassCardStyle as classCardStyle,
-  workflowClassCostStyle as classCardCostStyle,
-  workflowCostInfoPopoverStyle,
-  workflowCostInfoTriggerStyle,
-  workflowCostInfoWrapStyle,
-  workflowClassCycleStyle as classCardCycleStyle,
-  workflowClassGridStyle as classGridStyle,
-  workflowClassStatLineStyle as classCardStatLineStyle,
-  workflowClassStatsStyle as classCardStatsStyle,
-  workflowClassTextStyle as classCardTextStyle,
-  workflowClassTopStyle as classCardTopStyle,
-  workflowHeaderInlineStyle,
-  workflowHeaderStyle as workflowCardHeaderStyle,
-  workflowAnchorTargetStyle,
-  workflowInlineFieldStyle,
-  workflowInlineSelectStyle,
-  workflowCardStackStyle,
-  workflowPanelCardStyle,
-  workflowPromptLabelStyle,
-  workflowPromptTextareaStyle,
-  workflowSectionIntroStyle as sectionTabsIntroStyle,
-  workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
-  workflowTabButtonStyle as tabButtonStyle,
-  workflowTabContainerStyle as tabContainerStyle,
-  workflowTabIconEmojiStyle as tabIconEmojiStyle,
-  workflowTabIconImageStyle as tabIconImageStyle,
-  workflowTabLabelStyle as tabLabelStyle,
-} from '@/app/dashboard/workflow-ui';
-
 type AreaConfig = {
   area_id: string;
   areas?: {
@@ -3301,6 +3257,167 @@ export default function InternationalizationManager({ config, availableLocales, 
     );
   }
 
+  function renderWorkflowTranslationTable(showAreaName: boolean, emptyMessage: string) {
+    return (
+      <>
+        <div className="d-flex flex-wrap gap-2">
+          {visibleWorkflowTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 fw-semibold d-inline-flex align-items-center gap-2 ${activeTab === tab.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {isIconPath(tab.icon) ? (
+                <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized />
+              ) : (
+                <span aria-hidden="true">{tab.icon}</span>
+              )}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="table-responsive border rounded-3">
+          <table className="table table-sm align-top mb-0">
+            <thead className="table-light">
+              <tr>
+                <th scope="col" className="text-secondary small fw-bold px-3 py-2">Bereich</th>
+                <th scope="col" className="text-secondary small fw-bold px-3 py-2">Deutsch (Quelle)</th>
+                <th scope="col" className="text-secondary small fw-bold px-3 py-2">Übersetzung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td className="text-secondary small px-3 py-3" colSpan={3}>{emptyMessage}</td>
+                </tr>
+              ) : filteredRows.map((row, idx) => (
+                <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
+                  <td className="small text-dark px-3 py-3">
+                    {(() => {
+                      const meta = resolveSectionMeta(row.section_key);
+                      const sectionLabel = meta?.label ?? row.section_key;
+                      const sectionType: SectionKind = meta?.type ?? 'general';
+                      const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
+                      return (
+                        <div className="d-grid gap-2">
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <span className="fw-bold">{sectionLabel}</span>
+                            <span className="badge rounded-pill text-bg-secondary">{displayTextClassLabel(displayClass)}</span>
+                          </div>
+                          {showAreaName ? (
+                            <div className="small text-success fw-bold">{row.area_name}</div>
+                          ) : null}
+                          <div className="small text-secondary font-monospace text-break">{row.section_key}</div>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-3 py-3">
+                    <textarea className="form-control form-control-sm bg-light text-secondary" value={row.source_content_de ?? ''} readOnly rows={7} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <textarea
+                      className="form-control form-control-sm"
+                      value={row.translated_content ?? ''}
+                      rows={7}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setRows((prev) => prev.map((item) => (
+                          item.area_id === row.area_id && item.section_key === row.section_key
+                            ? { ...item, translated_content: next }
+                            : item
+                        )));
+                      }}
+                    />
+                    <div className="d-flex align-items-center gap-2 flex-wrap mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary fw-semibold"
+                        disabled={loading || saving || llmOptions.length === 0}
+                        onClick={async () => {
+                          try {
+                            setRewritingKey(`${row.area_id}:${row.section_key}`);
+                            setStatusTone(null);
+                            setStatus(`KI übersetzt ${row.section_key} …`);
+                            const translated = await rewriteViaAi(row);
+                            setRows((prev) => prev.map((item) => (
+                              item.area_id === row.area_id && item.section_key === row.section_key
+                                ? { ...item, translated_content: translated }
+                                : item
+                            )));
+                            setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
+                            setStatusTone('success');
+                          } catch (error) {
+                            setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+                            setStatusTone('error');
+                          } finally {
+                            setRewritingKey(null);
+                          }
+                        }}
+                      >
+                        {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-link p-0 fw-semibold text-decoration-none"
+                        onClick={() => {
+                          const promptKey = rowPromptStorageKey(row);
+                          setRowPromptOpenMap((prev) => ({
+                            ...prev,
+                            [promptKey]: !prev[promptKey],
+                          }));
+                        }}
+                      >
+                        {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                      </button>
+                      {row.translation_is_stale ? (
+                        <span className="badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle">Quelle geändert</span>
+                      ) : null}
+                    </div>
+                    {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
+                      <div className="border rounded-3 bg-light p-3 mt-3 d-grid gap-2">
+                        <div className="small text-secondary text-uppercase fw-bold">Standard-Prompt</div>
+                        <div className="small text-secondary lh-base">{getWorkflowPrompt(getRowDisplayClass(row))}</div>
+                        <label className="d-flex flex-column gap-2 small fw-semibold text-dark">
+                          Eigener Prompt (optional)
+                          <textarea
+                            value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              const promptKey = rowPromptStorageKey(row);
+                              setRowCustomPromptMap((prev) => ({
+                                ...prev,
+                                [promptKey]: next,
+                              }));
+                            }}
+                            className="form-control form-control-sm"
+                            rows={4}
+                            placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="d-flex justify-content-end">
+          <button
+            type="button"
+            className={`btn fw-bold px-4 py-2 ${loading || saving || rows.length === 0 || !hasEdits ? 'btn-secondary disabled' : 'btn-success'}`}
+            onClick={() => void saveRows()}
+            disabled={loading || saving || rows.length === 0 || !hasEdits}
+          >
+            {saving ? 'Speichern …' : 'Übersetzungen speichern'}
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <FullscreenLoader
@@ -3337,39 +3454,45 @@ export default function InternationalizationManager({ config, availableLocales, 
       />
       {workflowConfirmOpen ? (
         <div
-          style={workflowConfirmOverlayStyle}
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center p-4 z-3"
           onClick={() => setWorkflowConfirmOpen(false)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setWorkflowConfirmOpen(false);
           }}
         >
-          <div
-            style={workflowConfirmCardStyle}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="i18n-workflow-confirm-title"
-            aria-describedby="i18n-workflow-confirm-text"
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 id="i18n-workflow-confirm-title" style={workflowConfirmTitleStyle}>Vor dem Übersetzungslauf prüfen</h3>
-            <p id="i18n-workflow-confirm-text" style={workflowConfirmTextStyle}>
-              Bitte prüfe den deutschen Stand vor dem Übersetzungslauf auf Vollständigkeit und Qualität, um Korrekturläufe und Kosten zu sparen!
-            </p>
-            <div style={workflowConfirmActionRowStyle}>
-              <button type="button" style={workflowConfirmCancelButtonStyle} onClick={() => setWorkflowConfirmOpen(false)}>
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                style={workflowConfirmProceedButtonStyle}
-                onClick={() => {
-                  setWorkflowConfirmOpen(false);
-                  void triggerWorkflowUpdate();
-                }}
-              >
-                Übersetzung starten
-              </button>
+          <div className="container">
+            <div className="row justify-content-center">
+              <div className="col-12 col-md-8 col-xl-5">
+                <div
+                  className="bg-white border border-warning rounded-4 shadow p-4 d-grid gap-3"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="i18n-workflow-confirm-title"
+                  aria-describedby="i18n-workflow-confirm-text"
+                  tabIndex={-1}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 id="i18n-workflow-confirm-title" className="m-0 fs-4 fw-bold text-dark">Vor dem Übersetzungslauf prüfen</h3>
+                  <p id="i18n-workflow-confirm-text" className="m-0 small text-secondary lh-base">
+                    Bitte prüfe den deutschen Stand vor dem Übersetzungslauf auf Vollständigkeit und Qualität, um Korrekturläufe und Kosten zu sparen!
+                  </p>
+                  <div className="d-flex justify-content-end gap-2 flex-wrap">
+                    <button type="button" className="btn btn-outline-secondary rounded-pill fw-semibold px-3" onClick={() => setWorkflowConfirmOpen(false)}>
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-warning rounded-pill fw-bold px-3"
+                      onClick={() => {
+                        setWorkflowConfirmOpen(false);
+                        void triggerWorkflowUpdate();
+                      }}
+                    >
+                      Übersetzung starten
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3425,15 +3548,15 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
 	      {activeDomain === 'immobilienmarkt' ? (
-	      <div style={workflowCardStackStyle}>
-	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
-	        <div style={workflowCardHeaderStyle}>
-	          <div style={workflowHeaderInlineStyle}>
-	            <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
-	            <div style={workflowInlineControlsStyle}>
-	              <label style={workflowInlineFieldStyle}>
+	      <div className="d-grid gap-3">
+	      <div className="bg-white border rounded-4 p-3 p-xl-4">
+	        <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+	          <div className="d-flex align-items-center gap-3 flex-wrap">
+	            <h3 className="m-0 fs-5 fw-bold text-dark">Bereich wählen -&gt;</h3>
+	            <div className="d-flex align-items-center gap-2 flex-wrap">
+	              <label className="d-grid gap-1 small fw-semibold text-secondary">
 	                <select
-	                  style={workflowInlineSelectStyle}
+	                  className="form-select form-select-sm"
 	                  value={channel}
 	                  onChange={(e) => setChannel(e.target.value as I18nChannel)}
 	                >
@@ -3444,9 +3567,9 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                  ))}
 	                </select>
 	              </label>
-	              <label style={workflowInlineFieldStyle}>
+	              <label className="d-grid gap-1 small fw-semibold text-secondary">
 	                <select
-	                  style={workflowInlineSelectStyle}
+	                  className="form-select form-select-sm"
 	                  value={scope}
 	                  onChange={(e) => setScope(e.target.value as I18nScope)}
 	                >
@@ -3458,126 +3581,127 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                </select>
 	              </label>
 	              {status ? (
-	                <div style={statusTone === 'error' ? workflowStatusErrorStyle : workflowStatusSuccessStyle}>{status}</div>
+	                <div className={`small fw-semibold lh-sm ${statusTone === 'error' ? 'text-danger' : 'text-success'}`}>{status}</div>
 	              ) : (
-	                <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
+	                <div className="small fw-bold text-dark lh-sm">Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
 	              )}
 	            </div>
 	          </div>
 	        </div>
 
-	        <div style={channel === 'local_site' ? localI18nClassGridStyle : classGridStyle}>
+	        <div className="row g-3">
 	          {workflowClasses.map((displayClass) => {
 	            const stats = classSummary[displayClass];
 	            const active = activeClass === displayClass;
 	            const buttonDisabled = loading || saving || (active && selectedWorkflowKeys.length === 0);
 	            return (
-	              <button
-	                key={displayClass}
-	                type="button"
-	                style={classCardStyle(active)}
-	                onClick={() => setActiveClass(displayClass)}
-	              >
-	                <div style={classCardTopStyle}>
-	                  <span style={workflowClassBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-	                  <span style={classCardCountStyle}>{stats.total}</span>
-	                </div>
-	                <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
-	                <p style={classCardCycleStyle}>{i18nWorkflowClassCycle(displayClass)}</p>
-	                <div style={classCardStatsStyle}>
-	                  <div style={classCardStatLineStyle}>
-	                    <span>Uebersetzt: {stats.translated}</span>
-	                    <span>DE-Fallback: {stats.fallback}</span>
-	                    <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
+	              <div key={displayClass} className={channel === 'local_site' ? 'col-12 col-lg-4' : 'col-12 col-xl-6'}>
+	                <div
+	                  role="button"
+	                  tabIndex={0}
+	                  className={`btn w-100 h-100 text-start border rounded-4 p-3 d-grid gap-3 ${active ? 'bg-light border-secondary shadow-sm' : 'bg-white border-secondary-subtle'}`}
+	                  onClick={() => setActiveClass(displayClass)}
+	                  onKeyDown={(e) => {
+	                    if (e.key !== 'Enter' && e.key !== ' ') return;
+	                    e.preventDefault();
+	                    setActiveClass(displayClass);
+	                  }}
+	                >
+	                  <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+	                    <span className="badge rounded-pill text-bg-secondary px-3 py-2">{displayTextClassLabel(displayClass)}</span>
+	                    <span className="fs-5 fw-bold text-dark">{stats.total}</span>
 	                  </div>
-	                  {stats.stale > 0 ? (
-	                    <div style={classCardStatLineStyle}>
-	                      <span>Veraltet: {stats.stale}</span>
+	                  <p className="small text-secondary lh-base m-0">{i18nWorkflowClassDescription(displayClass)}</p>
+	                  <p className="small text-dark fw-semibold lh-base m-0">{i18nWorkflowClassCycle(displayClass)}</p>
+	                  <div className="d-flex flex-column gap-1 small text-secondary">
+	                    <div className="d-flex gap-3 flex-wrap">
+	                      <span>Uebersetzt: {stats.translated}</span>
+	                      <span>DE-Fallback: {stats.fallback}</span>
+	                      <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
 	                    </div>
-	                  ) : null}
-	                </div>
-	                <div style={classCardCostStyle}>
-	                  <span style={classCardStatLineStyle}>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
-	                  <span style={classCardStatLineStyle}>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
-	                  <span style={workflowCostInfoWrapStyle}>
+	                    {stats.stale > 0 ? (
+	                      <div>Veraltet: {stats.stale}</div>
+	                    ) : null}
+	                  </div>
+	                  <div className="d-flex align-items-center gap-2 flex-wrap small text-secondary position-relative">
+	                    <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
+	                    <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+	                    <span className="position-relative">
+	                      <button
+	                        type="button"
+	                        className="btn btn-sm btn-outline-secondary rounded-circle fw-bold lh-1 px-2"
+	                        onClick={(e) => {
+	                          e.stopPropagation();
+	                          setCostInfoOpenClass((prev) => (prev === displayClass ? null : displayClass));
+	                        }}
+	                        aria-label="Hinweis zur Kostenberechnung"
+	                      >
+	                        i
+	                      </button>
+	                      {costInfoOpenClass === displayClass ? (
+	                        <span className="position-absolute top-100 end-0 z-3 mt-2 border rounded-3 bg-white shadow p-3 small text-secondary lh-base">
+	                          Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
+	                        </span>
+	                      ) : null}
+	                    </span>
+	                  </div>
+	                  <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+	                    Standardprompt (anpassbar)
+	                    <textarea
+	                      value={getWorkflowPrompt(displayClass)}
+	                      onChange={(e) => {
+	                        const next = e.target.value;
+	                        setWorkflowPromptDrafts((prev) => ({
+	                          ...prev,
+	                          [workflowPromptStorageKey(displayClass)]: next,
+	                        }));
+	                      }}
+	                      className="form-control"
+	                      rows={5}
+	                      placeholder={getI18nStandardPrompt(displayClass, locale)}
+	                    />
+	                  </label>
+	                  <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
 	                    <button
 	                      type="button"
-	                      style={workflowCostInfoTriggerStyle}
+	                      className="btn btn-link p-0 fw-semibold text-decoration-none"
 	                      onClick={(e) => {
 	                        e.stopPropagation();
-	                        setCostInfoOpenClass((prev) => (prev === displayClass ? null : displayClass));
+	                        scrollToTopicSection();
 	                      }}
-	                      aria-label="Hinweis zur Kostenberechnung"
 	                    >
-	                      i
+	                      Einzeltexte
 	                    </button>
-	                    {costInfoOpenClass === displayClass ? (
-	                      <span style={workflowCostInfoPopoverStyle}>
-	                        Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
-	                      </span>
-	                    ) : null}
-	                  </span>
+	                    <button
+	                      type="button"
+	                      className={`btn btn-sm fw-bold ${buttonDisabled ? 'btn-secondary disabled' : 'btn-outline-secondary'}`}
+	                      onClick={() => {
+	                        if (!active) {
+	                          setActiveClass(displayClass);
+	                          return;
+	                        }
+	                        setWorkflowConfirmOpen(true);
+	                      }}
+	                      disabled={buttonDisabled}
+	                    >
+	                      {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Alle Texte KI-übersetzen'}
+	                    </button>
+	                  </div>
 	                </div>
-	                <label style={workflowPromptLabelStyle}>
-	                  Standardprompt (anpassbar)
-	                  <textarea
-	                    value={getWorkflowPrompt(displayClass)}
-	                    onChange={(e) => {
-	                      const next = e.target.value;
-	                      setWorkflowPromptDrafts((prev) => ({
-	                        ...prev,
-	                        [workflowPromptStorageKey(displayClass)]: next,
-	                      }));
-	                    }}
-	                    style={workflowPromptTextareaStyle}
-	                    placeholder={getI18nStandardPrompt(displayClass, locale)}
-	                  />
-	                </label>
-	                <div style={classCardActionRowStyle}>
-	                  <button
-	                    type="button"
-	                    style={workflowAnchorLinkStyle(String(displayTextBadgeStyle(displayClass).color ?? '#486b7a'))}
-	                    onClick={(e) => {
-	                      e.stopPropagation();
-	                      scrollToTopicSection();
-	                    }}
-	                  >
-	                    Einzeltexte
-	                  </button>
-	                  <button
-	                    type="button"
-	                    style={workflowActionButtonStyle({
-	                      borderColor: String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1'),
-	                      background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
-	                      color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
-	                      disabled: buttonDisabled,
-	                    })}
-	                    onClick={() => {
-	                      if (!active) {
-	                        setActiveClass(displayClass);
-	                        return;
-	                      }
-	                      setWorkflowConfirmOpen(true);
-	                    }}
-	                    disabled={buttonDisabled}
-	                  >
-	                    {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Alle Texte KI-übersetzen'}
-	                  </button>
-	                </div>
-	              </button>
+	              </div>
 	            );
 	          })}
 	        </div>
 	      </div>
 
-	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
-	        <div id={topicSectionAnchorId} style={{ ...sectionTabsIntroStyle, ...workflowAnchorTargetStyle }}>
-          <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
+	      <div className="bg-white border rounded-4 p-3 p-xl-4">
+	        <div id={topicSectionAnchorId} className="mb-3">
+          <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
         {showScopeAreaSidebar ? (
-          <div style={workflowAreaGridStyle}>
-            <aside style={workflowAreaListCardStyle}>
-              <div style={workflowAreaListWrapStyle}>
+          <div className="row g-3 align-items-start">
+            <aside className="col-12 col-xl-3">
+              <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-2">
                 {scopeAreaItems.map((item) => {
                   const isDistrictItem = item.area_id.split('-').length <= 3;
                   const active = selectedScopeArea?.area_id === item.area_id;
@@ -3585,341 +3709,30 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <button
                       key={item.area_id}
                       type="button"
-                      style={workflowAreaListRowStyle(active)}
+                      className={`btn w-100 text-start rounded-3 border p-3 d-flex flex-column gap-2 ${active ? 'bg-white border-secondary shadow-sm' : 'bg-light border-secondary-subtle'}`}
                       onClick={() => setSelectedScopeAreaId(item.area_id)}
                     >
-                      <div style={workflowAreaListRowTopStyle}>
-                        <strong style={workflowAreaHeadlineStyle}>{item.area_name}</strong>
-                        <span style={workflowAreaTypeBadgeStyle(!isDistrictItem)}>{isDistrictItem ? 'Kreis' : 'Ortslage'}</span>
+                      <div className="d-flex align-items-start justify-content-between gap-2">
+                        <strong className="small text-dark">{item.area_name}</strong>
+                        <span className={`badge rounded-pill ${isDistrictItem ? 'text-bg-secondary' : 'text-bg-success'}`}>{isDistrictItem ? 'Kreis' : 'Ortslage'}</span>
                       </div>
-                      <div style={workflowAreaMetaLineStyle}>{item.area_id}</div>
+                      <div className="small text-secondary">{item.area_id}</div>
                     </button>
                   );
                 })}
               </div>
             </aside>
 
-            <div style={workflowAreaContentWrapStyle}>
-              <div style={workflowAreaContentStackStyle}>
-                <div style={tabContainerStyle}>
-                  {visibleWorkflowTabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      style={tabButtonStyle(activeTab === tab.id)}
-                      onClick={() => setActiveTab(tab.id)}
-                    >
-                      {isIconPath(tab.icon) ? (
-                        <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-                      ) : (
-                        <span style={tabIconEmojiStyle}>{tab.icon}</span>
-                      )}
-                      <span style={tabLabelStyle}>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <div style={tableWrapStyle}>
-                  <table style={tableStyle}>
-                    <colgroup>
-                      <col style={{ width: '24%' }} />
-                      <col style={{ width: '38%' }} />
-                      <col style={{ width: '38%' }} />
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th style={thStyle}>Bereich</th>
-                        <th style={thStyle}>Deutsch (Quelle)</th>
-                        <th style={thStyle}>Übersetzung</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRows.length === 0 ? (
-                        <tr>
-                          <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.</td>
-                        </tr>
-                      ) : filteredRows.map((row, idx) => (
-                        <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
-                          <td style={tdStyle}>
-                            {(() => {
-                              const meta = resolveSectionMeta(row.section_key);
-                              const sectionLabel = meta?.label ?? row.section_key;
-                              const sectionType: SectionKind = meta?.type ?? 'general';
-                              const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
-                              return (
-                                <div style={{ display: 'grid', gap: 6 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                    <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
-                                    <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                                  </div>
-                                  <div style={sectionKeyMetaStyle}>{row.section_key}</div>
-                                </div>
-                              );
-                            })()}
-                          </td>
-                          <td style={tdStyle}>
-                            <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
-                          </td>
-                          <td style={tdStyle}>
-                            <textarea
-                              style={textareaStyle}
-                              value={row.translated_content ?? ''}
-                              onChange={(e) => {
-                                const next = e.target.value;
-                                setRows((prev) => prev.map((item) => (
-                                  item.area_id === row.area_id && item.section_key === row.section_key
-                                    ? { ...item, translated_content: next }
-                                    : item
-                                )));
-                              }}
-                            />
-                            <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                              <button
-                                type="button"
-                                style={smallGhostButtonStyle}
-                                disabled={loading || saving || llmOptions.length === 0}
-                                onClick={async () => {
-                                  try {
-                                    setRewritingKey(`${row.area_id}:${row.section_key}`);
-                                    setStatusTone(null);
-                                    setStatus(`KI übersetzt ${row.section_key} …`);
-                                    const translated = await rewriteViaAi(row);
-                                    setRows((prev) => prev.map((item) => (
-                                      item.area_id === row.area_id && item.section_key === row.section_key
-                                        ? { ...item, translated_content: translated }
-                                        : item
-                                    )));
-                                    setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
-                                    setStatusTone('success');
-                                  } catch (error) {
-                                    setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
-                                    setStatusTone('error');
-                                  } finally {
-                                    setRewritingKey(null);
-                                  }
-                                }}
-                              >
-                                {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
-                              </button>
-                              <button
-                                type="button"
-                                style={promptToggleStyle}
-                                onClick={() => {
-                                  const promptKey = rowPromptStorageKey(row);
-                                  setRowPromptOpenMap((prev) => ({
-                                    ...prev,
-                                    [promptKey]: !prev[promptKey],
-                                  }));
-                                }}
-                              >
-                                {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                              </button>
-                              {row.translation_is_stale ? (
-                                <span style={staleBadgeStyle}>Quelle geändert</span>
-                              ) : null}
-                            </div>
-                            {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
-                              <div style={promptPanelStyle}>
-                                <div style={promptLabelStyle}>Standard-Prompt</div>
-                                <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
-                                <label style={promptInputLabelStyle}>
-                                  Eigener Prompt (optional)
-                                  <textarea
-                                    value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
-                                    onChange={(e) => {
-                                      const next = e.target.value;
-                                      const promptKey = rowPromptStorageKey(row);
-                                      setRowCustomPromptMap((prev) => ({
-                                        ...prev,
-                                        [promptKey]: next,
-                                      }));
-                                    }}
-                                    style={promptInputStyle}
-                                    placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
-                                  />
-                                </label>
-                              </div>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div style={actionsBottomStyle}>
-                  <button
-                    type="button"
-                    style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
-                    onClick={() => void saveRows()}
-                    disabled={loading || saving || rows.length === 0 || !hasEdits}
-                  >
-                    {saving ? 'Speichern …' : 'Übersetzungen speichern'}
-                  </button>
-                </div>
+            <div className="col-12 col-xl-9">
+              <div className="d-grid gap-3">
+                {renderWorkflowTranslationTable(false, 'In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.')}
               </div>
             </div>
           </div>
         ) : (
           <>
-            <div style={workflowAreaContentStackStyle}>
-              <div style={tabContainerStyle}>
-                {visibleWorkflowTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    style={tabButtonStyle(activeTab === tab.id)}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    {isIconPath(tab.icon) ? (
-                      <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-                    ) : (
-                      <span style={tabIconEmojiStyle}>{tab.icon}</span>
-                    )}
-                    <span style={tabLabelStyle}>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-              <div style={tableWrapStyle}>
-                <table style={tableStyle}>
-                  <colgroup>
-                    <col style={{ width: '24%' }} />
-                    <col style={{ width: '38%' }} />
-                    <col style={{ width: '38%' }} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th style={thStyle}>Bereich</th>
-                      <th style={thStyle}>Deutsch (Quelle)</th>
-                      <th style={thStyle}>Übersetzung</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRows.length === 0 ? (
-                      <tr>
-                        <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
-                      </tr>
-                    ) : filteredRows.map((row, idx) => (
-                      <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
-                        <td style={tdStyle}>
-                          {(() => {
-                            const meta = resolveSectionMeta(row.section_key);
-                            const sectionLabel = meta?.label ?? row.section_key;
-                            const sectionType: SectionKind = meta?.type ?? 'general';
-                            const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
-                            return (
-                              <div style={{ display: 'grid', gap: 6 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
-                                  <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                                </div>
-                                {scope === 'kreis_ortslagen' ? (
-                                  <div style={areaMetaStyle}>{row.area_name}</div>
-                                ) : null}
-                                <div style={sectionKeyMetaStyle}>{row.section_key}</div>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                        <td style={tdStyle}>
-                          <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
-                        </td>
-                        <td style={tdStyle}>
-                          <textarea
-                            style={textareaStyle}
-                            value={row.translated_content ?? ''}
-                            onChange={(e) => {
-                              const next = e.target.value;
-                              setRows((prev) => prev.map((item) => (
-                                item.area_id === row.area_id && item.section_key === row.section_key
-                                  ? { ...item, translated_content: next }
-                                  : item
-                              )));
-                            }}
-                          />
-                          <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <button
-                              type="button"
-                              style={smallGhostButtonStyle}
-                              disabled={loading || saving || llmOptions.length === 0}
-                              onClick={async () => {
-                                try {
-                                  setRewritingKey(`${row.area_id}:${row.section_key}`);
-                                  setStatusTone(null);
-                                  setStatus(`KI übersetzt ${row.section_key} …`);
-                                  const translated = await rewriteViaAi(row);
-                                  setRows((prev) => prev.map((item) => (
-                                    item.area_id === row.area_id && item.section_key === row.section_key
-                                      ? { ...item, translated_content: translated }
-                                      : item
-                                  )));
-                                  setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
-                                  setStatusTone('success');
-                                } catch (error) {
-                                  setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
-                                  setStatusTone('error');
-                                } finally {
-                                  setRewritingKey(null);
-                                }
-                              }}
-                            >
-                              {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
-                            </button>
-                            <button
-                              type="button"
-                              style={promptToggleStyle}
-                              onClick={() => {
-                                const promptKey = rowPromptStorageKey(row);
-                                setRowPromptOpenMap((prev) => ({
-                                  ...prev,
-                                  [promptKey]: !prev[promptKey],
-                                }));
-                              }}
-                            >
-                              {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                            </button>
-                            {row.translation_is_stale ? (
-                              <span style={staleBadgeStyle}>Quelle geändert</span>
-                            ) : null}
-                          </div>
-                          {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
-                            <div style={promptPanelStyle}>
-                              <div style={promptLabelStyle}>Standard-Prompt</div>
-                              <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
-                              <label style={promptInputLabelStyle}>
-                                Eigener Prompt (optional)
-                                <textarea
-                                  value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
-                                  onChange={(e) => {
-                                    const next = e.target.value;
-                                    const promptKey = rowPromptStorageKey(row);
-                                    setRowCustomPromptMap((prev) => ({
-                                      ...prev,
-                                      [promptKey]: next,
-                                    }));
-                                  }}
-                                  style={promptInputStyle}
-                                  placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
-                                />
-                              </label>
-                            </div>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div style={actionsBottomStyle}>
-                <button
-                  type="button"
-                  style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
-                  onClick={() => void saveRows()}
-                  disabled={loading || saving || rows.length === 0 || !hasEdits}
-                >
-                  {saving ? 'Speichern …' : 'Übersetzungen speichern'}
-                </button>
-              </div>
+            <div className="d-grid gap-3">
+              {renderWorkflowTranslationTable(scope === 'kreis_ortslagen', 'In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.')}
             </div>
           </>
         )}
@@ -4823,30 +4636,34 @@ export default function InternationalizationManager({ config, availableLocales, 
         ) : null}
       </div>
       ) : (
-      <div style={editorCardStyle}>
-        <div style={domainPlaceholderCardStyle}>
-          <div style={domainPlaceholderHeadStyle}>
+      <div className="bg-white border rounded-4 p-3 p-xl-4">
+        <div className="border border-secondary-subtle rounded-4 p-4 bg-light d-grid gap-3">
+          <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
             <div>
-              <h3 style={sectionTabsIntroTitleStyle}>{activeDomainMeta.label}</h3>
-              <p style={domainPlaceholderTextStyle}>{activeDomainMeta.description}</p>
+              <h3 className="m-0 fs-5 fw-bold text-dark">{activeDomainMeta.label}</h3>
+              <p className="small text-secondary lh-base mt-2 mb-0">{activeDomainMeta.description}</p>
             </div>
-            <span style={domainPlaceholderBadgeStyle(activeDomainMeta.enabled)}>
+            <span className={`badge rounded-pill fw-bold ${activeDomainMeta.enabled ? 'text-success bg-success-subtle border border-success-subtle' : 'text-secondary bg-secondary-subtle border border-secondary-subtle'}`}>
               {activeDomainMeta.enabled ? 'Anbindung folgt' : 'Nicht freigeschaltet'}
             </span>
           </div>
-          <div style={domainPlaceholderGridStyle}>
-            <div style={domainPlaceholderItemStyle}>
-              <span style={estimateLabelStyle}>Status</span>
-              <strong>{activeDomainMeta.enabled ? 'Produktbereich wird als eigener I18N-Workflow vorbereitet.' : 'Produkt ist für diesen Partner aktuell nicht freigeschaltet.'}</strong>
+          <div className="row g-3">
+            <div className="col-12 col-md-6">
+              <div className="bg-white border rounded-3 p-3 h-100 d-grid gap-2">
+                <span className="small text-secondary text-uppercase fw-bold">Status</span>
+                <strong className="text-dark">{activeDomainMeta.enabled ? 'Produktbereich wird als eigener I18N-Workflow vorbereitet.' : 'Produkt ist für diesen Partner aktuell nicht freigeschaltet.'}</strong>
+              </div>
             </div>
-            <div style={domainPlaceholderItemStyle}>
-              <span style={estimateLabelStyle}>Nächster Ausbau</span>
-              <strong>Datensatzbasierte Sprachpflege inkl. Status, Kosten und Aktualität.</strong>
+            <div className="col-12 col-md-6">
+              <div className="bg-white border rounded-3 p-3 h-100 d-grid gap-2">
+                <span className="small text-secondary text-uppercase fw-bold">Nächster Ausbau</span>
+                <strong className="text-dark">Datensatzbasierte Sprachpflege inkl. Status, Kosten und Aktualität.</strong>
+              </div>
             </div>
           </div>
-          <div style={qualityCheckBoxStyle(false)}>
-            <strong>Produktbereich in Vorbereitung</strong>
-            <span>
+          <div className="border border-success-subtle rounded-3 bg-success-subtle text-success p-3 d-grid gap-2">
+            <strong className="text-success">Produktbereich in Vorbereitung</strong>
+            <span className="small lh-base">
               {activeDomainMeta.enabled
                 ? 'Die Tab-Struktur ist bereits vorbereitet. Die eigentliche Übersetzungslogik für diesen Bereich wird im nächsten Schritt separat an Datenmodell und UI angebunden.'
                 : 'Sobald das Produkt freigeschaltet ist, kann hier die passende Sprachpflege mit eigenem Workflow eingebunden werden.'}
@@ -4859,380 +4676,3 @@ export default function InternationalizationManager({ config, availableLocales, 
     </>
   );
 }
-
-const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
-  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
-  borderRadius: 10,
-  background: active ? '#0f766e' : '#e2e8f0',
-  color: active ? '#fff' : '#64748b',
-  width: '300px',
-  height: '54px',
-  fontSize: 14,
-  fontWeight: 700,
-  cursor: active ? 'pointer' : 'not-allowed',
-  opacity: active ? 1 : 0.75,
-});
-
-const smallGhostButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 8,
-  background: '#fff',
-  color: '#334155',
-  padding: '6px 8px',
-  fontSize: 11,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const statusSuccessBoxStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid #bbf7d0',
-  background: '#f0fdf4',
-  fontSize: 12,
-  color: '#166534',
-};
-
-const statusErrorBoxStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid #fecaca',
-  background: '#fef2f2',
-  fontSize: 12,
-  color: '#991b1b',
-};
-
-const workflowStatusSuccessStyle: React.CSSProperties = {
-  ...statusSuccessBoxStyle,
-  maxWidth: 420,
-  padding: 0,
-  fontSize: 11,
-  lineHeight: 1.4,
-  border: 'none',
-  background: 'transparent',
-};
-
-const workflowStatusErrorStyle: React.CSSProperties = {
-  ...statusErrorBoxStyle,
-  maxWidth: 420,
-  padding: '8px 10px',
-  fontSize: 11,
-  lineHeight: 1.4,
-};
-
-const staleBadgeStyle: React.CSSProperties = {
-  border: '1px solid #fde68a',
-  borderRadius: 999,
-  background: '#fffbeb',
-  color: '#92400e',
-  padding: '2px 8px',
-  fontSize: 10,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-};
-
-const editorCardStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  background: '#ffffff',
-  padding: 14,
-  marginTop: 6,
-  display: 'grid',
-  gap: 8,
-};
-
-const workflowInlineControlsStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 10,
-  alignItems: 'center',
-};
-
-const workflowScopeHintStyle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: '#0f172a',
-  lineHeight: 1.35,
-  maxWidth: 360,
-};
-
-const workflowClassBadgeStyle = (displayClass: DisplayTextClass): React.CSSProperties => ({
-  ...displayTextBadgeStyle(displayClass),
-  fontSize: 16,
-  lineHeight: 1,
-  padding: '10px 20px',
-  borderRadius: 999,
-  fontWeight: 700,
-  letterSpacing: '0.01em',
-});
-
-const classCardCountStyle: React.CSSProperties = {
-  fontSize: 18,
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const estimateLabelStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: '#64748b',
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-};
-
-const promptToggleStyle: React.CSSProperties = {
-  alignSelf: 'flex-start',
-  background: 'transparent',
-  border: 'none',
-  color: 'rgb(72, 107, 122)',
-  fontSize: 12,
-  fontWeight: 600,
-  cursor: 'pointer',
-  padding: 0,
-};
-
-const promptPanelStyle: React.CSSProperties = {
-  marginTop: 10,
-  border: '1px solid #e2e8f0',
-  borderRadius: 10,
-  padding: 12,
-  backgroundColor: '#f8fafc',
-  display: 'grid',
-  gap: 10,
-};
-
-const promptLabelStyle: React.CSSProperties = {
-  fontSize: 10,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  color: '#94a3b8',
-  fontWeight: 700,
-};
-
-const promptContentStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#475569',
-  lineHeight: 1.5,
-};
-
-const promptInputLabelStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  fontSize: 11,
-  fontWeight: 600,
-  color: '#1e293b',
-};
-
-const promptInputStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 80,
-  padding: 10,
-  borderRadius: 8,
-  border: '1px solid #e2e8f0',
-  fontSize: 12,
-  lineHeight: 1.4,
-  fontFamily: 'inherit',
-  resize: 'vertical',
-  background: '#ffffff',
-};
-
-const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({
-  display: 'grid',
-  gap: 6,
-  padding: 12,
-  borderRadius: 12,
-  border: manualCheck ? '1px solid #fcd34d' : '1px solid #86efac',
-  background: manualCheck ? '#fffbeb' : '#f0fdf4',
-  color: manualCheck ? '#92400e' : '#166534',
-});
-
-const domainPlaceholderCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 16,
-  padding: 20,
-  borderRadius: 16,
-  border: '1px dashed #cbd5e1',
-  background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-};
-
-const domainPlaceholderHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
-  gap: 16,
-  flexWrap: 'wrap',
-};
-
-const domainPlaceholderBadgeStyle = (enabled: boolean): React.CSSProperties => ({
-  borderRadius: 999,
-  padding: '5px 10px',
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  background: enabled ? '#dcfce7' : '#e2e8f0',
-  color: enabled ? '#166534' : '#475569',
-  alignSelf: 'flex-start',
-});
-
-const domainPlaceholderTextStyle: React.CSSProperties = {
-  margin: '4px 0 0',
-  fontSize: 14,
-  lineHeight: 1.65,
-  color: '#475569',
-  maxWidth: 760,
-};
-
-const domainPlaceholderGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 12,
-};
-
-const localI18nClassGridStyle: React.CSSProperties = {
-  ...classGridStyle,
-  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-};
-
-const domainPlaceholderItemStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  padding: 14,
-  borderRadius: 12,
-  border: '1px solid #e2e8f0',
-  background: '#fff',
-  color: '#0f172a',
-};
-
-const workflowConfirmOverlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 40,
-  background: 'rgba(15, 23, 42, 0.52)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '24px',
-};
-
-const workflowConfirmCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 520,
-  borderRadius: 18,
-  background: '#ffffff',
-  border: '1px solid #fde68a',
-  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.22)',
-  padding: '22px 22px 18px',
-  display: 'grid',
-  gap: 14,
-};
-
-const workflowConfirmTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 20,
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const workflowConfirmTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  lineHeight: 1.55,
-  color: '#334155',
-};
-
-const workflowConfirmActionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
-const workflowConfirmCancelButtonStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 999,
-  background: '#ffffff',
-  color: '#334155',
-  height: 40,
-  padding: '0 16px',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const workflowConfirmProceedButtonStyle: React.CSSProperties = {
-  border: '1px solid #facc15',
-  borderRadius: 999,
-  background: '#facc15',
-  color: '#0f172a',
-  height: 40,
-  padding: '0 16px',
-  fontSize: 13,
-  fontWeight: 800,
-  cursor: 'pointer',
-};
-
-const tableWrapStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 10,
-  overflow: 'auto',
-};
-
-const actionsBottomStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  marginTop: 8,
-};
-
-const tableStyle: React.CSSProperties = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  minWidth: 1160,
-  tableLayout: 'fixed',
-};
-
-const thStyle: React.CSSProperties = {
-  textAlign: 'left',
-  borderBottom: '1px solid #e2e8f0',
-  padding: '10px 12px',
-  fontSize: 12,
-  color: '#334155',
-  background: '#f8fafc',
-};
-
-const tdStyle: React.CSSProperties = {
-  borderBottom: '1px solid #f1f5f9',
-  padding: '10px 10px',
-  fontSize: 12,
-  color: '#0f172a',
-  verticalAlign: 'top',
-};
-
-const sectionKeyMetaStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: '#64748b',
-  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-  wordBreak: 'break-word',
-};
-
-const areaMetaStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: '#0f766e',
-  fontWeight: 700,
-};
-
-const textareaStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 165,
-  border: '1px solid #d1d5db',
-  borderRadius: 8,
-  padding: '8px 10px',
-  fontSize: 12,
-  lineHeight: 1.45,
-  resize: 'vertical',
-};
-
-const textareaReadonlyStyle: React.CSSProperties = {
-  ...textareaStyle,
-  background: '#f8fafc',
-};
