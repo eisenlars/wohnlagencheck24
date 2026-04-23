@@ -2874,8 +2874,14 @@ export default function InternationalizationManager({ config, availableLocales, 
     return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
   }
 
-  function getPropertyListRowClass(active: boolean): string {
+  function getI18nListRowClass(active: boolean): string {
     return `btn w-100 text-start rounded-3 border p-3 d-flex flex-column gap-2 ${active ? 'bg-light border-secondary' : 'bg-white border-secondary-subtle'}`;
+  }
+
+  function getI18nTranslationBadgeClass(stale: boolean, translated: boolean): string {
+    if (stale) return 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle fw-bold px-3 py-2';
+    if (translated) return 'badge rounded-pill text-success bg-success-subtle border border-success-subtle fw-bold px-3 py-2';
+    return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
   }
 
   function getPropertyFieldPrompt(definition: PropertyFieldDefinition): string {
@@ -4164,7 +4170,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                       <button
                         key={item.offer_id}
                         type="button"
-                        className={getPropertyListRowClass(selectedPropertyItem?.offer_id === item.offer_id)}
+                        className={getI18nListRowClass(selectedPropertyItem?.offer_id === item.offer_id)}
                         onClick={() => setSelectedPropertyOfferId(item.offer_id)}
                       >
                         <div className="d-flex align-items-start justify-content-between gap-2">
@@ -4298,75 +4304,77 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
       </div>
       ) : activeDomain === 'referenzen' && activeDomainMeta.enabled ? (
-      <div style={editorCardStyle}>
-        {referenceStatus ? <div style={referenceStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{referenceStatus}</div> : null}
-        <div style={blogGridStyle}>
-          <aside style={blogListCardStyle}>
-            <div style={blogListHeadStyle}>
-              <h3 style={sectionTabsIntroTitleStyle}>Referenzobjekte</h3>
-              <button
-                type="button"
-                style={secondaryActionButtonStyle}
-                onClick={() => void loadReferenceItems()}
-                disabled={referenceLoading || referenceSaving}
-              >
-                Stand laden
-              </button>
-            </div>
-            <div style={blogListMetaStyle}>
-              Für Referenzen werden SEO-, Kurz- und Langtexte je Sprache separat gepflegt.
-            </div>
-            {referenceItems.length === 0 ? (
-              <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Referenzobjekte vorhanden.</div>
-            ) : (
-              <div style={blogListWrapStyle}>
-                {referenceItems.map((item) => {
-                  const translated = Boolean(
-                    item.translated_seo_title.trim()
-                    || item.translated_seo_description.trim()
-                    || item.translated_seo_h1.trim()
-                    || item.translated_short_description.trim()
-                    || item.translated_long_description.trim()
-                    || item.translated_location_text.trim()
-                    || item.translated_features_text.trim()
-                    || item.translated_highlights.length > 0
-                    || item.translated_image_alt_texts.length > 0,
-                  );
-                  return (
-                    <button
-                      key={item.reference_id}
-                      type="button"
-                      style={blogListRowStyle(selectedReferenceItem?.reference_id === item.reference_id)}
-                      onClick={() => setSelectedReferenceId(item.reference_id)}
-                    >
-                      <div style={blogListRowTopStyle}>
-                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
-                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
-                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
-                        </span>
-                      </div>
-                      <div style={blogListSublineStyle}>{item.region_label || 'Ohne Regionsangabe'}</div>
-                      <div style={blogListMetaLineStyle}>
-                        {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
-                      </div>
-                    </button>
-                  );
-                })}
+      <div className="bg-white border rounded-4 p-3 p-xl-4">
+        {referenceStatus ? <div className={`alert ${referenceStatusTone === 'error' ? 'alert-danger' : 'alert-success'} mb-3`}>{referenceStatus}</div> : null}
+        <div className="row g-3 g-xl-4 align-items-start">
+          <aside className="col-12 col-xl-4">
+            <div className="bg-light border rounded-4 p-3">
+              <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+                <h3 className="m-0 fs-5 fw-bold text-dark">Referenzobjekte</h3>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary fw-semibold"
+                  onClick={() => void loadReferenceItems()}
+                  disabled={referenceLoading || referenceSaving}
+                >
+                  Stand laden
+                </button>
               </div>
-            )}
+              <div className="small text-secondary lh-base mb-3">
+                Für Referenzen werden SEO-, Kurz- und Langtexte je Sprache separat gepflegt.
+              </div>
+              {referenceItems.length === 0 ? (
+                <div className="border rounded-3 p-3 small text-secondary bg-white">Für diesen Partner sind aktuell keine Referenzobjekte vorhanden.</div>
+              ) : (
+                <div className="d-flex flex-column gap-2">
+                  {referenceItems.map((item) => {
+                    const translated = Boolean(
+                      item.translated_seo_title.trim()
+                      || item.translated_seo_description.trim()
+                      || item.translated_seo_h1.trim()
+                      || item.translated_short_description.trim()
+                      || item.translated_long_description.trim()
+                      || item.translated_location_text.trim()
+                      || item.translated_features_text.trim()
+                      || item.translated_highlights.length > 0
+                      || item.translated_image_alt_texts.length > 0,
+                    );
+                    return (
+                      <button
+                        key={item.reference_id}
+                        type="button"
+                        className={getI18nListRowClass(selectedReferenceItem?.reference_id === item.reference_id)}
+                        onClick={() => setSelectedReferenceId(item.reference_id)}
+                      >
+                        <div className="d-flex align-items-start justify-content-between gap-2">
+                          <strong className="small text-dark">{item.title || 'Ohne Titel'}</strong>
+                          <span className={getI18nTranslationBadgeClass(item.translation_is_stale, translated)}>
+                            {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                          </span>
+                        </div>
+                        <div className="small text-secondary lh-base">{item.region_label || 'Ohne Regionsangabe'}</div>
+                        <div className="small text-secondary">
+                          {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </aside>
 
-          <div style={blogEditorWrapStyle}>
+          <div className="col-12 col-xl-8">
             {selectedReferenceItem ? (
-              <>
-                <div style={blogEditorHeadStyle}>
+              <div className="d-grid gap-4">
+                <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
                   <div>
-                    <h3 style={sectionTabsIntroTitleStyle}>{selectedReferenceItem.title || 'Ohne Titel'}</h3>
-                    <p style={blogEditorIntroStyle}>
+                    <h3 className="m-0 fs-5 fw-bold text-dark">{selectedReferenceItem.title || 'Ohne Titel'}</h3>
+                    <p className="small text-secondary lh-base mt-2 mb-0">
                       Übersetze hier die Referenztexte, die aktuell über die deutschen Override-Felder ausgespielt werden. Die deutsche Bearbeitung bleibt im Bereich „Referenzen“.
                     </p>
                   </div>
-                  <span style={blogTranslationBadgeStyle(selectedReferenceItem.translation_is_stale, Boolean(
+                  <span className={getI18nTranslationBadgeClass(selectedReferenceItem.translation_is_stale, Boolean(
                     selectedReferenceItem.translated_seo_title.trim()
                     || selectedReferenceItem.translated_seo_description.trim()
                     || selectedReferenceItem.translated_seo_h1.trim()
@@ -4381,238 +4389,255 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </span>
                 </div>
 
-                <div style={blogSummaryGridStyle}>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Region</span>
-                    <strong>{selectedReferenceItem.region_label || 'Nicht gesetzt'}</strong>
+                <div className="row g-3">
+                  <div className="col-12 col-md-4">
+                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-2">
+                      <span className="small text-secondary text-uppercase fw-bold">Region</span>
+                      <strong className="text-dark">{selectedReferenceItem.region_label || 'Nicht gesetzt'}</strong>
+                    </div>
                   </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
-                    <strong>{selectedReferenceItem.translation_status}</strong>
+                  <div className="col-12 col-md-4">
+                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-2">
+                      <span className="small text-secondary text-uppercase fw-bold">Übersetzungsstatus</span>
+                      <strong className="text-dark">{selectedReferenceItem.translation_status}</strong>
+                    </div>
                   </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Zuletzt aktualisiert</span>
-                    <strong>{selectedReferenceItem.translation_updated_at ? new Date(selectedReferenceItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
-                  </div>
-                </div>
-
-                <div style={blogColumnGridStyle}>
-                  <div style={blogSourceCardStyle}>
-                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input style={inputStyle} value={selectedReferenceItem.source_seo_title} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_seo_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input style={inputStyle} value={selectedReferenceItem.source_seo_h1} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_short_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_long_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_location_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_features_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_highlights.join('\n')} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_image_alt_texts.join('\n')} readOnly />
-                    </label>
-                  </div>
-
-                  <div style={blogTargetCardStyle}>
-                    <div style={blogColumnHeadStyle}>Übersetzung</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input
-                        style={inputStyle}
-                        value={selectedReferenceItem.translated_seo_title}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_title: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_seo_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input
-                        style={inputStyle}
-                        value={selectedReferenceItem.translated_seo_h1}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_h1: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_short_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_short_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_long_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_long_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_location_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_location_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_features_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_features_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_highlights.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_highlights: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedReferenceItem.translated_image_alt_texts.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_image_alt_texts: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Status
-                      <select
-                        style={inputStyle}
-                        value={selectedReferenceItem.translation_status}
-                        onChange={(e) => {
-                          const next = e.target.value as BlogTranslationStatus;
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translation_status: next } : item
-                          )));
-                        }}
-                      >
-                        <option value="draft">Entwurf</option>
-                        <option value="approved">Freigegeben</option>
-                        <option value="needs_review">Prüfen</option>
-                      </select>
-                    </label>
-                    <div style={blogActionRowStyle}>
-                      <button
-                        type="button"
-                        style={secondaryActionButtonStyle}
-                        onClick={() => {
-                          setReferenceItems((prev) => prev.map((item) => (
-                            item.reference_id === selectedReferenceItem.reference_id
-                              ? {
-                                  ...item,
-                                  translated_seo_title: item.source_seo_title,
-                                  translated_seo_description: item.source_seo_description,
-                                  translated_seo_h1: item.source_seo_h1,
-                                  translated_short_description: item.source_short_description,
-                                  translated_long_description: item.source_long_description,
-                                  translated_location_text: item.source_location_text,
-                                  translated_features_text: item.source_features_text,
-                                  translated_highlights: [...item.source_highlights],
-                                  translated_image_alt_texts: [...item.source_image_alt_texts],
-                                }
-                              : item
-                          )));
-                        }}
-                        disabled={referenceSaving}
-                      >
-                        Deutsch übernehmen
-                      </button>
-                      <button
-                        type="button"
-                        style={buttonPrimaryStyle(referenceHasEdits && !referenceSaving)}
-                        onClick={() => void saveSelectedReferenceItem()}
-                        disabled={!referenceHasEdits || referenceSaving}
-                      >
-                        {referenceSaving ? 'Speichern …' : 'Referenz-Übersetzung speichern'}
-                      </button>
+                  <div className="col-12 col-md-4">
+                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-2">
+                      <span className="small text-secondary text-uppercase fw-bold">Zuletzt aktualisiert</span>
+                      <strong className="text-dark">{selectedReferenceItem.translation_updated_at ? new Date(selectedReferenceItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
                     </div>
                   </div>
                 </div>
-              </>
+
+                <div className="row g-3">
+                  <div className="col-12 col-xl-6">
+                    <div className="border rounded-4 bg-light p-3 h-100 d-grid gap-3">
+                      <div className="small text-secondary text-uppercase fw-bold">Deutsch (Quelle)</div>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        SEO-Titel
+                        <input className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_title} readOnly />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Meta-Description
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_description} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        H1
+                        <input className="form-control bg-white text-secondary" value={selectedReferenceItem.source_seo_h1} readOnly />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Kurzbeschreibung
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_short_description} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Langbeschreibung
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_long_description} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Lage
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_location_text} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Ausstattung
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_features_text} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Highlights
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_highlights.join('\n')} readOnly rows={4} />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Bild-Alt-Texte
+                        <textarea className="form-control bg-white text-secondary" value={selectedReferenceItem.source_image_alt_texts.join('\n')} readOnly rows={4} />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="col-12 col-xl-6">
+                    <div className="border rounded-4 bg-white p-3 h-100 d-grid gap-3">
+                      <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        SEO-Titel
+                        <input
+                          className="form-control"
+                          value={selectedReferenceItem.translated_seo_title}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_title: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Meta-Description
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_seo_description}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_description: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        H1
+                        <input
+                          className="form-control"
+                          value={selectedReferenceItem.translated_seo_h1}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_h1: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Kurzbeschreibung
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_short_description}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_short_description: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Langbeschreibung
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_long_description}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_long_description: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Lage
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_location_text}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_location_text: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Ausstattung
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_features_text}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_features_text: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Highlights
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_highlights.join('\n')}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_highlights: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Bild-Alt-Texte
+                        <textarea
+                          className="form-control"
+                          value={selectedReferenceItem.translated_image_alt_texts.join('\n')}
+                          rows={4}
+                          onChange={(e) => {
+                            const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_image_alt_texts: next } : item
+                            )));
+                          }}
+                        />
+                      </label>
+                      <label className="d-flex flex-column gap-2 small fw-bold text-secondary">
+                        Status
+                        <select
+                          className="form-select"
+                          value={selectedReferenceItem.translation_status}
+                          onChange={(e) => {
+                            const next = e.target.value as BlogTranslationStatus;
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id ? { ...item, translation_status: next } : item
+                            )));
+                          }}
+                        >
+                          <option value="draft">Entwurf</option>
+                          <option value="approved">Freigegeben</option>
+                          <option value="needs_review">Prüfen</option>
+                        </select>
+                      </label>
+                      <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary fw-semibold"
+                          onClick={() => {
+                            setReferenceItems((prev) => prev.map((item) => (
+                              item.reference_id === selectedReferenceItem.reference_id
+                                ? {
+                                    ...item,
+                                    translated_seo_title: item.source_seo_title,
+                                    translated_seo_description: item.source_seo_description,
+                                    translated_seo_h1: item.source_seo_h1,
+                                    translated_short_description: item.source_short_description,
+                                    translated_long_description: item.source_long_description,
+                                    translated_location_text: item.source_location_text,
+                                    translated_features_text: item.source_features_text,
+                                    translated_highlights: [...item.source_highlights],
+                                    translated_image_alt_texts: [...item.source_image_alt_texts],
+                                  }
+                                : item
+                            )));
+                          }}
+                          disabled={referenceSaving}
+                        >
+                          Deutsch übernehmen
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn fw-bold px-4 py-2 ${referenceHasEdits && !referenceSaving ? 'btn-success' : 'btn-secondary disabled'}`}
+                          onClick={() => void saveSelectedReferenceItem()}
+                          disabled={!referenceHasEdits || referenceSaving}
+                        >
+                          {referenceSaving ? 'Speichern …' : 'Referenz-Übersetzung speichern'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div style={blogEmptyDetailStyle}>Wähle links ein Referenzobjekt, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+              <div className="border rounded-4 p-4 small text-secondary bg-light">Wähle links ein Referenzobjekt, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
