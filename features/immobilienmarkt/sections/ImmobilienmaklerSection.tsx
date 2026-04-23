@@ -116,7 +116,7 @@ function MarketOfferCard(props: {
   const showNewBadge = shouldShowNewOfferBadge(offer);
 
   return (
-    <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
+    <article className="card border-0 bg-white rounded-4 h-100 overflow-hidden">
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
@@ -165,13 +165,15 @@ function MarketRequestCard(props: {
   listHref: string;
   detailLabel: string;
   listLabel: string;
+  tone?: "default" | "accent";
 }) {
-  const { request, detailHref, listHref, detailLabel, listLabel } = props;
+  const { request, detailHref, listHref, detailLabel, listLabel, tone = "default" } = props;
   const imageSrc = request.imageUrl;
   const showNewBadge = Boolean(buildNewMarketingBadge(request.updatedAt));
+  const isAccent = tone === "accent";
 
   return (
-    <article className="card border-0 bg-light rounded-4 h-100 overflow-hidden">
+    <article className={`card rounded-4 h-100 overflow-hidden ${isAccent ? "border border-warning bg-transparent text-white" : "border-0 bg-light"}`}>
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
@@ -192,20 +194,20 @@ function MarketRequestCard(props: {
           </span>
         </div>
         <h3 className="h6 mb-2">
-          <a href={detailHref} className="link-dark text-decoration-none">
+          <a href={detailHref} className={`${isAccent ? "link-light" : "link-dark"} text-decoration-none`}>
             {request.title}
           </a>
         </h3>
-        <p className="text-body-secondary mb-3">
+        <p className={`${isAccent ? "text-white" : "text-body-secondary"} mb-3`}>
           {[formatCurrency(request.maxPrice), formatArea(request.maxAreaSqm)]
             .filter(Boolean)
             .join(" · ") || "Suchprofil auf Anfrage"}
         </p>
         <div className="d-flex flex-wrap gap-2">
-          <a href={detailHref} className="btn btn-outline-dark btn-sm">
+          <a href={detailHref} className={isAccent ? "btn btn-outline-warning text-white btn-sm fw-semibold" : "btn btn-outline-dark btn-sm"}>
             {detailLabel}
           </a>
-          <a href={listHref} className="btn btn-light border btn-sm fw-semibold">
+          <a href={listHref} className={isAccent ? "btn btn-outline-warning text-white btn-sm fw-semibold" : "btn btn-light border btn-sm fw-semibold"}>
             {listLabel}
           </a>
         </div>
@@ -287,6 +289,8 @@ export function ImmobilienmaklerSection({
     ...localityGallery,
   ].slice(0, 6);
   const hasMarketItems = Boolean(featuredBuyOffer || featuredBuyRequest || featuredRentOffer || featuredRentRequest);
+  const hasFeaturedOffers = Boolean(featuredBuyOffer || featuredRentOffer);
+  const hasFeaturedRequests = Boolean(featuredBuyRequest || featuredRentRequest);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -418,9 +422,9 @@ export function ImmobilienmaklerSection({
               </div>
             </div>
             <div className="d-flex flex-column gap-4">
-              {featuredBuyOffer || featuredBuyRequest ? (
+              {hasFeaturedOffers ? (
                 <div className="rounded-4 bg-light p-3">
-                  <h3 className="h5 mb-3">Kaufen</h3>
+                  <h3 className="h5 mb-3">Angebote</h3>
                   <div className="row g-3">
                     {featuredBuyOffer ? (
                       <div className="col-12 col-lg-6">
@@ -434,25 +438,6 @@ export function ImmobilienmaklerSection({
                       </div>
                     ) : null}
 
-                    {featuredBuyRequest ? (
-                      <div className="col-12 col-lg-6">
-                        <MarketRequestCard
-                          request={featuredBuyRequest}
-                          detailHref={buildRequestHref(basePath, featuredBuyRequest)}
-                          listHref={buildRequestListHref(basePath, "kauf")}
-                          detailLabel="Kaufgesuch ansehen"
-                          listLabel="Alle Kaufgesuche"
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-
-              {featuredRentOffer || featuredRentRequest ? (
-                <div className="rounded-4 bg-light p-3">
-                  <h3 className="h5 mb-3">Mieten</h3>
-                  <div className="row g-3">
                     {featuredRentOffer ? (
                       <div className="col-12 col-lg-6">
                         <MarketOfferCard
@@ -461,6 +446,26 @@ export function ImmobilienmaklerSection({
                           listHref={buildOfferListHref(basePath, "miete")}
                           detailLabel="Mietangebot ansehen"
                           listLabel="Alle Mietangebote"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {hasFeaturedRequests ? (
+                <div className="rounded-4 p-3 text-white" style={{ background: "#486b7a" }}>
+                  <h3 className="h5 mb-3">Gesuche</h3>
+                  <div className="row g-3">
+                    {featuredBuyRequest ? (
+                      <div className="col-12 col-lg-6">
+                        <MarketRequestCard
+                          request={featuredBuyRequest}
+                          detailHref={buildRequestHref(basePath, featuredBuyRequest)}
+                          listHref={buildRequestListHref(basePath, "kauf")}
+                          detailLabel="Kaufgesuch ansehen"
+                          listLabel="Alle Kaufgesuche"
+                          tone="accent"
                         />
                       </div>
                     ) : null}
@@ -473,6 +478,7 @@ export function ImmobilienmaklerSection({
                           listHref={buildRequestListHref(basePath, "miete")}
                           detailLabel="Mietgesuch ansehen"
                           listLabel="Alle Mietgesuche"
+                          tone="accent"
                         />
                       </div>
                     ) : null}
@@ -495,7 +501,7 @@ export function ImmobilienmaklerSection({
 
       <section className="card border-0 shadow-sm rounded-4">
         <div className="card-body p-3 p-lg-4 text-center">
-          <h2 className="mb-3">Unsere Region {kreisName}</h2>
+          <h2 className="mb-4">Unsere Region - &quot;{kreisName}&quot;</h2>
           <div className="d-flex flex-column flex-md-row justify-content-center gap-2">
             <a href={basePath} className="btn btn-outline-dark fw-semibold">
               Marktbericht
