@@ -2868,14 +2868,14 @@ export default function InternationalizationManager({ config, availableLocales, 
     };
   }
 
-  function getPropertyStatusBadgeStyle(status: PropertyComputedStatus): React.CSSProperties {
-    if (status === 'translated') {
-      return propertyMetaBadgeStyle('#dcfce7', '#166534', '#bbf7d0');
-    }
-    if (status === 'in_progress') {
-      return propertyMetaBadgeStyle('#fef3c7', '#92400e', '#fde68a');
-    }
-    return propertyMetaBadgeStyle('#fee2e2', '#b91c1c', '#fecaca');
+  function getPropertyStatusBadgeClass(status: PropertyComputedStatus): string {
+    if (status === 'translated') return 'badge rounded-pill text-success bg-success-subtle border border-success-subtle fw-bold px-3 py-2';
+    if (status === 'in_progress') return 'badge rounded-pill text-warning bg-warning-subtle border border-warning-subtle fw-bold px-3 py-2';
+    return 'badge rounded-pill text-danger bg-danger-subtle border border-danger-subtle fw-bold px-3 py-2';
+  }
+
+  function getPropertyListRowClass(active: boolean): string {
+    return `btn w-100 text-start rounded-3 border p-3 d-flex flex-column gap-2 ${active ? 'bg-light border-secondary' : 'bg-white border-secondary-subtle'}`;
   }
 
   function getPropertyFieldPrompt(definition: PropertyFieldDefinition): string {
@@ -2989,52 +2989,54 @@ export default function InternationalizationManager({ config, availableLocales, 
     const isBusy = propertyAiKey === `${item.offer_id}:${definition.key}`;
 
     return (
-      <div key={`${item.offer_id}-${definition.key}`} style={propertyFieldRowStyle}>
-        <div style={propertyFieldRowHeadStyle}>
+      <div key={`${item.offer_id}-${definition.key}`} className="border rounded-4 bg-white p-3 d-grid gap-3">
+        <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
           <div>
-            <div style={propertyFieldTitleStyle}>{definition.label}</div>
+            <div className="fw-bold text-dark">{definition.label}</div>
             {definition.list ? (
-              <div style={propertyFieldHintStyle}>Eine Zeile entspricht genau einem Eintrag.</div>
+              <div className="small text-secondary">Eine Zeile entspricht genau einem Eintrag.</div>
             ) : null}
           </div>
           <button
             type="button"
-            style={propertyFieldAiButtonStyle}
+            className="btn btn-sm btn-outline-primary fw-semibold"
             onClick={() => void runPropertyFieldAi(item, definition)}
             disabled={propertySaving || propertyBulkAiRunning || llmOptions.length === 0 || isBusy}
           >
             {isBusy ? 'KI übersetzt …' : 'Mit KI übersetzen'}
           </button>
         </div>
-        <div style={propertyFieldPairGridStyle}>
-          <div style={propertyFieldColumnStyle}>
-            <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
+        <div className="row g-3">
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Deutsch</div>
             {definition.multiline || definition.list ? (
               <textarea
-                style={propertyReadonlyTextareaStyle}
+                className="form-control bg-light text-secondary"
                 value={sourceValue}
                 readOnly
+                rows={6}
               />
             ) : (
               <input
-                style={propertyReadonlyInputStyle}
+                className="form-control bg-light text-secondary"
                 value={sourceValue}
                 readOnly
               />
             )}
           </div>
-          <div style={propertyFieldColumnStyle}>
-            <div style={propertyFieldColumnLabelStyle}>Übersetzung</div>
+          <div className="col-12 col-xl-6 d-grid gap-2">
+            <div className="small text-secondary text-uppercase fw-bold">Übersetzung</div>
             {definition.multiline || definition.list ? (
               <textarea
-                style={propertyEditableTextareaStyle}
+                className="form-control"
                 value={targetValue}
                 placeholder={definition.placeholder}
                 onChange={(e) => updatePropertyField(item.offer_id, definition.targetKey, e.target.value, Boolean(definition.list))}
+                rows={6}
               />
             ) : (
               <input
-                style={propertyEditableInputStyle}
+                className="form-control"
                 value={targetValue}
                 placeholder={definition.placeholder}
                 onChange={(e) => updatePropertyField(item.offer_id, definition.targetKey, e.target.value, false)}
@@ -4119,80 +4121,82 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
       </div>
       ) : activeDomain === 'immobilien' && activeDomainMeta.enabled ? (
-      <div style={editorCardStyle}>
-        {propertyStatus ? <div style={propertyStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{propertyStatus}</div> : null}
-        <div style={blogGridStyle}>
-          <aside style={blogListCardStyle}>
-            <div style={blogListHeadStyle}>
-              <h3 style={sectionTabsIntroTitleStyle}>Angebote</h3>
-              <div style={propertySidebarActionsStyle}>
-                <button
-                  type="button"
-                  style={secondaryActionButtonStyle}
-                  onClick={() => void runPropertyDraftBatchAi()}
-                  disabled={propertyLoading || propertySaving || propertyBulkAiRunning || llmOptions.length === 0 || propertyDraftItemsCount === 0}
-                >
-                  {propertyBulkAiRunning
-                    ? 'Drafts werden übersetzt …'
-                    : propertyEditorTab === 'texts'
-                      ? 'Alle Draft-Texte mit KI übersetzen'
-                      : 'Alle Draft-SEO/GEO-Felder mit KI übersetzen'}
-                </button>
-                <button
-                  type="button"
-                  style={secondaryActionButtonStyle}
-                  onClick={() => void loadPropertyItems()}
-                  disabled={propertyLoading || propertySaving || propertyBulkAiRunning}
-                >
-                  Stand laden
-                </button>
+      <div className="bg-white border rounded-4 p-3 p-xl-4">
+        {propertyStatus ? <div className={`alert ${propertyStatusTone === 'error' ? 'alert-danger' : 'alert-success'} mb-3`}>{propertyStatus}</div> : null}
+        <div className="row g-3 g-xl-4 align-items-start">
+          <aside className="col-12 col-xl-4">
+            <div className="bg-light border rounded-4 p-3">
+              <div className="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+                <h3 className="m-0 fs-5 fw-bold text-dark">Angebote</h3>
+                <div className="d-flex flex-wrap gap-2 justify-content-end">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary fw-semibold"
+                    onClick={() => void runPropertyDraftBatchAi()}
+                    disabled={propertyLoading || propertySaving || propertyBulkAiRunning || llmOptions.length === 0 || propertyDraftItemsCount === 0}
+                  >
+                    {propertyBulkAiRunning
+                      ? 'Drafts werden übersetzt …'
+                      : propertyEditorTab === 'texts'
+                        ? 'Alle Draft-Texte mit KI übersetzen'
+                        : 'Alle Draft-SEO/GEO-Felder mit KI übersetzen'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary fw-semibold"
+                    onClick={() => void loadPropertyItems()}
+                    disabled={propertyLoading || propertySaving || propertyBulkAiRunning}
+                  >
+                    Stand laden
+                  </button>
+                </div>
               </div>
-            </div>
-            <div style={blogListMetaStyle}>
-              Je Angebot werden SEO-, Beschreibungs- und Bildtexte in der Zielsprache getrennt vom deutschen Exposé gepflegt.
-            </div>
-            {propertyItems.length === 0 ? (
-              <div style={blogEmptyStateStyle}>Für den aktuellen Partner gibt es noch keine Partner-Immobilien.</div>
-            ) : (
-              <div style={blogListWrapStyle}>
-                {propertyItems.map((item) => {
-                  const computedStatus = getComputedPropertyStatus(item);
-                  return (
-                    <button
-                      key={item.offer_id}
-                      type="button"
-                      style={blogListRowStyle(selectedPropertyItem?.offer_id === item.offer_id)}
-                      onClick={() => setSelectedPropertyOfferId(item.offer_id)}
-                    >
-                      <div style={blogListRowTopStyle}>
-                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
-                        <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
-                          {computedStatus.shortLabel}
-                        </span>
-                      </div>
-                      <div style={blogListSublineStyle}>{item.address || `${item.offer_type || 'angebot'} · ${item.object_type || 'Objekt'}`}</div>
-                      <div style={blogListMetaLineStyle}>
-                        {item.offer_type || 'angebot'} · {item.object_type || 'Objekt'} · {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="small text-secondary lh-base mb-3">
+                Je Angebot werden SEO-, Beschreibungs- und Bildtexte in der Zielsprache getrennt vom deutschen Exposé gepflegt.
               </div>
-            )}
+              {propertyItems.length === 0 ? (
+                <div className="border rounded-3 p-3 small text-secondary bg-white">Für den aktuellen Partner gibt es noch keine Partner-Immobilien.</div>
+              ) : (
+                <div className="d-flex flex-column gap-2">
+                  {propertyItems.map((item) => {
+                    const computedStatus = getComputedPropertyStatus(item);
+                    return (
+                      <button
+                        key={item.offer_id}
+                        type="button"
+                        className={getPropertyListRowClass(selectedPropertyItem?.offer_id === item.offer_id)}
+                        onClick={() => setSelectedPropertyOfferId(item.offer_id)}
+                      >
+                        <div className="d-flex align-items-start justify-content-between gap-2">
+                          <strong className="small text-dark">{item.title || 'Ohne Titel'}</strong>
+                          <span className={getPropertyStatusBadgeClass(computedStatus.visual)}>
+                            {computedStatus.shortLabel}
+                          </span>
+                        </div>
+                        <div className="small text-secondary lh-base">{item.address || `${item.offer_type || 'angebot'} · ${item.object_type || 'Objekt'}`}</div>
+                        <div className="small text-secondary">
+                          {item.offer_type || 'angebot'} · {item.object_type || 'Objekt'} · {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </aside>
 
-          <div style={blogEditorWrapStyle}>
+          <div className="col-12 col-xl-8">
             {selectedPropertyItem ? (
-              <>
-                <div style={blogEditorHeadStyle}>
-                  <div style={propertyTitleStackStyle}>
-                    <div style={propertyTitleRowStyle}>
-                      <h3 style={sectionTabsIntroTitleStyle}>{selectedPropertyItem.title || 'Ohne Titel'}</h3>
-                      <div style={propertyTitleBadgeRowStyle}>
-                        <span style={propertyContextBadgeStyle}>
+              <div className="d-grid gap-4">
+                <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                  <div className="d-grid gap-2">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <h3 className="m-0 fs-5 fw-bold text-dark">{selectedPropertyItem.title || 'Ohne Titel'}</h3>
+                      <div className="d-flex gap-2 flex-wrap">
+                        <span className="badge rounded-pill text-secondary bg-light border">
                           {selectedPropertyItem.object_type || 'Objekt'}
                         </span>
-                        <span style={propertyContextBadgeStyle}>
+                        <span className="badge rounded-pill text-secondary bg-light border">
                           {selectedPropertyItem.offer_type || 'Angebot'}
                         </span>
                       </div>
@@ -4203,54 +4207,54 @@ export default function InternationalizationManager({ config, availableLocales, 
                 {(() => {
                   const computedStatus = getComputedPropertyStatus(selectedPropertyItem);
                   return (
-                    <div style={propertyMetaBadgeRowStyle}>
-                      <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
+                    <div className="d-flex gap-2 flex-wrap align-items-center">
+                      <span className={getPropertyStatusBadgeClass(computedStatus.visual)}>
                         {computedStatus.label}
                       </span>
-                      <span style={propertyLastUpdatedBadgeStyle}>
+                      <span className="badge rounded-pill text-secondary bg-white border fw-semibold px-3 py-2">
                         Zuletzt aktualisiert: {selectedPropertyItem.translation_updated_at ? new Date(selectedPropertyItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}
                       </span>
                     </div>
                   );
                 })()}
 
-                <div style={propertyTabBarStyle}>
+                <div className="d-flex flex-wrap gap-2 my-2">
                   <button
                     type="button"
-                    style={tabButtonStyle(propertyEditorTab === 'texts')}
+                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${propertyEditorTab === 'texts' ? 'btn-secondary' : 'btn-outline-secondary'}`}
                     onClick={() => setPropertyEditorTab('texts')}
                   >
-                    <span style={propertyTabLabelStyle}>Texte</span>
+                    Texte
                   </button>
                   <button
                     type="button"
-                    style={tabButtonStyle(propertyEditorTab === 'seo')}
+                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${propertyEditorTab === 'seo' ? 'btn-secondary' : 'btn-outline-secondary'}`}
                     onClick={() => setPropertyEditorTab('seo')}
                   >
-                    <span style={propertyTabLabelStyle}>SEO / GEO</span>
+                    SEO / GEO
                   </button>
                 </div>
 
-                <div style={propertySectionIntroCardStyle}>
-                  <div style={blogColumnHeadStyle}>
+                <div className="border rounded-4 bg-light p-3 d-grid gap-2">
+                  <div className="small text-secondary text-uppercase fw-bold">
                     {propertyEditorTab === 'texts' ? 'Texte übersetzen' : 'SEO / GEO übersetzen'}
                   </div>
-                  <div style={propertySectionIntroTextStyle}>
+                  <div className="small text-secondary lh-base">
                     {propertyEditorTab === 'texts'
                       ? 'Bearbeite die redaktionellen Exposé-Texte zeilen- und feldgenau. Quelle und Übersetzung sind jetzt pro Feld direkt gegenübergestellt.'
                       : 'Pflege Snippet-, AEO- und Bildtexte separat für die Zielsprache. KI-Hilfen wirken immer nur auf den aktuell gewählten Feldtyp.'}
                   </div>
                 </div>
 
-                <div style={propertyFieldStackStyle}>
+                <div className="d-grid gap-3">
                   {propertyVisibleFieldDefinitions.map((definition) => renderPropertyFieldPair(selectedPropertyItem, definition))}
                 </div>
 
-                <div style={propertyStatusCardStyle}>
-                  <div style={blogActionRowStyle}>
+                <div className="border rounded-4 bg-light p-3">
+                  <div className="d-flex align-items-center justify-content-end gap-2 flex-wrap">
                     <button
                       type="button"
-                      style={secondaryActionButtonStyle}
+                      className="btn btn-outline-secondary fw-semibold"
                       onClick={() => {
                         setPropertyItems((prev) => prev.map((item) => (
                           item.offer_id === selectedPropertyItem.offer_id
@@ -4278,7 +4282,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                     </button>
                     <button
                       type="button"
-                      style={buttonPrimaryStyle(propertyHasEdits && !propertySaving && !propertyBulkAiRunning)}
+                      className={`btn fw-bold px-4 py-2 ${propertyHasEdits && !propertySaving && !propertyBulkAiRunning ? 'btn-success' : 'btn-secondary disabled'}`}
                       onClick={() => void saveSelectedPropertyItem()}
                       disabled={!propertyHasEdits || propertySaving || propertyBulkAiRunning}
                     >
@@ -4286,9 +4290,9 @@ export default function InternationalizationManager({ config, availableLocales, 
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
-              <div style={blogEmptyDetailStyle}>Wähle links ein Immobilienangebot, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+              <div className="border rounded-4 p-4 small text-secondary bg-light">Wähle links ein Immobilienangebot, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
@@ -5183,74 +5187,12 @@ const blogEditorHeadStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 
-const propertyTitleStackStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
-};
-
-const propertyTitleRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
-const propertyTitleBadgeRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  flexWrap: 'wrap',
-  alignItems: 'center',
-};
-
-const propertyMetaBadgeStyle = (
-  background: string,
-  color: string,
-  borderColor: string,
-): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  borderRadius: 999,
-  padding: '6px 12px',
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  border: `1px solid ${borderColor}`,
-  background,
-  color,
-  whiteSpace: 'nowrap',
-});
-
-const propertyContextBadgeStyle: React.CSSProperties = {
-  ...propertyMetaBadgeStyle('#f8fafc', '#334155', '#cbd5e1'),
-  textTransform: 'none',
-};
-
-const propertyMetaBadgeRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 10,
-  flexWrap: 'wrap',
-  alignItems: 'center',
-};
-
-const propertyLastUpdatedBadgeStyle: React.CSSProperties = {
-  ...propertyMetaBadgeStyle('#ffffff', '#475569', '#dbe5ea'),
-  textTransform: 'none',
-};
-
 const blogEditorIntroStyle: React.CSSProperties = {
   margin: '4px 0 0',
   fontSize: 13,
   lineHeight: 1.55,
   color: '#64748b',
   maxWidth: 760,
-};
-
-const propertySidebarActionsStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 10,
-  justifyContent: 'flex-end',
 };
 
 const blogSummaryGridStyle: React.CSSProperties = {
@@ -5272,156 +5214,6 @@ const blogColumnGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: 16,
-};
-
-const propertyTabBarStyle: React.CSSProperties = {
-  ...tabContainerStyle,
-  marginBottom: 0,
-};
-
-const propertyTabLabelStyle: React.CSSProperties = {
-  ...tabLabelStyle,
-  fontSize: 12,
-};
-
-const propertySectionIntroCardStyle: React.CSSProperties = {
-  border: '1px solid #dbe5ea',
-  borderRadius: 14,
-  background: '#f8fafc',
-  padding: '14px 16px',
-  display: 'grid',
-  gap: 6,
-};
-
-const propertySectionIntroTextStyle: React.CSSProperties = {
-  fontSize: 13,
-  lineHeight: 1.55,
-  color: '#64748b',
-};
-
-const propertyFieldStackStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 16,
-};
-
-const propertyFieldRowStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 16,
-  background: '#ffffff',
-  padding: '16px',
-  display: 'grid',
-  gap: 14,
-};
-
-const propertyFieldRowHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 12,
-  alignItems: 'flex-start',
-  flexWrap: 'wrap',
-};
-
-const propertyFieldTitleStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const propertyFieldHintStyle: React.CSSProperties = {
-  marginTop: 4,
-  fontSize: 12,
-  lineHeight: 1.45,
-  color: '#64748b',
-};
-
-const propertyFieldAiButtonStyle: React.CSSProperties = {
-  border: '1px solid rgb(72, 107, 122)',
-  borderRadius: 10,
-  background: 'rgba(72, 107, 122, 0.12)',
-  color: 'rgb(72, 107, 122)',
-  minHeight: 40,
-  padding: '0 14px',
-  fontSize: 12,
-  fontWeight: 700,
-  cursor: 'pointer',
-};
-
-const propertyFieldPairGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: 14,
-};
-
-const propertyFieldColumnStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-};
-
-const propertyFieldColumnLabelStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  color: '#64748b',
-};
-
-const propertyFieldInputBaseStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 44,
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  fontSize: 13,
-  lineHeight: 1.45,
-  boxSizing: 'border-box',
-};
-
-const propertyReadonlyInputStyle: React.CSSProperties = {
-  ...propertyFieldInputBaseStyle,
-  background: '#f8fafc',
-  color: '#475569',
-  border: '1px solid #e2e8f0',
-};
-
-const propertyEditableInputStyle: React.CSSProperties = {
-  ...propertyFieldInputBaseStyle,
-  background: '#ffffff',
-  color: '#0f172a',
-};
-
-const propertyFieldTextareaBaseStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 180,
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  fontSize: 13,
-  lineHeight: 1.55,
-  resize: 'vertical',
-  boxSizing: 'border-box',
-};
-
-const propertyReadonlyTextareaStyle: React.CSSProperties = {
-  ...propertyFieldTextareaBaseStyle,
-  background: '#f8fafc',
-  color: '#475569',
-  border: '1px solid #e2e8f0',
-};
-
-const propertyEditableTextareaStyle: React.CSSProperties = {
-  ...propertyFieldTextareaBaseStyle,
-  background: '#ffffff',
-  color: '#0f172a',
-};
-
-const propertyStatusCardStyle: React.CSSProperties = {
-  border: '1px solid #dbe5ea',
-  borderRadius: 14,
-  background: '#f8fafc',
-  padding: '16px',
-  display: 'grid',
-  gap: 14,
-  alignItems: 'start',
 };
 
 const blogSourceCardStyle: React.CSSProperties = {
