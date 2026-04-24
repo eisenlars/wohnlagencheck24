@@ -171,6 +171,12 @@ type PropstackPropertyStatus = {
   nonpublic?: boolean | null;
 };
 
+type PropstackLocation = {
+  id?: number | string | null;
+  name?: string | null;
+  sub_locations?: PropstackLocation[] | null;
+};
+
 type PropstackSearchProfile = {
   id?: number | string;
   created_at?: string | null;
@@ -250,6 +256,27 @@ type RegionTarget = {
   district: string | null;
   label: string;
   key: string;
+};
+
+type PropstackSearchLocationKind = "city" | "region" | "location";
+
+type PropstackResolvedSearchLocation = {
+  id: string;
+  name: string;
+  path: string[];
+  label: string;
+};
+
+type PropstackSearchRegionResolution = {
+  targets: Array<RegionTarget & { kind: PropstackSearchLocationKind }>;
+  resolvedLocations: PropstackResolvedSearchLocation[];
+  resolutionSource: "location_ids" | "cities" | "regions" | "none";
+  searchLocations: Array<{
+    kind: PropstackSearchLocationKind;
+    label: string;
+    id?: string | null;
+    path?: string[] | null;
+  }>;
 };
 
 type PropstackClassification = {
@@ -1122,33 +1149,134 @@ function classifyPropstackSearchProfile(profile: Pick<PropstackSearchProfile, "r
   });
 }
 
-function buildSearchProfileRegionTargets(profile: PropstackSearchProfile): Array<RegionTarget & { kind: "city" | "region" }> {
+function collectPropstackLocations(
+  nodes: PropstackLocation[] | null | undefined,
+  path: string[] = [],
+  out: PropstackResolvedSearchLocation[] = [],
+): PropstackResolvedSearchLocation[] {
+  if (!Array.isArray(nodes)) return out;
+  for (const node of nodes) {
+    const id = String(node?.id ?? "").trim();
+    const name = String(node?.name ?? "").trim();
+    if (!id || !name) {
+      collectPropstackLocations(node?.sub_locations, path, out);
+      continue;
+    }
+    const nextPath = [...path, name];
+    out.push({
+      id,
+      name,
+      path: nextPath,
+      label: nextPath.join(" / "),
+    });
+    collectPropstackLocations(node?.sub_locations, nextPath, out);
+  }
+  return out;
+}
+
+function inferSearchProfileLocationContext(profile: PropstackSearchProfile): string | null {
+  const cities = normalizeStringArray(profile.cities);
+  const regions = normalizeStringArray(profile.regions);
+  return firstString([
+    profile.city,
+    cities.length === 1 ? cities[0] : null,
+    profile.region,
+    regions.length === 1 ? regions[0] : null,
+  ]);
+}
+
+function resolveSearchProfileLocations(
+  profile: PropstackSearchProfile,
+  locationIndex: Map<string, PropstackResolvedSearchLocation> | null | undefined,
+): PropstackResolvedSearchLocation[] {
+  if (!locationIndex || locationIndex.size === 0) return [];
+  const ids = normalizeSearchProfileIdArray(profile.location_ids);
+  if (ids.length === 0) return [];
+  const out: PropstackResolvedSearchLocation[] = [];
   const seen = new Set<string>();
-  const out: Array<RegionTarget & { kind: "city" | "region" }> = [];
-  const add = (target: RegionTarget | null, kind: "city" | "region") => {
+  for (const id of ids) {
+    const resolved = locationIndex.get(id);
+    if (!resolved || seen.has(resolved.id)) continue;
+    seen.add(resolved.id);
+    out.push(resolved);
+  }
+  return out;
+}
+
+function buildSearchProfileRegionResolution(
+  profile: PropstackSearchProfile,
+  locationIndex?: Map<string, PropstackResolvedSearchLocation> | null,
+): PropstackSearchRegionResolution {
+  const seen = new Set<string>();
+  const targets: Array<RegionTarget & { kind: PropstackSearchLocationKind }> = [];
+  const searchLocations: PropstackSearchRegionResolution["searchLocations"] = [];
+  const add = (target: RegionTarget | null, kind: PropstackSearchLocationKind) => {
     if (!target) return;
     const key = `${kind}:${target.key}`;
     if (seen.has(key)) return;
     seen.add(key);
-    out.push({ ...target, kind });
+    targets.push({ ...target, kind });
   };
 
   const cities = normalizeStringArray(profile.cities);
   const regions = normalizeStringArray(profile.regions);
+  const resolvedLocations = resolveSearchProfileLocations(profile, locationIndex);
+  const locationContext = inferSearchProfileLocationContext(profile);
 
-  for (const city of cities) add(toRegionTarget(city, null), "city");
-  if (cities.length === 0) {
-    for (const region of regions) add(toRegionTarget(region, null), "region");
+  if (resolvedLocations.length > 0) {
+    for (const location of resolvedLocations) {
+      add(
+        locationContext
+          ? toRegionTarget(locationContext, location.name)
+          : toRegionTarget(location.label, null),
+        "location",
+      );
+      searchLocations.push({
+        kind: "location",
+        id: location.id,
+        label: location.label,
+        path: location.path,
+      });
+    }
+    return {
+      targets,
+      resolvedLocations,
+      resolutionSource: "location_ids",
+      searchLocations,
+    };
   }
 
-  return out;
+  for (const city of cities) {
+    add(toRegionTarget(city, null), "city");
+    searchLocations.push({ kind: "city", label: city });
+  }
+  if (targets.length > 0) {
+    return {
+      targets,
+      resolvedLocations: [],
+      resolutionSource: "cities",
+      searchLocations,
+    };
+  }
+
+  for (const region of regions) {
+    add(toRegionTarget(region, null), "region");
+    searchLocations.push({ kind: "region", label: region });
+  }
+
+  return {
+    targets,
+    resolvedLocations: [],
+    resolutionSource: searchLocations.length > 0 ? "regions" : "none",
+    searchLocations,
+  };
 }
 
 function buildSearchProfileTitle(
   profile: PropstackSearchProfile,
   requestType: "kauf" | "miete",
   classification: PropstackClassification,
-  targets: Array<RegionTarget & { kind: "city" | "region" }>,
+  targets: Array<RegionTarget & { kind: PropstackSearchLocationKind }>,
 ): string {
   const explicitTitle = firstString([profile.title, profile.query_title, profile.name]);
   if (explicitTitle) return explicitTitle;
@@ -1455,13 +1583,15 @@ function mapUnitReference(
 function mapSearchProfileRequest(
   partnerId: string,
   profile: PropstackSearchProfile,
+  locationIndex?: Map<string, PropstackResolvedSearchLocation> | null,
 ): RawRequest {
   const cities = normalizeStringArray(profile.cities);
   const regions = normalizeStringArray(profile.regions);
   const rsTypes = normalizeStringArray(profile.rs_types);
   const rsCategories = normalizeStringArray(profile.rs_categories);
   const recommendedUseTypes = normalizeStringArray(profile.recommended_use_types);
-  const targets = buildSearchProfileRegionTargets(profile);
+  const regionResolution = buildSearchProfileRegionResolution(profile, locationIndex);
+  const targets = regionResolution.targets;
   const classification = classifyPropstackSearchProfile(profile);
   const requestType = requestTypeFromProfile(profile);
   const minRooms = normalizeSearchProfileRoomsMin(profile);
@@ -1505,12 +1635,16 @@ function mapSearchProfileRequest(
       kind: target.kind,
     })),
     region_target_keys: targets.map((target) => target.key),
-    search_locations: [
-      ...cities.map((entry) => ({ kind: "city", label: entry })),
-      ...regions.map((entry) => ({ kind: "region", label: entry })),
-    ],
+    search_locations: regionResolution.searchLocations,
     cities,
     regions,
+    resolved_locations: regionResolution.resolvedLocations.map((location) => ({
+      id: location.id,
+      name: location.name,
+      label: location.label,
+      path: location.path,
+    })),
+    location_resolution_source: regionResolution.resolutionSource,
     client_id: profile.client_id ?? null,
     status: profile.status ?? null,
     active: profile.active ?? null,
@@ -1743,6 +1877,41 @@ export async function fetchPropstackSearchProfiles(
 ): Promise<PropstackSearchProfile[]> {
   const result = await fetchPropstackSearchProfilesDetailed(integration, apiKey, options);
   return result.items;
+}
+
+async function fetchPropstackLocationsDetailed(
+  integration: PartnerIntegration,
+  apiKey: string,
+): Promise<PropstackFetchBatchResult<PropstackLocation>> {
+  const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
+  const url = new URL(`${base.replace(/\/+$/, "")}/locations`);
+  const res = await fetchWithTimeout(url.toString(), {
+    headers: {
+      "X-API-KEY": apiKey,
+    },
+  });
+
+  if (res.status === 404 || res.status === 405) {
+    return {
+      items: [],
+      requestsMade: 1,
+      pagesFetched: 0,
+      hitLimit: false,
+    };
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Propstack locations fetch failed (${res.status}): ${body}`);
+  }
+
+  const json = await res.json();
+  const items = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
+  return {
+    items: Array.isArray(items) ? (items as PropstackLocation[]) : [],
+    requestsMade: 1,
+    pagesFetched: Array.isArray(items) && items.length > 0 ? 1 : 0,
+    hitLimit: false,
+  };
 }
 
 async function fetchPropstackSearchProfilesDetailed(
@@ -2003,16 +2172,32 @@ export async function syncPropstackResources(
         maxPages: activeRequestLimits.maxPages,
         perPage: activeRequestLimits.perPage,
       });
+      let locationIndex: Map<string, PropstackResolvedSearchLocation> | null = null;
       providerRequestCount += profilesResult.requestsMade;
       providerPagesFetched += profilesResult.pagesFetched;
       providerBreakdown.saved_queries = {
         requests: profilesResult.requestsMade,
         pages_fetched: profilesResult.pagesFetched,
       };
+      try {
+        const locationsResult = await fetchPropstackLocationsDetailed(integration, apiKey);
+        providerRequestCount += locationsResult.requestsMade;
+        providerPagesFetched += locationsResult.pagesFetched;
+        providerBreakdown.locations = {
+          requests: locationsResult.requestsMade,
+          pages_fetched: locationsResult.pagesFetched,
+        };
+        locationIndex = new Map(
+          collectPropstackLocations(locationsResult.items).map((location) => [location.id, location]),
+        );
+        notes.push(`propstack locations loaded: ${locationIndex.size}`);
+      } catch (error) {
+        notes.push(`propstack locations fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+      }
       requestsHitLimit = profilesResult.hitLimit;
       requests = profilesResult.items
         .filter((p) => p.active !== false)
-        .map((p) => mapSearchProfileRequest(integration.partner_id, p));
+        .map((p) => mapSearchProfileRequest(integration.partner_id, p, locationIndex));
       requestsFetched = true;
       requestsSource = "live";
       notes.push(
