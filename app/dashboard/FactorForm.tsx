@@ -518,8 +518,9 @@ function InputRow({
 
 const FactorForm = forwardRef<FactorFormHandle, {
   config: PartnerAreaConfig;
+  workspaceTitle?: string;
   onLoadingChange?: (loading: boolean) => void;
-}>(function FactorForm({ config, onLoadingChange }, ref) {
+}>(function FactorForm({ config, workspaceTitle, onLoadingChange }, ref) {
   const supabase = createClient();
   const [message, setMessage] = useState('');
   const [rebuildMessage, setRebuildMessage] = useState('');
@@ -1172,6 +1173,11 @@ const FactorForm = forwardRef<FactorFormHandle, {
     <div className="d-flex flex-column gap-4 position-relative">
       {!onLoadingChange && isLoading ? (
         <FullscreenLoader show label="Faktoren werden geladen..." fixed={false} />
+      ) : null}
+      {workspaceTitle ? (
+        <div className="d-flex flex-column gap-1">
+          <h2 className="m-0 fs-4 fw-bold text-dark">{workspaceTitle}</h2>
+        </div>
       ) : null}
       
       {/* 1. Markttrends */}

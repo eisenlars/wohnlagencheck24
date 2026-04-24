@@ -2134,7 +2134,7 @@ export default function DashboardClient({
               {(headerConfig.isRegionBased || headerConfig.showDistrictSelector) && effectiveAreaConfig ? (
                 <div className={`${dashboardStyles.workspaceHeaderContext} ${hideTextsHeaderInActivationFlow ? dashboardStyles.workspaceHeaderContextCompact : ''}`}>
                   {hideTextsHeaderInActivationFlow ? <div className={dashboardStyles.hiddenTextsHeaderSpacer} /> : null}
-                  {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
+                  {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector && activeMainTab !== 'factors' ? (
                     <div className={dashboardStyles.workspaceHeaderRegionMeta}>
                       <h2 className={dashboardStyles.regionTitle}>{effectiveRegionHeaderTitle}</h2>
                       <div className={`${dashboardStyles.regionStatus} ${activationToneClass(resolveActivationStatusKey(effectiveAreaConfig))}`}>
@@ -2364,6 +2364,7 @@ export default function DashboardClient({
                 ref={factorFormRef}
                 key={`f-${effectiveSelectedConfig.area_id}`}
                 config={effectiveSelectedConfig}
+                workspaceTitle={effectiveRegionHeaderTitle}
                 onLoadingChange={setFactorPaneLoading}
               />
             ) : activeMainTab === 'texts' && scopedContentAreaConfig ? (
