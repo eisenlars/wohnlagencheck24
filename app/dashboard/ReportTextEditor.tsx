@@ -298,8 +298,8 @@ export default function ReportTextEditor({
       </div>
 
       <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
-        <div id={topicSectionAnchorId} className={`${workspaceStyles.reportSectionIntro} ${workspaceStyles.reportAnchorTarget}`}>
-          <h3 className={workspaceStyles.reportSectionTitle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
+        <div id={topicSectionAnchorId} className={`mb-4 ${workspaceStyles.reportAnchorTarget}`}>
+          <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
 
         <div className={showScopeAreaSidebar ? workspaceStyles.reportAreaGrid : undefined}>

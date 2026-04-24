@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import NextImage from 'next/image';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -1069,10 +1068,6 @@ function isTranslatableSectionKey(sectionKey: string): boolean {
     return false;
   }
   return true;
-}
-
-function isIconPath(value: string): boolean {
-  return typeof value === 'string' && value.startsWith('/');
 }
 
 function resolveTabId(sectionKey: string): string {
