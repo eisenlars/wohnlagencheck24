@@ -23,6 +23,7 @@ type Props = {
     ortSlug?: string;
   };
   marketRangeContext: RequestMarketRangeContext | null;
+  marketRangeScope?: "ortslage" | "kreis";
   initialAreaSqm?: number | null;
   numberLocale: string;
   currencyCode: string;
@@ -50,6 +51,7 @@ export function RequestFitTabs({
   request,
   context,
   marketRangeContext,
+  marketRangeScope = "ortslage",
   initialAreaSqm,
   numberLocale,
   currencyCode,
@@ -57,7 +59,7 @@ export function RequestFitTabs({
 }: Props) {
   const normalizedLocale = locale === "en" ? "en" : "de";
   const objectKind = resolveObjectKind(request.objectType);
-  const hasValuationRange = Boolean(context.ortSlug) && objectKind
+  const hasValuationRange = objectKind
     ? mode === "miete"
       ? Boolean(marketRangeContext?.rent[objectKind])
       : Boolean(marketRangeContext?.purchase[objectKind])
@@ -128,6 +130,7 @@ export function RequestFitTabs({
             objectType={request.objectType}
             marketRangeContext={marketRangeContext}
             regionLabel={regionLabel}
+            regionScope={marketRangeScope}
             initialAreaSqm={initialAreaSqm}
             locale={normalizedLocale}
             numberLocale={numberLocale}

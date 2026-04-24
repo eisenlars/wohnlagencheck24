@@ -7,7 +7,7 @@ import { getReportBySlugs } from "@/lib/data";
 import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
-import { buildRequestMarketRangeContext } from "@/lib/request-market-range";
+import { resolveRequestMarketRangeForRoute } from "@/lib/request-market-range-resolver";
 import { getRegionalRequestByIdForKreis } from "@/lib/request-detail";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -66,7 +66,11 @@ export async function ImmobiliengesuchKreisDetailPageContent({
   if (!requestData) notFound();
 
   const report = await getReportBySlugs([bundesland, kreis]);
-  const marketRangeContext = buildRequestMarketRangeContext(report);
+  const resolvedMarketRange = await resolveRequestMarketRangeForRoute({
+    request: requestData,
+    bundeslandSlug: bundesland,
+    kreisSlug: kreis,
+  });
   const meta = asRecord(asArray(report?.meta)[0] ?? report?.meta) ?? {};
   const kreisName = getRegionDisplayName({ meta, level: "kreis", fallbackSlug: kreis });
   const bundeslandName = asString(meta["bundesland_name"]) ?? formatRegionFallback(bundesland);
@@ -80,7 +84,7 @@ export async function ImmobiliengesuchKreisDetailPageContent({
   return (
     <RequestDetailPage
       request={requestData}
-      marketRangeContext={marketRangeContext}
+      resolvedMarketRange={resolvedMarketRange}
       mode="kauf"
       texts={texts}
       formatProfile={formatProfile}

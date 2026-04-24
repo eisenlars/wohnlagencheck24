@@ -12,6 +12,7 @@ type Props = {
   objectType: string | null;
   marketRangeContext: RequestMarketRangeContext | null;
   regionLabel: string;
+  regionScope?: "ortslage" | "kreis";
   initialAreaSqm?: number | null;
   locale?: string;
   numberLocale: string;
@@ -26,10 +27,11 @@ const COPY = {
   de: {
     purchaseEyebrow: "Preisspanne in der Zielregion",
     rentEyebrow: "Mietspanne in der Zielregion",
-    purchaseTitle: "Was in dieser Ortslage realistisch ist",
-    rentTitle: "Welche Miete in dieser Ortslage realistisch ist",
+    purchaseTitle: "Was in dieser Zielregion realistisch ist",
+    rentTitle: "Welche Miete in dieser Zielregion realistisch ist",
     comparablePrefix: "Die Spanne bezieht sich auf vergleichbare",
-    comparableIn: "in der Ortslage",
+    comparableInLocality: "in der Ortslage",
+    comparableInRegion: "in der Zielregion",
     comparableSuffix: "und dient als erste Orientierung.",
     housePlural: "Häuser",
     apartmentPlural: "Wohnungen",
@@ -38,17 +40,19 @@ const COPY = {
     purchaseResult: "Orientierungsrange für Ihre Wohnfläche",
     rentResult: "Orientierungsrange für Ihre Wohnfläche",
     perMonth: " / Monat",
-    resultHint: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für Ihre Ortslage.",
+    resultHintLocality: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für diese Ortslage.",
+    resultHintRegion: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für diesen Marktbereich.",
     areaBadgeSuffix: "Wohnfläche",
     cta: "Immobilie zu diesem Gesuch anbieten",
   },
   en: {
     purchaseEyebrow: "Price range in the target area",
     rentEyebrow: "Rent range in the target area",
-    purchaseTitle: "What is realistic in this locality",
-    rentTitle: "What rent is realistic in this locality",
+    purchaseTitle: "What is realistic in this target area",
+    rentTitle: "What rent is realistic in this target area",
     comparablePrefix: "This range is based on comparable",
-    comparableIn: "in the locality",
+    comparableInLocality: "in the locality",
+    comparableInRegion: "in the target area",
     comparableSuffix: "and provides a first orientation.",
     housePlural: "houses",
     apartmentPlural: "apartments",
@@ -57,7 +61,8 @@ const COPY = {
     purchaseResult: "Indicative range for your living area",
     rentResult: "Indicative range for your living area",
     perMonth: " / month",
-    resultHint: "This range is based on the target area and gives an initial orientation for this locality.",
+    resultHintLocality: "This range is based on the target area and gives an initial orientation for this locality.",
+    resultHintRegion: "This range is based on the target area and gives an initial orientation for this market area.",
     areaBadgeSuffix: "living area",
     cta: "Offer property for this request",
   },
@@ -108,6 +113,7 @@ export function RequestMarketRangeBox({
   objectType,
   marketRangeContext,
   regionLabel,
+  regionScope = "ortslage",
   initialAreaSqm,
   locale = "de",
   numberLocale,
@@ -137,6 +143,7 @@ export function RequestMarketRangeBox({
   if (!objectKind || !activeRange) return null;
 
   const isRent = mode === "miete";
+  const isLocalityScope = regionScope === "ortslage";
   const objectLabel = objectKind === "house" ? copy.housePlural : copy.apartmentPlural;
 
   return (
@@ -146,7 +153,7 @@ export function RequestMarketRangeBox({
         {isRent ? copy.rentTitle : copy.purchaseTitle}
       </h3>
       <p style={introStyle}>
-        {copy.comparablePrefix} {objectLabel.toLowerCase()} {copy.comparableIn} {regionLabel} {copy.comparableSuffix}
+        {copy.comparablePrefix} {objectLabel.toLowerCase()} {isLocalityScope ? copy.comparableInLocality : copy.comparableInRegion} {regionLabel} {copy.comparableSuffix}
       </p>
 
       <div style={fieldCardStyle}>
@@ -172,7 +179,7 @@ export function RequestMarketRangeBox({
             {totalLabel(computedActiveRange.total, locale, numberLocale, currencyCode, isRent ? copy.perMonth : "")}
           </div>
           <div style={resultHintStyle}>
-            {copy.resultHint}
+            {isLocalityScope ? copy.resultHintLocality : copy.resultHintRegion}
           </div>
         </div>
       ) : null}

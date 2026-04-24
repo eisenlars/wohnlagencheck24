@@ -7,8 +7,8 @@ import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import type { RequestMode } from "@/lib/gesuche";
 import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
 import type { RequestDetail } from "@/lib/request-detail";
+import type { ResolvedRequestMarketRange } from "@/lib/request-market-range-resolver";
 import type { RegionalReference } from "@/lib/referenzen";
-import type { RequestMarketRangeContext } from "@/lib/request-market-range";
 import { formatMetric } from "@/utils/format";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import { RequestFitTabs } from "./RequestFitTabs";
@@ -39,7 +39,7 @@ type Props = {
     };
   };
   references?: RegionalReference[];
-  marketRangeContext?: RequestMarketRangeContext | null;
+  resolvedMarketRange?: ResolvedRequestMarketRange | null;
 };
 
 function formatDateLabel(value: string | null | undefined, locale: string): string {
@@ -54,7 +54,7 @@ function formatDateLabel(value: string | null | undefined, locale: string): stri
 }
 
 export function RequestDetailPage(props: Props) {
-  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb, references = [], marketRangeContext = null } = props;
+  const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb, references = [], resolvedMarketRange = null } = props;
   const isGerman = locale === "de";
   const labels = isGerman
     ? {
@@ -224,10 +224,11 @@ export function RequestDetailPage(props: Props) {
             locale={locale}
             mode={mode}
             pagePath={listPath}
-            regionLabel={breadcrumb.names?.regionName ?? request.title}
+            regionLabel={resolvedMarketRange?.regionLabel ?? breadcrumb.names?.regionName ?? request.title}
             request={{ id: request.id, title: request.title, objectType: request.objectType }}
             context={breadcrumb.ctx ?? {}}
-            marketRangeContext={marketRangeContext}
+            marketRangeContext={resolvedMarketRange?.context ?? null}
+            marketRangeScope={resolvedMarketRange?.scope ?? "ortslage"}
             initialAreaSqm={initialAreaSqm}
             numberLocale={formatProfile.intlLocale}
             currencyCode={formatProfile.currencyCode}

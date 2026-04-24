@@ -5,6 +5,7 @@ import { cleanRequestRegionTargetLabel } from "@/lib/request-region-targets";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
 
 export type RequestDetail = RegionalRequest & {
+  regionTargetKeys: string[];
   seoTitle: string | null;
   seoDescription: string | null;
   seoH1: string | null;
@@ -169,6 +170,7 @@ function buildRequestDetail(record: Record<string, unknown>, requestId: string, 
     maxPrice,
     radiusKm,
     regionTargets,
+    regionTargetKeys: parseRegionTargetKeys(payload),
     updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
     imageUrl: requestImageOverride?.image_url ?? imageMatch.primary?.imageUrl ?? null,
     imageAlt: requestImageOverride?.alt_template ?? imageMatch.primary?.alt ?? null,

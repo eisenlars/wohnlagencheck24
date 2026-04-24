@@ -7,7 +7,7 @@ import { getReportBySlugs } from "@/lib/data";
 import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
-import { buildRequestMarketRangeContext } from "@/lib/request-market-range";
+import { resolveRequestMarketRangeForRoute } from "@/lib/request-market-range-resolver";
 import { getRegionalRequestByIdForOrtslage } from "@/lib/request-detail";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -73,7 +73,12 @@ export async function MietgesuchOrtDetailPageContent({
   const kreisName = getRegionDisplayName({ meta: kreisMeta, level: "kreis", fallbackSlug: kreis });
   const bundeslandName = asString(kreisMeta["bundesland_name"]) ?? formatRegionFallback(bundesland);
   const ortReport = await getReportBySlugs([bundesland, kreis, ort]);
-  const marketRangeContext = buildRequestMarketRangeContext(ortReport);
+  const resolvedMarketRange = await resolveRequestMarketRangeForRoute({
+    request: requestData,
+    bundeslandSlug: bundesland,
+    kreisSlug: kreis,
+    ortSlug: ort,
+  });
   const ortMeta = asRecord(asArray(ortReport?.meta)[0] ?? ortReport?.meta) ?? {};
   const ortName = getRegionDisplayName({ meta: ortMeta, level: "ort", fallbackSlug: ort });
 
@@ -88,7 +93,7 @@ export async function MietgesuchOrtDetailPageContent({
   return (
     <RequestDetailPage
       request={requestData}
-      marketRangeContext={marketRangeContext}
+      resolvedMarketRange={resolvedMarketRange}
       mode="miete"
       texts={texts}
       formatProfile={formatProfile}
