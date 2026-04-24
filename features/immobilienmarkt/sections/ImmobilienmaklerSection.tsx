@@ -142,49 +142,6 @@ function SectionTypeBadge(props: {
   );
 }
 
-function ObjectTypeImageBadge(props: {
-  label: string;
-  side: "start" | "end";
-  tone?: "light" | "accent";
-  topOffset?: number;
-}) {
-  const { label, side, tone = "light", topOffset = 12 } = props;
-  const style =
-    tone === "accent"
-      ? {
-          background: "rgba(15, 23, 42, 0.76)",
-          color: "#ffffff",
-          border: "1px solid rgba(255,255,255,0.35)",
-        }
-      : {
-          background: "rgba(255,255,255,0.92)",
-          color: "#0f172a",
-          border: "1px solid rgba(15,23,42,0.08)",
-        };
-
-  return (
-    <span
-      className={`position-absolute ${side === "start" ? "start-0" : "end-0"} badge rounded-pill`}
-      style={{
-        top: topOffset,
-        zIndex: 2,
-        display: "inline-flex",
-        alignItems: "center",
-        minHeight: 30,
-        marginLeft: 12,
-        marginRight: 12,
-        padding: "7px 10px",
-        fontSize: 12,
-        fontWeight: 800,
-        lineHeight: 1,
-        ...style,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
 function MarketSectionIcon({ type, accent = false }: { type: "offers" | "requests"; accent?: boolean }) {
   const iconColor = accent ? "#ffffff" : "#486b7a";
   const circleBg = accent ? "rgba(255,255,255,0.14)" : "#ffffff";
@@ -220,20 +177,17 @@ function MarketOfferCard(props: {
   listHref: string;
   detailLabel: string;
   listLabel: string;
-  badgeSide?: "start" | "end";
 }) {
-  const { offer, detailHref, listHref, detailLabel, listLabel, badgeSide = "start" } = props;
+  const { offer, detailHref, listHref, detailLabel, listLabel } = props;
   const imageSrc = sanitizeImageUrl(offer.imageUrl);
   const showNewBadge = shouldShowNewOfferBadge(offer);
   const objectTypeLabel = formatObjectType(offer.objectType);
-  const objectTypeBadgeOffset = badgeSide === "start" && showNewBadge ? 48 : 12;
 
   return (
     <article className="card border-0 bg-white rounded-4 h-100 overflow-hidden">
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
-          <ObjectTypeImageBadge label={objectTypeLabel} side={badgeSide} topOffset={objectTypeBadgeOffset} />
           <Image
             src={imageSrc}
             alt={offer.title}
@@ -244,11 +198,9 @@ function MarketOfferCard(props: {
         </a>
       ) : null}
       <div className="card-body p-3">
-        {!imageSrc ? (
-          <div className="mb-2">
-            <span className="badge rounded-pill text-bg-light border">{objectTypeLabel}</span>
-          </div>
-        ) : null}
+        <div className="mb-2">
+          <span className="badge rounded-pill text-bg-light border">{objectTypeLabel}</span>
+        </div>
         <h3 className="h6 mb-2">
           <a href={detailHref} className="link-dark text-decoration-none">
             {offer.title}
@@ -279,14 +231,12 @@ function MarketRequestCard(props: {
   detailLabel: string;
   listLabel: string;
   tone?: "default" | "accent";
-  badgeSide?: "start" | "end";
 }) {
-  const { request, detailHref, listHref, detailLabel, listLabel, tone = "default", badgeSide = "start" } = props;
+  const { request, detailHref, listHref, detailLabel, listLabel, tone = "default" } = props;
   const imageSrc = request.imageUrl;
   const showNewBadge = Boolean(buildNewMarketingBadge(request.updatedAt));
   const isAccent = tone === "accent";
   const objectTypeLabel = formatObjectType(request.objectType);
-  const objectTypeBadgeOffset = badgeSide === "start" && showNewBadge ? 48 : badgeSide === "end" ? 54 : 12;
 
   return (
     <article
@@ -297,12 +247,6 @@ function MarketRequestCard(props: {
         <div className="position-relative">
           <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
             {showNewBadge ? <NewImageBadge /> : null}
-            <ObjectTypeImageBadge
-              label={objectTypeLabel}
-              side={badgeSide}
-              tone="accent"
-              topOffset={objectTypeBadgeOffset}
-            />
             <Image
               src={imageSrc}
               alt={request.imageAlt ?? request.imageTitle ?? request.title}
@@ -315,11 +259,9 @@ function MarketRequestCard(props: {
         </div>
       ) : null}
       <div className="card-body p-3">
-        {!imageSrc ? (
-          <div className="mb-2">
-            <span className="badge rounded-pill text-bg-light border">{objectTypeLabel}</span>
-          </div>
-        ) : null}
+        <div className="mb-2">
+          <span className="badge rounded-pill text-bg-light border">{objectTypeLabel}</span>
+        </div>
         <h3 className="h6 mb-2">
           <a href={detailHref} className={`${isAccent ? "link-light" : "link-dark"} text-decoration-none`}>
             {request.title}
@@ -568,7 +510,7 @@ export function ImmobilienmaklerSection({
                   <div className="text-center mt-3 mb-4">
                     <MarketSectionIcon type="offers" />
                     <h3 className="h3 mb-0">Neue Angebote</h3>
-                    <div className="d-flex justify-content-center flex-wrap gap-2 mt-3">
+                    <div className="d-flex justify-content-between align-items-center gap-2 mt-3">
                       <SectionTypeBadge label="Kaufangebot" />
                       <SectionTypeBadge label="Mietangebot" />
                     </div>
@@ -582,7 +524,6 @@ export function ImmobilienmaklerSection({
                           listHref={buildOfferListHref(basePath, "kauf")}
                           detailLabel="Kaufangebot ansehen"
                           listLabel="Alle Kaufangebote"
-                          badgeSide="start"
                         />
                       </div>
                     ) : null}
@@ -595,7 +536,6 @@ export function ImmobilienmaklerSection({
                           listHref={buildOfferListHref(basePath, "miete")}
                           detailLabel="Mietangebot ansehen"
                           listLabel="Alle Mietangebote"
-                          badgeSide="end"
                         />
                       </div>
                     ) : null}
@@ -608,7 +548,7 @@ export function ImmobilienmaklerSection({
                   <div className="text-center mt-3 mb-4">
                     <MarketSectionIcon type="requests" accent />
                     <h3 className="h3 mb-0 text-white">Neue Gesuche</h3>
-                    <div className="d-flex justify-content-center flex-wrap gap-2 mt-3">
+                    <div className="d-flex justify-content-between align-items-center gap-2 mt-3">
                       <SectionTypeBadge label="Kaufgesuch" tone="accent" />
                       <SectionTypeBadge label="Mietgesuch" tone="accent" />
                     </div>
@@ -623,7 +563,6 @@ export function ImmobilienmaklerSection({
                           detailLabel="Kaufgesuch ansehen"
                           listLabel="Alle Kaufgesuche"
                           tone="accent"
-                          badgeSide="start"
                         />
                       </div>
                     ) : null}
@@ -637,7 +576,6 @@ export function ImmobilienmaklerSection({
                           detailLabel="Mietgesuch ansehen"
                           listLabel="Alle Mietgesuche"
                           tone="accent"
-                          badgeSide="end"
                         />
                       </div>
                     ) : null}
