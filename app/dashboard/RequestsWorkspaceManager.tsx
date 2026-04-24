@@ -7,6 +7,7 @@ import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
 import { getRequestImageCatalog, matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
+import WorkspacePillTabs from './WorkspacePillTabs';
 import workspaceStyles from './styles/workspace.module.css';
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
@@ -83,11 +84,6 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo' | 'criteria';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
-
-const workspaceTabClassName = (active: boolean) =>
-  active
-    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
-    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
 const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
 const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
 const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm';
@@ -1017,17 +1013,15 @@ export default function RequestsWorkspaceManager(props: Props) {
                       </div>
                     </div>
 
-                    <div className="d-flex flex-wrap gap-2 my-4">
-                      <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>
-                        Texte
-                      </button>
-                      <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>
-                        SEO / GEO
-                      </button>
-                      <button type="button" onClick={() => setActiveTab('criteria')} className={workspaceTabClassName(activeTab === 'criteria')}>
-                        Suchkriterien
-                      </button>
-                    </div>
+                    <WorkspacePillTabs
+                      items={[
+                        { id: 'texts', label: 'Texte' },
+                        { id: 'seo', label: 'SEO / GEO' },
+                        { id: 'criteria', label: 'Suchkriterien' },
+                      ]}
+                      activeId={activeTab}
+                      onSelect={(tabId) => setActiveTab(tabId as WorkspaceTab)}
+                    />
 
                     {activeTab === 'criteria' ? (
                       <div className="d-flex flex-column gap-2 mb-3">

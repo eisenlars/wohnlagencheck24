@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import workspaceStyles from './styles/workspace.module.css';
+import WorkspacePillTabs from './WorkspacePillTabs';
 
 type MarketingAreaConfig = {
   area_id: string;
@@ -156,20 +157,11 @@ export default function MarketingTextEditor({
 
           <div className={showScopeAreaSidebar ? 'col-12 col-xl-8' : 'col-12'}>
             <div className="d-flex flex-column gap-4">
-              <div className="d-flex flex-wrap gap-2 my-4">
-                {visibleTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => onSelectTab(tab.id)}
-                    className={`btn btn-sm rounded-pill px-3 ${
-                      activeTab === tab.id ? 'btn-secondary fw-bold' : 'btn-outline-secondary fw-semibold'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <WorkspacePillTabs
+                items={visibleTabs}
+                activeId={activeTab}
+                onSelect={onSelectTab}
+              />
 
               <div className="d-flex flex-column gap-4">
                 {activeSections.length === 0 ? (

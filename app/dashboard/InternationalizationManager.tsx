@@ -28,6 +28,7 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import { formatRequestModeLabel, formatRequestObjectTypeLabel } from '@/lib/request-labels';
+import WorkspacePillTabs from './WorkspacePillTabs';
 import workspaceStyles from './styles/workspace.module.css';
 type AreaConfig = {
   area_id: string;
@@ -3522,23 +3523,24 @@ export default function InternationalizationManager({ config, availableLocales, 
   function renderWorkflowTranslationTable(showAreaName: boolean, emptyMessage: string) {
     return (
       <>
-        <div className="d-flex flex-wrap gap-2">
-          {visibleWorkflowTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`btn btn-sm rounded-pill px-3 fw-semibold d-inline-flex align-items-center gap-2 ${activeTab === tab.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {isIconPath(tab.icon) ? (
-                <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized />
-              ) : (
-                <span aria-hidden="true">{tab.icon}</span>
-              )}
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </div>
+        <WorkspacePillTabs
+          items={visibleWorkflowTabs.map((tab) => ({
+            id: tab.id,
+            label: (
+              <span className="d-inline-flex align-items-center gap-2">
+                {isIconPath(tab.icon) ? (
+                  <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized />
+                ) : (
+                  <span aria-hidden="true">{tab.icon}</span>
+                )}
+                <span>{tab.label}</span>
+              </span>
+            ),
+          }))}
+          activeId={activeTab}
+          onSelect={setActiveTab}
+          className="my-4"
+        />
         <div className="table-responsive border rounded-3">
           <table className="table table-sm align-top mb-0">
             <thead className="table-light">
@@ -4243,22 +4245,14 @@ export default function InternationalizationManager({ config, availableLocales, 
                   );
                 })()}
 
-                <div className="d-flex flex-wrap gap-2 my-2">
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${propertyEditorTab === 'texts' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                    onClick={() => setPropertyEditorTab('texts')}
-                  >
-                    Texte
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${propertyEditorTab === 'seo' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                    onClick={() => setPropertyEditorTab('seo')}
-                  >
-                    SEO / GEO
-                  </button>
-                </div>
+                <WorkspacePillTabs
+                  items={[
+                    { id: 'texts', label: 'Texte' },
+                    { id: 'seo', label: 'SEO / GEO' },
+                  ]}
+                  activeId={propertyEditorTab}
+                  onSelect={(tabId) => setPropertyEditorTab(tabId as typeof propertyEditorTab)}
+                />
 
                 <div className="border rounded-4 bg-light p-3 d-grid gap-2">
                   <div className="small text-secondary text-uppercase fw-bold">
@@ -4571,22 +4565,14 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </div>
                 </div>
 
-                <div className="d-flex flex-wrap gap-2 my-2">
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${requestEditorTab === 'texts' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                    onClick={() => setRequestEditorTab('texts')}
-                  >
-                    Texte
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm rounded-pill px-3 fw-semibold ${requestEditorTab === 'seo' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                    onClick={() => setRequestEditorTab('seo')}
-                  >
-                    SEO / GEO
-                  </button>
-                </div>
+                <WorkspacePillTabs
+                  items={[
+                    { id: 'texts', label: 'Texte' },
+                    { id: 'seo', label: 'SEO / GEO' },
+                  ]}
+                  activeId={requestEditorTab}
+                  onSelect={(tabId) => setRequestEditorTab(tabId as typeof requestEditorTab)}
+                />
 
                 <div className="d-grid gap-3">
                   {requestVisibleFieldDefinitions.map((definition) => renderRequestFieldPair(selectedRequestItem, definition))}

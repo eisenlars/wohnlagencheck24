@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { formatReferenceChallengeCategory, type ReferenceChallengeCategory } from '@/lib/reference-challenges';
 import { createClient } from '@/utils/supabase/client';
+import WorkspacePillTabs from './WorkspacePillTabs';
 import workspaceStyles from './styles/workspace.module.css';
 type RawReferenceRow = {
   id: string;
@@ -60,11 +61,6 @@ type LlmOptionApiRow = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
-
-const workspaceTabClassName = (active: boolean) =>
-  active
-    ? 'btn btn-sm btn-secondary rounded-pill fw-bold px-3'
-    : 'btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3';
 const workspaceHeadingClassName = 'small text-uppercase text-secondary fw-bold';
 const workspaceMetaLabelClassName = 'small text-secondary text-uppercase fw-bold mb-1';
 const workspaceMetaValueClassName = 'small text-dark fw-semibold lh-sm text-break';
@@ -1215,12 +1211,16 @@ Der Text soll Eigentümern zeigen, dass diese Immobilie erfolgreich vermarktet w
                 </div>
               </div>
 
-              <div className="d-flex flex-wrap gap-2 my-4">
-                <button type="button" onClick={() => setActiveTab('texts')} className={workspaceTabClassName(activeTab === 'texts')}>Texte</button>
-                <button type="button" onClick={() => setActiveTab('seo')} className={workspaceTabClassName(activeTab === 'seo')}>SEO / GEO</button>
-                <button type="button" onClick={() => setActiveTab('facts')} className={workspaceTabClassName(activeTab === 'facts')}>Referenzdaten</button>
-                <button type="button" onClick={() => setActiveTab('media')} className={workspaceTabClassName(activeTab === 'media')}>Medien</button>
-              </div>
+              <WorkspacePillTabs
+                items={[
+                  { id: 'texts', label: 'Texte' },
+                  { id: 'seo', label: 'SEO / GEO' },
+                  { id: 'facts', label: 'Referenzdaten' },
+                  { id: 'media', label: 'Medien' },
+                ]}
+                activeId={activeTab}
+                onSelect={(tabId) => setActiveTab(tabId as WorkspaceTab)}
+              />
 
               {activeTab === 'texts' ? (
                 <div className="d-flex flex-column gap-3">

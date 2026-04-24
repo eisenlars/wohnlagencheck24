@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import workspaceStyles from './styles/workspace.module.css';
+import WorkspacePillTabs from './WorkspacePillTabs';
 
 type ReportAreaConfig = {
   area_id: string;
@@ -329,17 +330,11 @@ export default function ReportTextEditor({
 
           <div className={showScopeAreaSidebar ? workspaceStyles.reportAreaContentWrap : undefined}>
             <div className={`${workspaceStyles.reportAreaContentWrap} d-grid`}>
-              <div className={workspaceStyles.reportTabs}>
-                {visibleTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => onSelectTab(tab.id)}
-                    className={`${workspaceStyles.reportTabButton} ${activeTab === tab.id ? workspaceStyles.reportTabButtonActive : ''}`}
-                  >
-                    <span className={workspaceStyles.reportTabLabel}>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
+              <WorkspacePillTabs
+                items={visibleTabs}
+                activeId={activeTab}
+                onSelect={onSelectTab}
+              />
               <div className={workspaceStyles.reportContentWrapper}>
                 {activeSections.length === 0 ? (
                   <div className={workspaceStyles.reportEmptyState}>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import WorkspacePillTabs from './WorkspacePillTabs';
 import workspaceStyles from './styles/workspace.module.css';
 
 type OfferRow = {
@@ -1305,74 +1306,18 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
-            <div className="d-flex flex-wrap gap-2 my-4">
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('texts')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'texts'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                Texte
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('seo')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'seo'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                SEO / GEO
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('facts')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'facts'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                Objektmerkmale
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('equipment')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'equipment'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                Ausstattung
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('media')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'media'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                Medien
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('energy')}
-                className={`btn btn-sm rounded-pill px-3 ${
-                  activeWorkspaceTab === 'energy'
-                    ? 'btn-secondary fw-bold'
-                    : 'btn-outline-secondary fw-semibold'
-                }`}
-              >
-                Energieausweis
-              </button>
-            </div>
+            <WorkspacePillTabs
+              items={[
+                { id: 'texts', label: 'Texte' },
+                { id: 'seo', label: 'SEO / GEO' },
+                { id: 'facts', label: 'Objektmerkmale' },
+                { id: 'equipment', label: 'Ausstattung' },
+                { id: 'media', label: 'Medien' },
+                { id: 'energy', label: 'Energieausweis' },
+              ]}
+              activeId={activeWorkspaceTab}
+              onSelect={(tabId) => setActiveWorkspaceTab(tabId as typeof activeWorkspaceTab)}
+            />
             {activeWorkspaceTab === 'media' && selectedOffer ? (
               <div className="bg-light border rounded-4 p-3 d-flex flex-column gap-3">
                 <div className="small text-uppercase text-secondary fw-bold">Medien</div>
