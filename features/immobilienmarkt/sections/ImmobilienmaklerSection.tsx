@@ -8,6 +8,7 @@ import { KontaktForm } from "@/components/kontakt/KontaktForm";
 import type { RegionalReference } from "@/lib/referenzen";
 import { ReferenceExperienceMap } from "@/components/referenzen/ReferenceExperienceMap";
 import { RegionImageGallery } from "@/components/immobilienmarkt/RegionImageGallery";
+import { RequestImageDisclaimer } from "@/components/gesuche/RequestImageDisclaimer";
 import type { Offer } from "@/lib/angebote";
 import type { RegionalRequest } from "@/lib/gesuche";
 import { buildNewMarketingBadge } from "@/lib/offer-marketing-flags";
@@ -104,6 +105,45 @@ function NewImageBadge() {
   );
 }
 
+function ImageMetaBadge(props: {
+  label: string;
+  side: "start" | "end";
+  tone?: "light" | "accent";
+}) {
+  const { label, side, tone = "light" } = props;
+  const style =
+    tone === "accent"
+      ? {
+          background: "rgba(15, 23, 42, 0.76)",
+          color: "#ffffff",
+          border: "1px solid rgba(255,255,255,0.35)",
+        }
+      : {
+          background: "rgba(255,255,255,0.92)",
+          color: "#0f172a",
+          border: "1px solid rgba(15,23,42,0.08)",
+        };
+
+  return (
+    <span
+      className={`position-absolute bottom-0 ${side === "start" ? "start-0" : "end-0"} m-2 badge rounded-pill`}
+      style={{
+        zIndex: 2,
+        display: "inline-flex",
+        alignItems: "center",
+        minHeight: 30,
+        padding: "7px 10px",
+        fontSize: 12,
+        fontWeight: 800,
+        lineHeight: 1,
+        ...style,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 function MarketSectionIcon({ type, accent = false }: { type: "offers" | "requests"; accent?: boolean }) {
   const iconColor = accent ? "#ffffff" : "#486b7a";
   const circleBg = accent ? "rgba(255,255,255,0.14)" : "#ffffff";
@@ -143,12 +183,16 @@ function MarketOfferCard(props: {
   const { offer, detailHref, listHref, detailLabel, listLabel } = props;
   const imageSrc = sanitizeImageUrl(offer.imageUrl);
   const showNewBadge = shouldShowNewOfferBadge(offer);
+  const objectTypeLabel = formatObjectType(offer.objectType);
+  const marketingTypeLabel = offer.offerType === "miete" ? "Mietangebot" : "Kaufangebot";
 
   return (
     <article className="card border-0 bg-white rounded-4 h-100 overflow-hidden">
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
+          <ImageMetaBadge label={objectTypeLabel} side="start" />
+          <ImageMetaBadge label={marketingTypeLabel} side="end" />
           <Image
             src={imageSrc}
             alt={offer.title}
@@ -159,12 +203,6 @@ function MarketOfferCard(props: {
         </a>
       ) : null}
       <div className="card-body p-3">
-        <div className="d-flex flex-wrap gap-2 mb-2">
-          <span className="badge rounded-pill text-bg-light border">{formatObjectType(offer.objectType)}</span>
-          <span className="badge rounded-pill text-bg-light border">
-            {offer.offerType === "miete" ? "Mietangebot" : "Kaufangebot"}
-          </span>
-        </div>
         <h3 className="h6 mb-2">
           <a href={detailHref} className="link-dark text-decoration-none">
             {offer.title}
@@ -200,6 +238,8 @@ function MarketRequestCard(props: {
   const imageSrc = request.imageUrl;
   const showNewBadge = Boolean(buildNewMarketingBadge(request.updatedAt));
   const isAccent = tone === "accent";
+  const objectTypeLabel = formatObjectType(request.objectType);
+  const marketingTypeLabel = request.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch";
 
   return (
     <article
@@ -209,6 +249,9 @@ function MarketRequestCard(props: {
       {imageSrc ? (
         <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
           {showNewBadge ? <NewImageBadge /> : null}
+          <RequestImageDisclaimer />
+          <ImageMetaBadge label={objectTypeLabel} side="start" tone="accent" />
+          <ImageMetaBadge label={marketingTypeLabel} side="end" tone="accent" />
           <Image
             src={imageSrc}
             alt={request.imageAlt ?? request.imageTitle ?? request.title}
@@ -219,12 +262,6 @@ function MarketRequestCard(props: {
         </a>
       ) : null}
       <div className="card-body p-3">
-        <div className="d-flex flex-wrap gap-2 mb-2">
-          <span className="badge rounded-pill text-bg-light border">{formatObjectType(request.objectType)}</span>
-          <span className="badge rounded-pill text-bg-light border">
-            {request.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch"}
-          </span>
-        </div>
         <h3 className="h6 mb-2">
           <a href={detailHref} className={`${isAccent ? "link-light" : "link-dark"} text-decoration-none`}>
             {request.title}
@@ -470,9 +507,9 @@ export function ImmobilienmaklerSection({
             <div className="d-flex flex-column gap-4">
               {hasFeaturedOffers ? (
                 <div className="rounded-4 bg-light p-3">
-                  <div className="text-center mb-4">
+                  <div className="text-center mt-3 mb-4">
                     <MarketSectionIcon type="offers" />
-                    <h3 className="h3 mb-0">Angebote</h3>
+                    <h3 className="h3 mb-0">Neue Angebote</h3>
                   </div>
                   <div className="row g-3">
                     {featuredBuyOffer ? (
@@ -504,9 +541,9 @@ export function ImmobilienmaklerSection({
 
               {hasFeaturedRequests ? (
                 <div className="rounded-4 p-3 text-white" style={{ background: "#486b7a" }}>
-                  <div className="text-center mb-4">
+                  <div className="text-center mt-3 mb-4">
                     <MarketSectionIcon type="requests" accent />
-                    <h3 className="h3 mb-0 text-white">Gesuche</h3>
+                    <h3 className="h3 mb-0 text-white">Neue Gesuche</h3>
                   </div>
                   <div className="row g-3">
                     {featuredBuyRequest ? (
