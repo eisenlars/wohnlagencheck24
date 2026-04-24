@@ -296,7 +296,7 @@ export default function LocalSiteTextEditor({
       </section>
 
       <section className="bg-white border rounded-4 p-3 p-xl-4">
-        <div id={topicSectionAnchorId} className="mb-4">
+        <div id={topicSectionAnchorId} className={`mb-3 ${workspaceStyles.workspaceAnchorTarget}`}>
           <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
 

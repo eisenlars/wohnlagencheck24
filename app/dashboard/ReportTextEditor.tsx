@@ -298,7 +298,7 @@ export default function ReportTextEditor({
       </div>
 
       <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
-        <div id={topicSectionAnchorId} className={`mb-4 ${workspaceStyles.reportAnchorTarget}`}>
+        <div id={topicSectionAnchorId} className={`mb-3 ${workspaceStyles.workspaceAnchorTarget}`}>
           <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
 
