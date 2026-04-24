@@ -3517,7 +3517,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 
   function renderWorkflowTranslationTable(showAreaName: boolean, emptyMessage: string) {
     return (
-      <>
+      <div className="d-flex flex-column">
         <WorkspacePillTabs
           items={visibleWorkflowTabs.map((tab) => ({
             id: tab.id,
@@ -3663,7 +3663,7 @@ export default function InternationalizationManager({ config, availableLocales, 
             {saving ? 'Speichern …' : 'Übersetzungen speichern'}
           </button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -3801,7 +3801,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
 	      {activeDomain === 'immobilienmarkt' ? (
-	      <div className="d-grid gap-3">
+	      <div className="d-grid">
 	      <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
 	        <div className="d-grid gap-2">
 	          <div className="d-flex align-items-center gap-3 flex-wrap">
@@ -3940,7 +3940,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        </div>
 	      </div>
 
-	      <div className="bg-white border rounded-4 p-3 p-xl-4">
+	      <div className="bg-white border rounded-4 p-3">
 	        <div id={topicSectionAnchorId} className={`mb-3 ${workspaceStyles.workspaceAnchorTarget}`}>
           <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
@@ -3970,17 +3970,11 @@ export default function InternationalizationManager({ config, availableLocales, 
             </aside>
 
             <div className="col-12 col-xl-9">
-              <div className="d-grid gap-3">
-                {renderWorkflowTranslationTable(false, 'In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.')}
-              </div>
+              {renderWorkflowTranslationTable(false, 'In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.')}
             </div>
           </div>
         ) : (
-          <>
-            <div className="d-grid gap-3">
-              {renderWorkflowTranslationTable(scope === 'kreis_ortslagen', 'In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.')}
-            </div>
-          </>
+          renderWorkflowTranslationTable(scope === 'kreis_ortslagen', 'In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.')
         )}
 	      </div>
 	      </div>

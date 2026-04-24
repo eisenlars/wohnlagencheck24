@@ -297,7 +297,7 @@ export default function ReportTextEditor({
         ) : null}
       </div>
 
-      <div className={`${workspaceStyles.reportPanelCard} mb-0`}>
+      <section className="bg-white border rounded-4 p-3">
         <div id={topicSectionAnchorId} className={`mb-3 ${workspaceStyles.workspaceAnchorTarget}`}>
           <h3 className="m-0 fs-5 fw-bold text-dark">Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
@@ -362,7 +362,7 @@ export default function ReportTextEditor({
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {saving && <div className={workspaceStyles.reportSaveIndicator}>Speichere Änderungen...</div>}
       {publishModalOpen ? (
