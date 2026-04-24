@@ -3526,20 +3526,10 @@ export default function InternationalizationManager({ config, availableLocales, 
         <WorkspacePillTabs
           items={visibleWorkflowTabs.map((tab) => ({
             id: tab.id,
-            label: (
-              <span className="d-inline-flex align-items-center gap-2">
-                {isIconPath(tab.icon) ? (
-                  <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized />
-                ) : (
-                  <span aria-hidden="true">{tab.icon}</span>
-                )}
-                <span>{tab.label}</span>
-              </span>
-            ),
+            label: tab.label,
           }))}
           activeId={activeTab}
           onSelect={setActiveTab}
-          className="my-4"
         />
         <div className="table-responsive border rounded-3">
           <table className="table table-sm align-top mb-0">

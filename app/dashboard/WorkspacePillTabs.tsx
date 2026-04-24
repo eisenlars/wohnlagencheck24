@@ -20,7 +20,7 @@ export default function WorkspacePillTabs({
   items,
   activeId,
   onSelect,
-  className = 'my-4',
+  className = 'my-3',
 }: WorkspacePillTabsProps) {
   return (
     <div className={`d-flex flex-wrap gap-2 ${className}`.trim()}>
