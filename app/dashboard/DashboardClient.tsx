@@ -226,6 +226,7 @@ const FEATURE_TAB_CODES: Partial<Record<MainTab, string>> = {
 
 const DISTRICT_HEADER_SELECTOR_TABS = new Set<MainTab>([
   'texts',
+  'factors',
   'marketing',
   'local_site',
   'blog',
@@ -663,7 +664,7 @@ export default function DashboardClient({
           title: 'Wertanpassungen',
           description: 'Werte, Faktoren und Kennzahlen der Region prüfen und bei Bedarf anpassen.',
           isRegionBased: true,
-          showDistrictSelector: false,
+          showDistrictSelector: true,
         };
       case 'marketing':
         return {
@@ -1317,6 +1318,10 @@ export default function DashboardClient({
   const effectiveRegionHeaderTitle = useMemo(
     () => formatRegionHeaderTitle(configs, effectiveAreaConfig),
     [configs, effectiveAreaConfig],
+  );
+  const factorWorkspaceTitle = useMemo(
+    () => formatRegionHeaderTitle(configs, effectiveSelectedConfig),
+    [configs, effectiveSelectedConfig],
   );
   const welcomeActivationReviewNote = useMemo(() => {
     if (!effectiveWelcomeActivationConfig) return '';
@@ -2146,7 +2151,9 @@ export default function DashboardClient({
                     <div className={dashboardStyles.headerDistrictSelector}>
                       <div className="d-flex flex-wrap gap-2">
                         {scopedMainDistricts.map((district) => {
-                          const active = district.area_id === effectiveAreaConfig.area_id;
+                          const active = activeMainTab === 'factors'
+                            ? Boolean(effectiveSelectedConfig?.area_id?.startsWith(district.area_id))
+                            : district.area_id === effectiveAreaConfig.area_id;
                           const statusKey = resolveActivationStatusKey(district);
                           const statusLabel = formatActivationStatusLabel(district);
                           return (
@@ -2364,7 +2371,7 @@ export default function DashboardClient({
                 ref={factorFormRef}
                 key={`f-${effectiveSelectedConfig.area_id}`}
                 config={effectiveSelectedConfig}
-                workspaceTitle={effectiveRegionHeaderTitle}
+                workspaceTitle={factorWorkspaceTitle}
                 onLoadingChange={setFactorPaneLoading}
               />
             ) : activeMainTab === 'texts' && scopedContentAreaConfig ? (
