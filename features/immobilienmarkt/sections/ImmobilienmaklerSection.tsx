@@ -244,17 +244,19 @@ function MarketRequestCard(props: {
       style={isAccent ? { background: "#557888" } : undefined}
     >
       {imageSrc ? (
-        <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
-          {showNewBadge ? <NewImageBadge /> : null}
+        <div className="position-relative">
+          <a href={detailHref} className="ratio ratio-16x9 d-block position-relative">
+            {showNewBadge ? <NewImageBadge /> : null}
+            <Image
+              src={imageSrc}
+              alt={request.imageAlt ?? request.imageTitle ?? request.title}
+              fill
+              sizes="(min-width: 992px) 40vw, 100vw"
+              className="object-fit-cover"
+            />
+          </a>
           <RequestImageDisclaimer />
-          <Image
-            src={imageSrc}
-            alt={request.imageAlt ?? request.imageTitle ?? request.title}
-            fill
-            sizes="(min-width: 992px) 40vw, 100vw"
-            className="object-fit-cover"
-          />
-        </a>
+        </div>
       ) : null}
       <div className="card-body p-3">
         <div className="mb-2">
