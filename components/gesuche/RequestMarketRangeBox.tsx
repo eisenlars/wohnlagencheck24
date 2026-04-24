@@ -13,7 +13,6 @@ type Props = {
   marketRangeContext: RequestMarketRangeContext | null;
   regionLabel: string;
   initialAreaSqm?: number | null;
-  initialRooms?: number | null;
   locale?: string;
   numberLocale: string;
   currencyCode: string;
@@ -22,65 +21,44 @@ type Props = {
 };
 
 type ObjectKind = "house" | "apartment";
-type Condition = "renovierungsbeduerftig" | "durchschnitt" | "gepflegt" | "modernisiert";
 
 const COPY = {
   de: {
-    purchaseEyebrow: "Preisrahmen im Gebiet",
-    rentEyebrow: "Mietpreisrahmen im Gebiet",
-    purchaseTitle: "Passt Ihr Objekt preislich zum Gesuch?",
-    rentTitle: "Miete realistisch einordnen",
-    comparablePrefix: "Vergleichbare",
-    comparableIn: "in",
-    comparableSuffix: "liegen aktuell ungefähr bei:",
+    purchaseEyebrow: "Preisspanne in der Zielregion",
+    rentEyebrow: "Mietspanne in der Zielregion",
+    purchaseTitle: "Was in dieser Ortslage realistisch ist",
+    rentTitle: "Welche Miete in dieser Ortslage realistisch ist",
+    comparablePrefix: "Die Spanne bezieht sich auf vergleichbare",
+    comparableIn: "in der Ortslage",
+    comparableSuffix: "und dient als erste Orientierung.",
     housePlural: "Häuser",
     apartmentPlural: "Wohnungen",
-    purchasePerSqm: "Kaufpreis pro m²",
-    rentPerSqm: "Kaltmiete pro m²",
     livingArea: "Wohnfläche",
-    rooms: "Zimmer",
-    yearBuilt: "Baujahr",
-    optional: "optional",
-    condition: "Zustand",
-    conditionRenovation: "Renovierungsbedürftig",
-    conditionAverage: "Durchschnittlich",
-    conditionGood: "Gepflegt",
-    conditionModernized: "Modernisiert",
-    purchaseResult: "Grobe Kaufpreis-Einordnung",
-    rentResult: "Grobe Miet-Einordnung",
+    areaHint: "Für die erste Einordnung genügt die Wohnfläche. Weitere Merkmale können später ergänzt werden.",
+    purchaseResult: "Orientierungsrange für Ihre Wohnfläche",
+    rentResult: "Orientierungsrange für Ihre Wohnfläche",
     perMonth: " / Monat",
-    resultHint: "Orientierung auf Basis der Gebietsrange. Eine konkrete Einschätzung hängt von Mikrolage und Objektzustand ab.",
-    saleResult: "Perspektivische Verkaufsrange",
-    saleHint: "Für Eigentümer, die neben der Vermietung später auch einen Verkauf prüfen möchten.",
+    resultHint: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für Ihre Ortslage.",
+    areaBadgeSuffix: "Wohnfläche",
     cta: "Immobilie zu diesem Gesuch anbieten",
   },
   en: {
-    purchaseEyebrow: "Area price range",
-    rentEyebrow: "Area rent range",
-    purchaseTitle: "Does your property match this request?",
-    rentTitle: "Estimate the realistic rent range",
-    comparablePrefix: "Comparable",
-    comparableIn: "in",
-    comparableSuffix: "currently sit at approximately:",
+    purchaseEyebrow: "Price range in the target area",
+    rentEyebrow: "Rent range in the target area",
+    purchaseTitle: "What is realistic in this locality",
+    rentTitle: "What rent is realistic in this locality",
+    comparablePrefix: "This range is based on comparable",
+    comparableIn: "in the locality",
+    comparableSuffix: "and provides a first orientation.",
     housePlural: "houses",
     apartmentPlural: "apartments",
-    purchasePerSqm: "Purchase price per sqm",
-    rentPerSqm: "Cold rent per sqm",
     livingArea: "Living area",
-    rooms: "Rooms",
-    yearBuilt: "Year built",
-    optional: "optional",
-    condition: "Condition",
-    conditionRenovation: "Needs renovation",
-    conditionAverage: "Average",
-    conditionGood: "Well kept",
-    conditionModernized: "Modernized",
-    purchaseResult: "Indicative purchase range",
-    rentResult: "Indicative rent range",
+    areaHint: "Living area is enough for the first estimate. Further property details can follow later.",
+    purchaseResult: "Indicative range for your living area",
+    rentResult: "Indicative range for your living area",
     perMonth: " / month",
-    resultHint: "Orientation based on the regional range. A concrete assessment depends on micro-location and property condition.",
-    saleResult: "Potential sale range",
-    saleHint: "For owners who may also consider selling later.",
+    resultHint: "This range is based on the target area and gives an initial orientation for this locality.",
+    areaBadgeSuffix: "living area",
     cta: "Offer property for this request",
   },
 };
@@ -96,50 +74,16 @@ function resolveObjectKind(objectType: string | null): ObjectKind | null {
   return null;
 }
 
-function conditionFactor(condition: Condition): number {
-  if (condition === "renovierungsbeduerftig") return 0.92;
-  if (condition === "gepflegt") return 1.04;
-  if (condition === "modernisiert") return 1.09;
-  return 1;
-}
-
-function yearFactor(yearBuilt: number | null): number {
-  if (!yearBuilt || !Number.isFinite(yearBuilt)) return 1;
-  if (yearBuilt >= 2015) return 1.08;
-  if (yearBuilt >= 2000) return 1.04;
-  if (yearBuilt < 1950) return 0.96;
-  return 1;
-}
-
-function roomFactor(kind: ObjectKind, rooms: number | null): number {
-  if (kind !== "apartment" || !rooms || !Number.isFinite(rooms)) return 1;
-  if (rooms <= 1) return 0.97;
-  if (rooms >= 4) return 1.03;
-  return 1;
-}
-
 function round(value: number): number {
   return Math.round(value);
 }
 
-function applyRange(range: RequestMarketRange, factor: number): RequestMarketRange {
+function applyArea(range: RequestMarketRange, area: number): RequestMarketRange {
   return {
-    min: round(range.min * factor),
-    avg: round(range.avg * factor),
-    max: round(range.max * factor),
+    min: round(range.min * area),
+    avg: round(range.avg * area),
+    max: round(range.max * area),
   };
-}
-
-function rangeLabel(
-  range: RequestMarketRange,
-  kind: "purchase" | "rent",
-  locale: string | undefined,
-  numberLocale: string,
-  currencyCode: string,
-): string {
-  const metricKind = kind === "rent" ? "miete_qm" : "kaufpreis_qm";
-  const digits = kind === "rent" ? 2 : 0;
-  return `${formatMetric(range.min, { kind: metricKind, ctx: "kpi", unit: "eur_per_sqm", locale, numberLocale, currencyCode, fractionDigits: digits })} bis ${formatMetric(range.max, { kind: metricKind, ctx: "kpi", unit: "eur_per_sqm", locale, numberLocale, currencyCode, fractionDigits: digits })}`;
 }
 
 function totalLabel(
@@ -159,20 +103,12 @@ function resolveInitialArea(value: number | null | undefined, kind: ObjectKind):
   return kind === "house" ? "120" : "80";
 }
 
-function resolveInitialRooms(value: number | null | undefined): string {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return String(Math.round(value * 10) / 10);
-  }
-  return "3";
-}
-
 export function RequestMarketRangeBox({
   mode,
   objectType,
   marketRangeContext,
   regionLabel,
   initialAreaSqm,
-  initialRooms,
   locale = "de",
   numberLocale,
   currencyCode,
@@ -186,45 +122,15 @@ export function RequestMarketRangeBox({
       ? marketRangeContext?.rent[objectKind] ?? null
       : marketRangeContext?.purchase[objectKind] ?? null
     : null;
-  const saleRange = objectKind ? marketRangeContext?.purchase[objectKind] ?? null : null;
 
   const [areaDraft, setAreaDraft] = useState(() => objectKind ? resolveInitialArea(initialAreaSqm, objectKind) : "80");
-  const [roomsDraft, setRoomsDraft] = useState(() => resolveInitialRooms(initialRooms));
-  const [yearDraft, setYearDraft] = useState("");
-  const [condition, setCondition] = useState<Condition>("durchschnitt");
-
   const area = Number(areaDraft.replace(",", "."));
-  const rooms = Number(roomsDraft.replace(",", "."));
-  const yearBuilt = Number(yearDraft);
-  const factor = objectKind
-    ? conditionFactor(condition)
-      * yearFactor(Number.isFinite(yearBuilt) ? yearBuilt : null)
-      * roomFactor(objectKind, Number.isFinite(rooms) ? rooms : null)
-    : 1;
 
   const computedActiveRange = (() => {
     if (!activeRange || !Number.isFinite(area) || area <= 10) return null;
-    const sqm = applyRange(activeRange, factor);
+    const total = applyArea(activeRange, area);
     return {
-      sqm,
-      total: {
-        min: round(sqm.min * area),
-        avg: round(sqm.avg * area),
-        max: round(sqm.max * area),
-      },
-    };
-  })();
-
-  const computedSaleRange = (() => {
-    if (mode !== "miete" || !saleRange || !Number.isFinite(area) || area <= 10) return null;
-    const sqm = applyRange(saleRange, factor);
-    return {
-      sqm,
-      total: {
-        min: round(sqm.min * area),
-        avg: round(sqm.avg * area),
-        max: round(sqm.max * area),
-      },
+      total,
     };
   })();
 
@@ -242,12 +148,8 @@ export function RequestMarketRangeBox({
       <p style={introStyle}>
         {copy.comparablePrefix} {objectLabel.toLowerCase()} {copy.comparableIn} {regionLabel} {copy.comparableSuffix}
       </p>
-      <div style={rangeCardStyle}>
-        <div style={rangeLabelStyle}>{rangeLabel(activeRange, isRent ? "rent" : "purchase", locale, numberLocale, currencyCode)}</div>
-        <div style={rangeHintStyle}>{isRent ? copy.rentPerSqm : copy.purchasePerSqm}</div>
-      </div>
 
-      <div style={formGridStyle}>
+      <div style={fieldCardStyle}>
         <label style={fieldStyle}>
           <span style={fieldLabelStyle}>{copy.livingArea}</span>
           <input
@@ -256,61 +158,21 @@ export function RequestMarketRangeBox({
             inputMode="decimal"
             style={inputStyle}
           />
-        </label>
-        {objectKind === "apartment" ? (
-          <label style={fieldStyle}>
-            <span style={fieldLabelStyle}>{copy.rooms}</span>
-            <input
-              value={roomsDraft}
-              onChange={(event) => setRoomsDraft(event.target.value)}
-              inputMode="decimal"
-              style={inputStyle}
-            />
-          </label>
-        ) : null}
-        <label style={fieldStyle}>
-          <span style={fieldLabelStyle}>{copy.yearBuilt}</span>
-          <input
-            value={yearDraft}
-            onChange={(event) => setYearDraft(event.target.value)}
-            inputMode="numeric"
-            placeholder={copy.optional}
-            style={inputStyle}
-          />
-        </label>
-        <label style={{ ...fieldStyle, gridColumn: "1 / -1" }}>
-          <span style={fieldLabelStyle}>{copy.condition}</span>
-          <select
-            value={condition}
-            onChange={(event) => setCondition(event.target.value as Condition)}
-            style={inputStyle}
-          >
-            <option value="renovierungsbeduerftig">{copy.conditionRenovation}</option>
-            <option value="durchschnitt">{copy.conditionAverage}</option>
-            <option value="gepflegt">{copy.conditionGood}</option>
-            <option value="modernisiert">{copy.conditionModernized}</option>
-          </select>
+          <span style={fieldHintStyle}>{copy.areaHint}</span>
         </label>
       </div>
 
       {computedActiveRange ? (
         <div style={resultStyle}>
+          <div style={areaBadgeStyle}>
+            {Math.round(area)} m² {copy.areaBadgeSuffix}
+          </div>
           <div style={resultLabelStyle}>{isRent ? copy.rentResult : copy.purchaseResult}</div>
           <div style={resultValueStyle}>
             {totalLabel(computedActiveRange.total, locale, numberLocale, currencyCode, isRent ? copy.perMonth : "")}
           </div>
           <div style={resultHintStyle}>
             {copy.resultHint}
-          </div>
-        </div>
-      ) : null}
-
-      {computedSaleRange ? (
-        <div style={saleHintStyle}>
-          <div style={resultLabelStyle}>{copy.saleResult}</div>
-          <div style={saleValueStyle}>{totalLabel(computedSaleRange.total, locale, numberLocale, currencyCode)}</div>
-          <div style={resultHintStyle}>
-            {copy.saleHint}
           </div>
         </div>
       ) : null}
@@ -359,29 +221,11 @@ const introStyle: CSSProperties = {
   lineHeight: 1.6,
 };
 
-const rangeCardStyle: CSSProperties = {
+const fieldCardStyle: CSSProperties = {
   padding: "14px 16px",
   borderRadius: 16,
-  background: "#f4f8fb",
+  background: "#f8fafc",
   border: "1px solid #dbe4ea",
-};
-
-const rangeLabelStyle: CSSProperties = {
-  fontSize: 18,
-  fontWeight: 800,
-  color: "#0f172a",
-};
-
-const rangeHintStyle: CSSProperties = {
-  marginTop: 4,
-  fontSize: 12,
-  color: "#64748b",
-};
-
-const formGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 10,
 };
 
 const fieldStyle: CSSProperties = {
@@ -393,6 +237,13 @@ const fieldLabelStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   color: "#475569",
+  marginBottom: 5,
+};
+
+const fieldHintStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "#64748b",
 };
 
 const inputStyle: CSSProperties = {
@@ -406,10 +257,11 @@ const inputStyle: CSSProperties = {
 };
 
 const resultStyle: CSSProperties = {
-  padding: "14px 16px",
-  borderRadius: 16,
-  background: "#0f172a",
-  color: "#fff",
+  padding: "18px 18px",
+  borderRadius: 18,
+  background: "linear-gradient(135deg, #f7fbfd 0%, #eef5f8 100%)",
+  border: "1px solid #dbe4ea",
+  color: "#0f172a",
 };
 
 const resultLabelStyle: CSSProperties = {
@@ -417,34 +269,33 @@ const resultLabelStyle: CSSProperties = {
   fontWeight: 800,
   letterSpacing: "0.05em",
   textTransform: "uppercase" as const,
-  opacity: 0.8,
+  color: "#486b7a",
+};
+
+const areaBadgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "#486b7a",
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 800,
+  marginBottom: 12,
 };
 
 const resultValueStyle: CSSProperties = {
-  marginTop: 5,
-  fontSize: 20,
+  marginTop: 8,
+  fontSize: 28,
   fontWeight: 800,
+  lineHeight: 1.15,
 };
 
 const resultHintStyle: CSSProperties = {
-  marginTop: 7,
-  fontSize: 12,
+  marginTop: 10,
+  fontSize: 13,
   lineHeight: 1.5,
-  opacity: 0.78,
-};
-
-const saleHintStyle: CSSProperties = {
-  padding: "14px 16px",
-  borderRadius: 16,
-  background: "#fff7ed",
-  border: "1px solid #fed7aa",
-  color: "#7c2d12",
-};
-
-const saleValueStyle: CSSProperties = {
-  marginTop: 5,
-  fontSize: 18,
-  fontWeight: 800,
+  color: "#475569",
 };
 
 const ctaStyle: CSSProperties = {

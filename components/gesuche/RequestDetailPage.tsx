@@ -126,10 +126,6 @@ export function RequestDetailPage(props: Props) {
     request.minAreaSqm !== null && request.maxAreaSqm !== null
       ? (request.minAreaSqm + request.maxAreaSqm) / 2
       : request.minAreaSqm ?? request.maxAreaSqm;
-  const initialRooms =
-    request.minRooms !== null && request.maxRooms !== null
-      ? (request.minRooms + request.maxRooms) / 2
-      : request.minRooms ?? request.maxRooms;
   const qualificationCopy = mode === "miete"
     ? "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermietungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine."
     : "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermarktungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine.";
@@ -233,7 +229,6 @@ export function RequestDetailPage(props: Props) {
             context={breadcrumb.ctx ?? {}}
             marketRangeContext={marketRangeContext}
             initialAreaSqm={initialAreaSqm}
-            initialRooms={initialRooms}
             numberLocale={formatProfile.intlLocale}
             currencyCode={formatProfile.currencyCode}
             hasReferences={references.length > 0}

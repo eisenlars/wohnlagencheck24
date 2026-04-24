@@ -24,7 +24,6 @@ type Props = {
   };
   marketRangeContext: RequestMarketRangeContext | null;
   initialAreaSqm?: number | null;
-  initialRooms?: number | null;
   numberLocale: string;
   currencyCode: string;
   hasReferences: boolean;
@@ -52,14 +51,13 @@ export function RequestFitTabs({
   context,
   marketRangeContext,
   initialAreaSqm,
-  initialRooms,
   numberLocale,
   currencyCode,
   hasReferences,
 }: Props) {
   const normalizedLocale = locale === "en" ? "en" : "de";
   const objectKind = resolveObjectKind(request.objectType);
-  const hasValuationRange = objectKind
+  const hasValuationRange = Boolean(context.ortSlug) && objectKind
     ? mode === "miete"
       ? Boolean(marketRangeContext?.rent[objectKind])
       : Boolean(marketRangeContext?.purchase[objectKind])
@@ -131,7 +129,6 @@ export function RequestFitTabs({
             marketRangeContext={marketRangeContext}
             regionLabel={regionLabel}
             initialAreaSqm={initialAreaSqm}
-            initialRooms={initialRooms}
             locale={normalizedLocale}
             numberLocale={numberLocale}
             currencyCode={currencyCode}
