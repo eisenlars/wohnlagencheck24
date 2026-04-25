@@ -25,45 +25,39 @@ type ObjectKind = "house" | "apartment";
 
 const COPY = {
   de: {
-    purchaseEyebrow: "Preisspanne in der Zielregion",
-    rentEyebrow: "Mietspanne in der Zielregion",
-    purchaseTitle: "Was in dieser Zielregion realistisch ist",
-    rentTitle: "Welche Miete in dieser Zielregion realistisch ist",
-    comparablePrefix: "Die Spanne bezieht sich auf vergleichbare",
-    comparableInLocality: "in der Ortslage",
-    comparableInRegion: "in der Zielregion",
-    comparableSuffix: "und dient als erste Orientierung.",
+    orientationTitle: "Preisspanne zur Orientierung",
     housePlural: "Häuser",
     apartmentPlural: "Wohnungen",
+    houseSingular: "Häuser",
+    apartmentSingular: "Wohnungen",
     livingArea: "Wohnfläche",
     areaHint: "Für die erste Einordnung genügt die Wohnfläche. Weitere Merkmale können später ergänzt werden.",
-    purchaseResult: "Orientierungsrange für Ihre Wohnfläche",
-    rentResult: "Orientierungsrange für Ihre Wohnfläche",
+    purchaseResult: "Orientierungsrahmen",
+    rentResult: "Orientierungsrahmen",
     perMonth: " / Monat",
-    resultHintLocality: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für diese Ortslage.",
-    resultHintRegion: "Die Spanne bezieht sich auf die Zielregion und liefert eine erste Orientierung für diesen Marktbereich.",
-    areaBadgeSuffix: "Wohnfläche",
+    orientationHintPrefix: "Die Preisspanne beruht auf unseren aktuellen Erhebungen für",
+    orientationHintIn: "in",
+    orientationHintSuffix: "Sie dient als erste Orientierung und sollte weiter verfeinert werden.",
+    refineActionClosed: "Preisspanne verfeinern",
+    refineActionOpen: "Verfeinerung ausblenden",
     cta: "Immobilie zu diesem Gesuch anbieten",
   },
   en: {
-    purchaseEyebrow: "Price range in the target area",
-    rentEyebrow: "Rent range in the target area",
-    purchaseTitle: "What is realistic in this target area",
-    rentTitle: "What rent is realistic in this target area",
-    comparablePrefix: "This range is based on comparable",
-    comparableInLocality: "in the locality",
-    comparableInRegion: "in the target area",
-    comparableSuffix: "and provides a first orientation.",
+    orientationTitle: "Indicative price range",
     housePlural: "houses",
     apartmentPlural: "apartments",
+    houseSingular: "houses",
+    apartmentSingular: "apartments",
     livingArea: "Living area",
     areaHint: "Living area is enough for the first estimate. Further property details can follow later.",
-    purchaseResult: "Indicative range for your living area",
-    rentResult: "Indicative range for your living area",
+    purchaseResult: "Indicative range",
+    rentResult: "Indicative range",
     perMonth: " / month",
-    resultHintLocality: "This range is based on the target area and gives an initial orientation for this locality.",
-    resultHintRegion: "This range is based on the target area and gives an initial orientation for this market area.",
-    areaBadgeSuffix: "living area",
+    orientationHintPrefix: "This price range is based on our current market observations for",
+    orientationHintIn: "in",
+    orientationHintSuffix: "It gives an initial orientation and should be refined further.",
+    refineActionClosed: "Refine price range",
+    refineActionOpen: "Hide refinement",
     cta: "Offer property for this request",
   },
 };
@@ -113,7 +107,6 @@ export function RequestMarketRangeBox({
   objectType,
   marketRangeContext,
   regionLabel,
-  regionScope = "ortslage",
   initialAreaSqm,
   locale = "de",
   numberLocale,
@@ -130,6 +123,7 @@ export function RequestMarketRangeBox({
     : null;
 
   const [areaDraft, setAreaDraft] = useState(() => objectKind ? resolveInitialArea(initialAreaSqm, objectKind) : "80");
+  const [showRefinement, setShowRefinement] = useState(false);
   const area = Number(areaDraft.replace(",", "."));
 
   const computedActiveRange = (() => {
@@ -143,46 +137,46 @@ export function RequestMarketRangeBox({
   if (!objectKind || !activeRange) return null;
 
   const isRent = mode === "miete";
-  const isLocalityScope = regionScope === "ortslage";
-  const objectLabel = objectKind === "house" ? copy.housePlural : copy.apartmentPlural;
+  const objectLabel = objectKind === "house" ? copy.houseSingular : copy.apartmentSingular;
+  const orientationHint = `${copy.orientationHintPrefix} ${objectLabel.toLowerCase()} ${copy.orientationHintIn} ${regionLabel}. ${copy.orientationHintSuffix}`;
 
   return (
     <div style={embedded ? embeddedBoxStyle : boxStyle}>
-      <div style={eyebrowStyle}>{isRent ? copy.rentEyebrow : copy.purchaseEyebrow}</div>
-      <h3 style={titleStyle}>
-        {isRent ? copy.rentTitle : copy.purchaseTitle}
-      </h3>
-      <p style={introStyle}>
-        {copy.comparablePrefix} {objectLabel.toLowerCase()} {isLocalityScope ? copy.comparableInLocality : copy.comparableInRegion} {regionLabel} {copy.comparableSuffix}
-      </p>
-
-      <div style={fieldCardStyle}>
-        <label style={fieldStyle}>
-          <span style={fieldLabelStyle}>{copy.livingArea}</span>
-          <input
-            value={areaDraft}
-            onChange={(event) => setAreaDraft(event.target.value)}
-            inputMode="decimal"
-            style={inputStyle}
-          />
-          <span style={fieldHintStyle}>{copy.areaHint}</span>
-        </label>
-      </div>
-
       {computedActiveRange ? (
         <div style={resultStyle}>
-          <div style={areaBadgeStyle}>
-            {Math.round(area)} m² {copy.areaBadgeSuffix}
-          </div>
-          <div style={resultLabelStyle}>{isRent ? copy.rentResult : copy.purchaseResult}</div>
+          <div style={resultLabelStyle}>{copy.orientationTitle}</div>
           <div style={resultValueStyle}>
             {totalLabel(computedActiveRange.total, locale, numberLocale, currencyCode, isRent ? copy.perMonth : "")}
           </div>
-          <div style={resultHintStyle}>
-            {isLocalityScope ? copy.resultHintLocality : copy.resultHintRegion}
-          </div>
+          <p style={resultHintStyle}>{orientationHint}</p>
         </div>
       ) : null}
+
+      <div style={refinementWrapStyle}>
+        <button
+          type="button"
+          onClick={() => setShowRefinement((current) => !current)}
+          style={refinementToggleStyle}
+          aria-expanded={showRefinement}
+        >
+          <span>{showRefinement ? copy.refineActionOpen : copy.refineActionClosed}</span>
+          <span aria-hidden="true" style={refinementToggleIconStyle}>{showRefinement ? "−" : "+"}</span>
+        </button>
+        {showRefinement ? (
+          <div style={fieldCardStyle}>
+            <label style={fieldStyle}>
+              <span style={fieldLabelStyle}>{copy.livingArea}</span>
+              <input
+                value={areaDraft}
+                onChange={(event) => setAreaDraft(event.target.value)}
+                inputMode="decimal"
+                style={inputStyle}
+              />
+              <span style={fieldHintStyle}>{copy.areaHint}</span>
+            </label>
+          </div>
+        ) : null}
+      </div>
 
       {!hideCta ? (
         <a href="#request-offer-form" style={ctaStyle}>
@@ -204,28 +198,6 @@ const boxStyle: CSSProperties = {
 const embeddedBoxStyle: CSSProperties = {
   display: "grid",
   gap: 14,
-};
-
-const eyebrowStyle: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase" as const,
-  color: "#486b7a",
-};
-
-const titleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 20,
-  lineHeight: 1.25,
-  color: "#0f172a",
-};
-
-const introStyle: CSSProperties = {
-  margin: 0,
-  color: "#475569",
-  fontSize: 14,
-  lineHeight: 1.6,
 };
 
 const fieldCardStyle: CSSProperties = {
@@ -269,6 +241,7 @@ const resultStyle: CSSProperties = {
   background: "linear-gradient(135deg, #f7fbfd 0%, #eef5f8 100%)",
   border: "1px solid #dbe4ea",
   color: "#0f172a",
+  textAlign: "center",
 };
 
 const resultLabelStyle: CSSProperties = {
@@ -279,18 +252,6 @@ const resultLabelStyle: CSSProperties = {
   color: "#486b7a",
 };
 
-const areaBadgeStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "6px 10px",
-  borderRadius: 999,
-  background: "#486b7a",
-  color: "#fff",
-  fontSize: 12,
-  fontWeight: 800,
-  marginBottom: 12,
-};
-
 const resultValueStyle: CSSProperties = {
   marginTop: 8,
   fontSize: 28,
@@ -299,10 +260,38 @@ const resultValueStyle: CSSProperties = {
 };
 
 const resultHintStyle: CSSProperties = {
-  marginTop: 10,
+  margin: "12px auto 0",
   fontSize: 13,
   lineHeight: 1.5,
   color: "#475569",
+  maxWidth: 520,
+};
+
+const refinementWrapStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+};
+
+const refinementToggleStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  padding: "14px 16px",
+  borderRadius: 16,
+  border: "1px solid #dbe4ea",
+  background: "#fff",
+  color: "#0f172a",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const refinementToggleIconStyle: CSSProperties = {
+  fontSize: 20,
+  lineHeight: 1,
+  color: "#486b7a",
 };
 
 const ctaStyle: CSSProperties = {
