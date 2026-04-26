@@ -143,6 +143,40 @@ Der Flow bekommt je nach Audience:
 - `preview`
   mit `previewMode` und ohne produktive Submission
 
+## Gesuche: Immobilienwert pruefen
+
+Im Gesuche-Detail wird die Verfeinerung `Immobilienwert pruefen` aktuell als eigener Public-/
+Preview-Prototyp im Gesuchebereich betrieben. Die technische Kette ist derzeit:
+
+- Zielregion des Gesuchs wird serverseitig auf eine passende Ortslage oder einen Kreis-Fallback
+  aufgeloest
+- Lagecluster werden ueber eine kompakte Runtime-Datei pro Gebiet geladen
+- die vom Nutzer eingegebene Adresse wird serverseitig geokodiert
+- die geokodierte Koordinate wird gegen die Lagecluster-Polygone geprueft
+- die gefundene Lagequalitaet beeinflusst anschliessend `min/avg/max` der ausgegebenen
+  Preisspanne
+
+### Aktueller Testmodus
+
+Die aktuelle Testimplementierung nutzt fuer die Adressaufloesung serverseitig Nominatim/OSM.
+Das ist fuer Prototyping und fachliche Validierung ausreichend, ist aber nicht als finale
+Produktivloesung zu verstehen.
+
+### Produktionshinweis
+
+Vor einem produktiven Rollout dieser Mikrolagen-/Adresslogik muss fuer den Live-Betrieb ein
+leistungsfaehigeres Setup eingeplant werden. Dazu gehoert je nach Zielbild:
+
+- Umstieg auf belastbarere Geocoding-/Autocomplete-Tools
+- oder ein eigener, kontrollierter Infrastrukturpfad mit Caching/Rate-Limit-Steuerung
+
+Gruende dafuer sind insbesondere:
+
+- oeffentliche Rate-Limits freier Dienste
+- schwankende Antwortqualitaet bei Autosuggest und Adressaufloesung
+- Performance- und Stabilitaetsanforderungen im Live-Betrieb
+- bessere Kontrolle ueber Monitoring, Fehlerverhalten und Lastspitzen
+
 ## Beobachtete Implementierungsnotizen
 
 - Die Public-Immobilienmarkt-Uebersicht nutzt die Visibility-Schicht bereits explizit.
