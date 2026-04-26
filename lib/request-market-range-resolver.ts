@@ -1,4 +1,5 @@
 import { getOrteForKreis, getReportBySlugs, readReportPostalCodes } from "@/lib/data";
+import { loadResolvedLageclusterRuntime, type ResolvedLageclusterRuntime } from "@/lib/lagecluster-runtime";
 import type { RequestDetail } from "@/lib/request-detail";
 import { buildRequestMarketRangeContext, type RequestMarketRangeContext } from "@/lib/request-market-range";
 
@@ -28,6 +29,8 @@ export type ResolvedRequestMarketRange = {
   regionLabel: string;
   scope: "ortslage" | "kreis";
   source: "ort_route" | "region_target_key" | "postal_code" | "district_name" | "target_label" | "kreis_fallback";
+  lagecluster: ResolvedLageclusterRuntime | null;
+  postalCodes: string[];
 };
 
 function asText(value: unknown): string | null {
@@ -113,6 +116,14 @@ async function loadLocalityCandidates(
     .filter((candidate) => candidate.context !== null);
 }
 
+async function resolveLagecluster(
+  bundeslandSlug: string,
+  kreisSlug: string,
+  ortSlug: string,
+): Promise<ResolvedLageclusterRuntime | null> {
+  return loadResolvedLageclusterRuntime(bundeslandSlug, kreisSlug, ortSlug);
+}
+
 function matchByTargetKey(
   candidates: LocalityCandidate[],
   targetKeys: string[],
@@ -171,11 +182,14 @@ export async function resolveRequestMarketRangeForRoute(
     const ortContext = buildRequestMarketRangeContext(ortReport);
     if (ortContext) {
       const ortMeta = ((ortReport?.meta ?? {}) as Record<string, unknown>);
+      const lagecluster = await resolveLagecluster(args.bundeslandSlug, args.kreisSlug, args.ortSlug);
       return {
         context: ortContext,
         regionLabel: readAreaDisplayName(ortMeta, args.ortSlug),
         scope: "ortslage",
         source: "ort_route",
+        lagecluster,
+        postalCodes: readReportPostalCodes(ortMeta),
       };
     }
   }
@@ -183,31 +197,40 @@ export async function resolveRequestMarketRangeForRoute(
   const candidates = await loadLocalityCandidates(args.bundeslandSlug, args.kreisSlug);
   const targetKeyMatch = matchByTargetKey(candidates, args.request.regionTargetKeys);
   if (targetKeyMatch?.context) {
+    const lagecluster = await resolveLagecluster(args.bundeslandSlug, args.kreisSlug, targetKeyMatch.slug);
     return {
       context: targetKeyMatch.context,
       regionLabel: targetKeyMatch.label,
       scope: "ortslage",
       source: "region_target_key",
+      lagecluster,
+      postalCodes: Array.from(targetKeyMatch.postalCodes),
     };
   }
 
   const postalCodeMatch = matchByPostalCode(candidates, args.request.regionTargets);
   if (postalCodeMatch?.context) {
+    const lagecluster = await resolveLagecluster(args.bundeslandSlug, args.kreisSlug, postalCodeMatch.slug);
     return {
       context: postalCodeMatch.context,
       regionLabel: postalCodeMatch.label,
       scope: "ortslage",
       source: "postal_code",
+      lagecluster,
+      postalCodes: Array.from(postalCodeMatch.postalCodes),
     };
   }
 
   const nameMatch = matchByNames(candidates, args.request.regionTargets);
   if (nameMatch?.context) {
+    const lagecluster = await resolveLagecluster(args.bundeslandSlug, args.kreisSlug, nameMatch.slug);
     return {
       context: nameMatch.context,
       regionLabel: nameMatch.label,
       scope: "ortslage",
       source: asText(args.request.regionTargets[0]?.district) ? "district_name" : "target_label",
+      lagecluster,
+      postalCodes: Array.from(nameMatch.postalCodes),
     };
   }
 
@@ -220,5 +243,7 @@ export async function resolveRequestMarketRangeForRoute(
     regionLabel: readAreaDisplayName(kreisMeta, args.kreisSlug),
     scope: "kreis",
     source: "kreis_fallback",
+    lagecluster: null,
+    postalCodes: readReportPostalCodes(kreisMeta),
   };
 }

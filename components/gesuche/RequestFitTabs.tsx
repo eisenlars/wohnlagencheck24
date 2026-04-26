@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from "react";
 
 import type { RequestMode } from "@/lib/gesuche";
+import type { ResolvedLageclusterRuntime } from "@/lib/lagecluster-runtime";
 import type { RequestMarketRangeContext } from "@/lib/request-market-range";
 import { RequestMarketRangeBox } from "./RequestMarketRangeBox";
 import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
@@ -24,6 +25,8 @@ type Props = {
   };
   marketRangeContext: RequestMarketRangeContext | null;
   marketRangeScope?: "ortslage" | "kreis";
+  lagecluster?: ResolvedLageclusterRuntime | null;
+  postalCodes?: string[];
   initialAreaSqm?: number | null;
   numberLocale: string;
   currencyCode: string;
@@ -52,6 +55,8 @@ export function RequestFitTabs({
   context,
   marketRangeContext,
   marketRangeScope = "ortslage",
+  lagecluster = null,
+  postalCodes = [],
   initialAreaSqm,
   numberLocale,
   currencyCode,
@@ -131,6 +136,9 @@ export function RequestFitTabs({
             marketRangeContext={marketRangeContext}
             regionLabel={regionLabel}
             regionScope={marketRangeScope}
+            lagecluster={lagecluster}
+            bundeslandSlug={context.bundeslandSlug}
+            postalCodes={postalCodes}
             initialAreaSqm={initialAreaSqm}
             locale={normalizedLocale}
             numberLocale={numberLocale}

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
 import type { RequestMode } from "@/lib/gesuche";
+import type { LageclusterMarketType, LageclusterQuality, ResolvedLageclusterRuntime } from "@/lib/lagecluster-runtime";
 import type { RequestMarketRange, RequestMarketRangeContext } from "@/lib/request-market-range";
 import { formatMetric } from "@/utils/format";
 
@@ -13,6 +14,9 @@ type Props = {
   marketRangeContext: RequestMarketRangeContext | null;
   regionLabel: string;
   regionScope?: "ortslage" | "kreis";
+  lagecluster?: ResolvedLageclusterRuntime | null;
+  bundeslandSlug?: string;
+  postalCodes?: string[];
   initialAreaSqm?: number | null;
   locale?: string;
   numberLocale: string;
@@ -23,6 +27,20 @@ type Props = {
 
 type ObjectKind = "house" | "apartment";
 type ConditionKey = "renovation_needed" | "simple" | "well_kept" | "modernized" | "as_new";
+type LocationResolutionState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | {
+      status: "matched";
+      quality: LageclusterQuality;
+      qualityLabel: string;
+      relationSource: "ortslage" | "kreis";
+      relation: RequestMarketRange;
+      displayName: string;
+    }
+  | { status: "geocode_not_found" }
+  | { status: "polygon_not_found" }
+  | { status: "error" };
 type EquipmentKey =
   | "terrace"
   | "garden"
@@ -63,6 +81,21 @@ const COPY = {
     street: "Straße",
     houseNumber: "Hausnummer",
     addressHint: "Mit genauer Adresse können wir später die Mikrolage genauer einordnen.",
+    clusterTitle: "Mikrolage in der Zielregion",
+    clusterAvailablePrefix: "Für",
+    clusterAvailableSuffix: "liegen Mikrolagen-Daten vor.",
+    clusterQualityPrefix: "Verfügbare Lagequalitäten",
+    clusterFallbackOrt: "Ortslagen-Relationen",
+    clusterFallbackKreis: "Landkreis-Fallback",
+    clusterMissing: "Für diese Zielregion liegen aktuell noch keine Mikrolagen-Daten für die spätere Verfeinerung vor.",
+    clusterLoading: "Adresse wird für die Mikrolage geprüft.",
+    clusterNotFound: "Die Adresse konnte noch keiner erfassten Mikrolage zugeordnet werden.",
+    clusterGeocodeMissing: "Die Adresse konnte geocodiert noch nicht sicher aufgelöst werden.",
+    clusterMatchPrefix: "Die angegebene Adresse liegt nach unserer Einordnung in",
+    clusterMatchSuffix: ".",
+    clusterAppliedOrt: "Die Ortslagen-Relation wird bereits in die Preisspanne eingerechnet.",
+    clusterAppliedKreis: "Mangels Ortslagenwert wird aktuell der Landkreis-Fallback eingerechnet.",
+    clusterError: "Die Mikrolagen-Prüfung konnte aktuell nicht abgeschlossen werden.",
     houseEquipment: "Ausstattung am Haus",
     apartmentEquipment: "Ausstattung der Wohnung",
     purchaseResult: "Orientierungsrahmen",
@@ -119,6 +152,21 @@ const COPY = {
     street: "Street",
     houseNumber: "House number",
     addressHint: "With a precise address, we can later classify the micro-location more accurately.",
+    clusterTitle: "Micro-location in the target region",
+    clusterAvailablePrefix: "Micro-location data is available for",
+    clusterAvailableSuffix: ".",
+    clusterQualityPrefix: "Available quality bands",
+    clusterFallbackOrt: "Locality relations",
+    clusterFallbackKreis: "County fallback",
+    clusterMissing: "There is currently no micro-location data available for this target region refinement.",
+    clusterLoading: "Checking the address against the micro-location model.",
+    clusterNotFound: "The address could not yet be assigned to a recorded micro-location.",
+    clusterGeocodeMissing: "The address could not yet be geocoded reliably.",
+    clusterMatchPrefix: "Based on our model, the address is located in",
+    clusterMatchSuffix: ".",
+    clusterAppliedOrt: "The locality relation is already included in the price range.",
+    clusterAppliedKreis: "A county fallback relation is currently applied.",
+    clusterError: "The micro-location check could not be completed at the moment.",
     houseEquipment: "House features",
     apartmentEquipment: "Apartment features",
     purchaseResult: "Indicative range",
@@ -172,6 +220,40 @@ function resolveObjectKind(objectType: string | null): ObjectKind | null {
     return "apartment";
   }
   return null;
+}
+
+function resolveMarketType(kind: ObjectKind, mode: RequestMode): LageclusterMarketType {
+  if (kind === "house") return mode === "miete" ? "house_rent" : "house_sell";
+  return mode === "miete" ? "apartment_rent" : "apartment_sell";
+}
+
+function formatQualityLabel(locale: "de" | "en", quality: LageclusterQuality): string {
+  if (locale === "en") {
+    switch (quality) {
+      case "LOW":
+        return "Low";
+      case "MIDDLE":
+        return "Middle";
+      case "GOOD":
+        return "Good";
+      case "VERY_GOOD":
+        return "Very good";
+      case "EXCELLENT":
+        return "Excellent";
+    }
+  }
+  switch (quality) {
+    case "LOW":
+      return "Einfach";
+    case "MIDDLE":
+      return "Mittel";
+    case "GOOD":
+      return "Gut";
+    case "VERY_GOOD":
+      return "Sehr gut";
+    case "EXCELLENT":
+      return "Exzellent";
+  }
 }
 
 function round(value: number): number {
@@ -347,6 +429,9 @@ export function RequestMarketRangeBox({
   objectType,
   marketRangeContext,
   regionLabel,
+  lagecluster = null,
+  bundeslandSlug,
+  postalCodes = [],
   initialAreaSqm,
   locale = "de",
   numberLocale,
@@ -357,6 +442,7 @@ export function RequestMarketRangeBox({
   const copy = locale === "en" ? COPY.en : COPY.de;
   const objectKind = resolveObjectKind(objectType);
   const profile = objectKind ? getObjectProfile(copy, objectKind) : null;
+  const marketType = objectKind ? resolveMarketType(objectKind, mode) : null;
   const activeRange = objectKind
     ? mode === "miete"
       ? marketRangeContext?.rent[objectKind] ?? null
@@ -373,28 +459,117 @@ export function RequestMarketRangeBox({
   const [houseNumber, setHouseNumber] = useState("");
   const [equipment, setEquipment] = useState<Record<EquipmentKey, boolean>>(() => createInitialEquipmentState());
   const [showRefinement, setShowRefinement] = useState(false);
+  const [locationResolution, setLocationResolution] = useState<LocationResolutionState>({ status: "idle" });
   const area = Number(areaDraft.replace(",", "."));
   const rooms = Number(roomsDraft.replace(",", "."));
+  const deferredStreet = useDeferredValue(street);
+  const deferredHouseNumber = useDeferredValue(houseNumber);
 
-  const computedActiveRange = (() => {
-    if (!activeRange || !profile || !Number.isFinite(area) || area <= 10) return null;
-    const baseTotal = applyArea(activeRange, area);
-    const roomsFactor = Number.isFinite(rooms) && rooms > 0 && objectKind
-      ? profile.roomFactor(area, rooms)
-      : 1;
-    const conditionFactor = getConditionFactor(condition);
-    const equipmentFactor = profile.equipmentFactor(equipment);
-    const total = applyFactor(baseTotal, roomsFactor * conditionFactor * equipmentFactor);
-    return {
-      total,
+  useEffect(() => {
+    if (!showRefinement || !lagecluster || !marketType || !bundeslandSlug) {
+      setLocationResolution({ status: "idle" });
+      return;
+    }
+    const normalizedStreet = deferredStreet.trim();
+    if (normalizedStreet.length < 3) {
+      setLocationResolution({ status: "idle" });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLocationResolution({ status: "loading" });
+      try {
+        const response = await fetch("/api/request-valuation/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bundeslandSlug,
+            kreisSlug: lagecluster.kreisSlug,
+            ortSlug: lagecluster.ortSlug,
+            regionLabel,
+            postalCode: postalCodes[0] ?? null,
+            street: normalizedStreet,
+            houseNumber: deferredHouseNumber.trim() || null,
+            marketType,
+          }),
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as
+          | {
+              ok?: boolean;
+              status?: string;
+              quality?: LageclusterQuality;
+              qualityLabel?: string;
+              relationSource?: "ortslage" | "kreis";
+              relation?: RequestMarketRange;
+              geocoded?: { displayName?: string | null } | null;
+            }
+          | null;
+        if (controller.signal.aborted) return;
+        if (!response.ok || !payload) {
+          setLocationResolution({ status: "error" });
+          return;
+        }
+        if (payload.ok && payload.status === "matched" && payload.quality && payload.qualityLabel && payload.relation && payload.relationSource) {
+          setLocationResolution({
+            status: "matched",
+            quality: payload.quality,
+            qualityLabel: payload.qualityLabel,
+            relationSource: payload.relationSource,
+            relation: payload.relation,
+            displayName: payload.geocoded?.displayName ?? normalizedStreet,
+          });
+          return;
+        }
+        if (payload.status === "geocode_not_found") {
+          setLocationResolution({ status: "geocode_not_found" });
+          return;
+        }
+        if (payload.status === "polygon_not_found") {
+          setLocationResolution({ status: "polygon_not_found" });
+          return;
+        }
+        setLocationResolution({ status: "error" });
+      } catch {
+        if (!controller.signal.aborted) {
+          setLocationResolution({ status: "error" });
+        }
+      }
+    }, 550);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
     };
-  })();
+  }, [
+    showRefinement,
+    lagecluster,
+    marketType,
+    bundeslandSlug,
+    regionLabel,
+    postalCodes,
+    deferredStreet,
+    deferredHouseNumber,
+  ]);
 
   if (!objectKind || !activeRange || !profile) return null;
 
   const isRent = mode === "miete";
   const objectLabel = objectKind === "house" ? copy.houseSingular : copy.apartmentSingular;
   const orientationHint = `${copy.orientationHintPrefix} ${objectLabel.toLowerCase()} ${copy.orientationHintIn} ${regionLabel}. ${copy.orientationHintSuffix}`;
+  const clusterRelations = marketType ? (lagecluster?.relations[marketType] ?? {}) : {};
+  const countyClusterRelations = marketType ? (lagecluster?.countyRelations[marketType] ?? {}) : {};
+  const activeClusterRelations = Object.keys(clusterRelations).length > 0 ? clusterRelations : countyClusterRelations;
+  const clusterRelationSource = Object.keys(clusterRelations).length > 0 ? copy.clusterFallbackOrt : copy.clusterFallbackKreis;
+  const availableClusterQualities = (Object.keys(activeClusterRelations) as LageclusterQuality[])
+    .map((quality) => ({
+      quality,
+      label: formatQualityLabel(locale === "en" ? "en" : "de", quality),
+      avg: activeClusterRelations[quality]?.avg ?? null,
+    }))
+    .filter((entry) => entry.avg !== null)
+    .sort((a, b) => (a.avg ?? 1) - (b.avg ?? 1));
   const roomsNote = (() => {
     if (!Number.isFinite(rooms) || rooms <= 0 || !Number.isFinite(area) || area <= 10) return profile.roomNoteGood;
     const expectedRooms = profile.expectedRooms(area);
@@ -408,6 +583,26 @@ export function RequestMarketRangeBox({
     .filter((key) => equipment[key])
     .map((key) => copy.equipmentOptions[key]);
   const summaryItems = buildSummaryItems(copy, Number.isFinite(area) && area > 10 ? area : initialArea ?? 80, Number.isFinite(rooms) && rooms > 0 ? rooms : 3, condition);
+  const locationAdjustedRange = locationResolution.status === "matched"
+    ? {
+        min: activeRange.min * locationResolution.relation.min,
+        avg: activeRange.avg * locationResolution.relation.avg,
+        max: activeRange.max * locationResolution.relation.max,
+      }
+    : activeRange;
+  const computedActiveRange = (() => {
+    if (!locationAdjustedRange || !Number.isFinite(area) || area <= 10) return null;
+    const baseTotal = applyArea(locationAdjustedRange, area);
+    const roomsFactor = Number.isFinite(rooms) && rooms > 0
+      ? profile.roomFactor(area, rooms)
+      : 1;
+    const conditionFactor = getConditionFactor(condition);
+    const equipmentFactor = profile.equipmentFactor(equipment);
+    const total = applyFactor(baseTotal, roomsFactor * conditionFactor * equipmentFactor);
+    return {
+      total,
+    };
+  })();
 
   return (
     <div style={embedded ? embeddedBoxStyle : boxStyle}>
@@ -513,6 +708,52 @@ export function RequestMarketRangeBox({
                 </label>
               </div>
               <div style={fieldHintStyle}>{copy.addressHint}</div>
+              {lagecluster ? (
+                <div style={clusterInfoStyle}>
+                  <div style={clusterInfoTitleStyle}>{copy.clusterTitle}</div>
+                  <div style={clusterInfoTextStyle}>
+                    {locationResolution.status === "matched"
+                      ? `${copy.clusterMatchPrefix} ${locationResolution.qualityLabel}${copy.clusterMatchSuffix}`
+                      : `${copy.clusterAvailablePrefix} ${regionLabel} ${copy.clusterAvailableSuffix}`}
+                  </div>
+                  <div style={clusterInfoMetaStyle}>
+                    {lagecluster.items.length} Polygone · {locationResolution.status === "matched"
+                      ? (locationResolution.relationSource === "ortslage" ? copy.clusterFallbackOrt : copy.clusterFallbackKreis)
+                      : clusterRelationSource}
+                  </div>
+                  {availableClusterQualities.length > 0 ? (
+                    <div style={clusterChipWrapStyle}>
+                      {availableClusterQualities.map((entry) => (
+                        <span key={entry.quality} style={clusterChipStyle}>
+                          {entry.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {locationResolution.status === "loading" ? (
+                    <div style={clusterStatusStyle}>{copy.clusterLoading}</div>
+                  ) : null}
+                  {locationResolution.status === "geocode_not_found" ? (
+                    <div style={clusterStatusStyle}>{copy.clusterGeocodeMissing}</div>
+                  ) : null}
+                  {locationResolution.status === "polygon_not_found" ? (
+                    <div style={clusterStatusStyle}>{copy.clusterNotFound}</div>
+                  ) : null}
+                  {locationResolution.status === "error" ? (
+                    <div style={clusterStatusStyle}>{copy.clusterError}</div>
+                  ) : null}
+                  {locationResolution.status === "matched" ? (
+                    <div style={clusterStatusStyle}>
+                      {locationResolution.relationSource === "ortslage" ? copy.clusterAppliedOrt : copy.clusterAppliedKreis}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div style={clusterInfoStyle}>
+                  <div style={clusterInfoTitleStyle}>{copy.clusterTitle}</div>
+                  <div style={clusterInfoTextStyle}>{copy.clusterMissing}</div>
+                </div>
+              )}
             </div>
 
             <div style={fieldCardStyle}>
@@ -536,6 +777,17 @@ export function RequestMarketRangeBox({
               <ul style={notesListStyle}>
                 <li>{roomsNote}</li>
                 <li>{addressNote}</li>
+                {lagecluster && availableClusterQualities.length > 0 ? (
+                  <li>
+                    {copy.clusterQualityPrefix}: {availableClusterQualities.map((entry) => entry.label).join(", ")}.
+                  </li>
+                ) : null}
+                {locationResolution.status === "matched" ? (
+                  <li>
+                    {copy.clusterMatchPrefix} {locationResolution.qualityLabel}
+                    {copy.clusterMatchSuffix}
+                  </li>
+                ) : null}
                 <li>{copy.prototypeHint}</li>
               </ul>
             </div>
@@ -776,6 +1028,60 @@ const notesListStyle: CSSProperties = {
   color: "#475569",
   fontSize: 13,
   lineHeight: 1.6,
+};
+
+const clusterInfoStyle: CSSProperties = {
+  marginTop: 12,
+  padding: "12px 13px",
+  borderRadius: 14,
+  border: "1px solid #dbe4ea",
+  background: "#fff",
+  display: "grid",
+  gap: 8,
+};
+
+const clusterInfoTitleStyle: CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "#486b7a",
+};
+
+const clusterInfoTextStyle: CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: "#334155",
+};
+
+const clusterInfoMetaStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "#64748b",
+};
+
+const clusterChipWrapStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+};
+
+const clusterChipStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "#eef4f8",
+  border: "1px solid #dbe4ea",
+  color: "#486b7a",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const clusterStatusStyle: CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.55,
+  color: "#475569",
 };
 
 const ctaStyle: CSSProperties = {

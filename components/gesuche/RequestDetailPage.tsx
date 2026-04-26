@@ -229,6 +229,8 @@ export function RequestDetailPage(props: Props) {
             context={breadcrumb.ctx ?? {}}
             marketRangeContext={resolvedMarketRange?.context ?? null}
             marketRangeScope={resolvedMarketRange?.scope ?? "ortslage"}
+            lagecluster={resolvedMarketRange?.lagecluster ?? null}
+            postalCodes={resolvedMarketRange?.postalCodes ?? []}
             initialAreaSqm={initialAreaSqm}
             numberLocale={formatProfile.intlLocale}
             currencyCode={formatProfile.currencyCode}
