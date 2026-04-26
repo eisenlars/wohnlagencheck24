@@ -23,7 +23,30 @@ type Props = {
 
 type ObjectKind = "house" | "apartment";
 type ConditionKey = "renovation_needed" | "simple" | "well_kept" | "modernized" | "as_new";
-type EquipmentKey = "balcony" | "garden" | "parking" | "elevator" | "bathroom" | "energy";
+type EquipmentKey =
+  | "terrace"
+  | "garden"
+  | "garage"
+  | "bathroom"
+  | "energy"
+  | "heating"
+  | "balcony"
+  | "elevator"
+  | "parking"
+  | "kitchen";
+
+type ObjectProfile = {
+  equipmentKeys: EquipmentKey[];
+  roomOptions: number[];
+  defaultArea: string;
+  expectedRooms: (area: number) => number;
+  roomFactor: (area: number, rooms: number) => number;
+  equipmentFactor: (equipment: Record<EquipmentKey, boolean>) => number;
+  equipmentTitle: string;
+  roomNoteGood: string;
+  roomNoteCompact: string;
+  roomNoteGenerous: string;
+};
 
 const COPY = {
   de: {
@@ -40,7 +63,8 @@ const COPY = {
     street: "Straße",
     houseNumber: "Hausnummer",
     addressHint: "Mit genauer Adresse können wir später die Mikrolage genauer einordnen.",
-    equipment: "Ausstattungsmerkmale",
+    houseEquipment: "Ausstattung am Haus",
+    apartmentEquipment: "Ausstattung der Wohnung",
     purchaseResult: "Orientierungsrahmen",
     rentResult: "Orientierungsrahmen",
     perMonth: " / Monat",
@@ -51,9 +75,12 @@ const COPY = {
     refineActionOpen: "Verfeinerung ausblenden",
     summaryTitle: "Aktuell berücksichtigt",
     notesTitle: "Einordnung",
-    roomsNoteGood: "Die Zimmeranzahl wirkt für diese Wohnfläche stimmig.",
-    roomsNoteCompact: "Die Zimmeranzahl spricht eher für einen kompakten Grundriss.",
-    roomsNoteGenerous: "Die Zimmeranzahl deutet eher auf großzügige Raumzuschnitte hin.",
+    houseRoomsNoteGood: "Die Zimmeranzahl wirkt für dieses Haus stimmig.",
+    houseRoomsNoteCompact: "Die Zimmeranzahl spricht eher für einen kompakten Hausgrundriss.",
+    houseRoomsNoteGenerous: "Die Zimmeranzahl deutet eher auf einen großzügigen Familiengrundriss hin.",
+    apartmentRoomsNoteGood: "Die Zimmeranzahl wirkt für diese Wohnungsgröße stimmig.",
+    apartmentRoomsNoteCompact: "Die Zimmeranzahl spricht eher für einen kompakten Wohnungsgrundriss.",
+    apartmentRoomsNoteGenerous: "Die Zimmeranzahl deutet eher auf großzügige Zimmerzuschnitte hin.",
     addressNoteMissing: "Mit Straße und Hausnummer kann die Lage später genauer verfeinert werden.",
     addressNotePresent: "Die angegebene Adresse kann später für eine präzisere Mikrolagen-Einordnung genutzt werden.",
     prototypeHint: "Die aktuelle Verfeinerung ist ein Prototyp und wird später um Lagecluster und weitere Marktfaktoren ergänzt.",
@@ -65,12 +92,16 @@ const COPY = {
       as_new: "Neuwertig",
     },
     equipmentOptions: {
-      balcony: "Balkon / Terrasse",
+      terrace: "Terrasse",
       garden: "Garten",
-      parking: "Stellplatz / Garage",
-      elevator: "Aufzug",
+      garage: "Garage / Carport",
       bathroom: "Modernisiertes Bad",
       energy: "Energetisch modernisiert",
+      heating: "Modernisierte Heizung",
+      balcony: "Balkon / Loggia",
+      elevator: "Aufzug",
+      parking: "Stellplatz / Tiefgarage",
+      kitchen: "Einbauküche",
     },
     cta: "Immobilie zu diesem Gesuch anbieten",
   },
@@ -88,7 +119,8 @@ const COPY = {
     street: "Street",
     houseNumber: "House number",
     addressHint: "With a precise address, we can later classify the micro-location more accurately.",
-    equipment: "Features",
+    houseEquipment: "House features",
+    apartmentEquipment: "Apartment features",
     purchaseResult: "Indicative range",
     rentResult: "Indicative range",
     perMonth: " / month",
@@ -99,9 +131,12 @@ const COPY = {
     refineActionOpen: "Hide refinement",
     summaryTitle: "Currently considered",
     notesTitle: "Assessment",
-    roomsNoteGood: "The room count looks fitting for this living area.",
-    roomsNoteCompact: "The room count suggests a rather compact layout.",
-    roomsNoteGenerous: "The room count suggests rather generous room sizes.",
+    houseRoomsNoteGood: "The room count looks fitting for this house size.",
+    houseRoomsNoteCompact: "The room count suggests a rather compact house layout.",
+    houseRoomsNoteGenerous: "The room count suggests a more generous family layout.",
+    apartmentRoomsNoteGood: "The room count looks fitting for this apartment size.",
+    apartmentRoomsNoteCompact: "The room count suggests a rather compact apartment layout.",
+    apartmentRoomsNoteGenerous: "The room count suggests rather generous room sizes.",
     addressNoteMissing: "With street and house number, the location can later be refined more precisely.",
     addressNotePresent: "The provided address can later be used for a more precise micro-location assessment.",
     prototypeHint: "The current refinement is a prototype and will later be extended by location clusters and additional market factors.",
@@ -113,12 +148,16 @@ const COPY = {
       as_new: "As new",
     },
     equipmentOptions: {
-      balcony: "Balcony / terrace",
+      terrace: "Terrace",
       garden: "Garden",
-      parking: "Parking / garage",
-      elevator: "Elevator",
+      garage: "Garage / carport",
       bathroom: "Modernized bathroom",
       energy: "Energy modernization",
+      heating: "Modernized heating",
+      balcony: "Balcony / loggia",
+      elevator: "Elevator",
+      parking: "Parking / underground parking",
+      kitchen: "Fitted kitchen",
     },
     cta: "Offer property for this request",
   },
@@ -169,29 +208,24 @@ function resolveInitialArea(value: number | null | undefined, kind: ObjectKind):
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
     return String(Math.round(value));
   }
-  return kind === "house" ? "120" : "80";
+  return kind === "house" ? "135" : "82";
 }
 
 function resolveInitialRooms(kind: ObjectKind, area: number | null): string {
   if (kind === "house") {
-    if (area !== null && area >= 150) return "6";
-    if (area !== null && area >= 120) return "5";
+    if (area !== null && area >= 165) return "6";
+    if (area !== null && area >= 125) return "5";
     return "4";
   }
-  if (area !== null && area >= 100) return "4";
-  if (area !== null && area >= 70) return "3";
+  if (area !== null && area >= 110) return "5";
+  if (area !== null && area >= 78) return "3";
   return "2";
 }
 
-function getExpectedRooms(kind: ObjectKind, area: number): number {
-  if (kind === "house") {
-    if (area < 110) return 4;
-    if (area < 150) return 5;
-    return 6;
-  }
-  if (area < 55) return 2;
-  if (area < 90) return 3;
-  return 4;
+function getHouseExpectedRooms(area: number): number {
+  if (area < 115) return 4;
+  if (area < 165) return 5;
+  return 6;
 }
 
 function getConditionFactor(condition: ConditionKey): number {
@@ -209,25 +243,90 @@ function getConditionFactor(condition: ConditionKey): number {
   }
 }
 
-function getRoomsFactor(kind: ObjectKind, area: number, rooms: number): number {
-  const expectedRooms = getExpectedRooms(kind, area);
-  const difference = rooms - expectedRooms;
-  if (difference <= -2) return 0.97;
-  if (difference === -1) return 0.985;
-  if (difference === 0) return 1;
-  if (difference === 1) return 1.015;
-  return 1.01;
+function getApartmentExpectedRooms(area: number): number {
+  if (area < 58) return 2;
+  if (area < 98) return 3;
+  return 4;
 }
 
-function getEquipmentFactor(equipment: Record<EquipmentKey, boolean>, kind: ObjectKind): number {
-  let factor = 1;
-  if (equipment.balcony) factor += kind === "apartment" ? 0.015 : 0.01;
-  if (equipment.garden) factor += kind === "house" ? 0.025 : 0.01;
-  if (equipment.parking) factor += 0.015;
-  if (equipment.elevator) factor += kind === "apartment" ? 0.015 : 0.005;
-  if (equipment.bathroom) factor += 0.02;
-  if (equipment.energy) factor += 0.03;
-  return Math.min(1.08, factor);
+const HOUSE_EQUIPMENT_KEYS: EquipmentKey[] = ["terrace", "garden", "garage", "bathroom", "energy", "heating"];
+const APARTMENT_EQUIPMENT_KEYS: EquipmentKey[] = ["balcony", "elevator", "parking", "bathroom", "kitchen", "energy"];
+
+function getObjectProfile(copy: typeof COPY.de | typeof COPY.en, kind: ObjectKind): ObjectProfile {
+  if (kind === "house") {
+    return {
+      equipmentKeys: HOUSE_EQUIPMENT_KEYS,
+      roomOptions: [3, 4, 5, 6, 7, 8],
+      defaultArea: "135",
+      expectedRooms: getHouseExpectedRooms,
+      roomFactor: (area, rooms) => {
+        const difference = rooms - getHouseExpectedRooms(area);
+        if (difference <= -2) return 0.975;
+        if (difference === -1) return 0.988;
+        if (difference === 0) return 1;
+        if (difference === 1) return 1.012;
+        return 1.008;
+      },
+      equipmentFactor: (equipment) => {
+        let factor = 1;
+        if (equipment.terrace) factor += 0.015;
+        if (equipment.garden) factor += 0.025;
+        if (equipment.garage) factor += 0.018;
+        if (equipment.bathroom) factor += 0.018;
+        if (equipment.energy) factor += 0.028;
+        if (equipment.heating) factor += 0.02;
+        return Math.min(1.09, factor);
+      },
+      equipmentTitle: copy.houseEquipment,
+      roomNoteGood: copy.houseRoomsNoteGood,
+      roomNoteCompact: copy.houseRoomsNoteCompact,
+      roomNoteGenerous: copy.houseRoomsNoteGenerous,
+    };
+  }
+
+  return {
+    equipmentKeys: APARTMENT_EQUIPMENT_KEYS,
+    roomOptions: [1, 2, 3, 4, 5, 6],
+    defaultArea: "82",
+    expectedRooms: getApartmentExpectedRooms,
+    roomFactor: (area, rooms) => {
+      const difference = rooms - getApartmentExpectedRooms(area);
+      if (difference <= -2) return 0.972;
+      if (difference === -1) return 0.986;
+      if (difference === 0) return 1;
+      if (difference === 1) return 1.014;
+      return 1.007;
+    },
+    equipmentFactor: (equipment) => {
+      let factor = 1;
+      if (equipment.balcony) factor += 0.018;
+      if (equipment.elevator) factor += 0.015;
+      if (equipment.parking) factor += 0.015;
+      if (equipment.bathroom) factor += 0.02;
+      if (equipment.kitchen) factor += 0.012;
+      if (equipment.energy) factor += 0.025;
+      return Math.min(1.08, factor);
+    },
+    equipmentTitle: copy.apartmentEquipment,
+    roomNoteGood: copy.apartmentRoomsNoteGood,
+    roomNoteCompact: copy.apartmentRoomsNoteCompact,
+    roomNoteGenerous: copy.apartmentRoomsNoteGenerous,
+  };
+}
+
+function createInitialEquipmentState(): Record<EquipmentKey, boolean> {
+  return {
+    terrace: false,
+    garden: false,
+    garage: false,
+    bathroom: false,
+    energy: false,
+    heating: false,
+    balcony: false,
+    elevator: false,
+    parking: false,
+    kitchen: false,
+  };
 }
 
 function buildSummaryItems(
@@ -257,6 +356,7 @@ export function RequestMarketRangeBox({
 }: Props) {
   const copy = locale === "en" ? COPY.en : COPY.de;
   const objectKind = resolveObjectKind(objectType);
+  const profile = objectKind ? getObjectProfile(copy, objectKind) : null;
   const activeRange = objectKind
     ? mode === "miete"
       ? marketRangeContext?.rent[objectKind] ?? null
@@ -271,54 +371,42 @@ export function RequestMarketRangeBox({
   const [condition, setCondition] = useState<ConditionKey>("well_kept");
   const [street, setStreet] = useState("");
   const [houseNumber, setHouseNumber] = useState("");
-  const [equipment, setEquipment] = useState<Record<EquipmentKey, boolean>>({
-    balcony: false,
-    garden: false,
-    parking: false,
-    elevator: false,
-    bathroom: false,
-    energy: false,
-  });
+  const [equipment, setEquipment] = useState<Record<EquipmentKey, boolean>>(() => createInitialEquipmentState());
   const [showRefinement, setShowRefinement] = useState(false);
   const area = Number(areaDraft.replace(",", "."));
   const rooms = Number(roomsDraft.replace(",", "."));
 
   const computedActiveRange = (() => {
-    if (!activeRange || !Number.isFinite(area) || area <= 10) return null;
+    if (!activeRange || !profile || !Number.isFinite(area) || area <= 10) return null;
     const baseTotal = applyArea(activeRange, area);
     const roomsFactor = Number.isFinite(rooms) && rooms > 0 && objectKind
-      ? getRoomsFactor(objectKind, area, rooms)
+      ? profile.roomFactor(area, rooms)
       : 1;
     const conditionFactor = getConditionFactor(condition);
-    const equipmentFactor = objectKind ? getEquipmentFactor(equipment, objectKind) : 1;
+    const equipmentFactor = profile.equipmentFactor(equipment);
     const total = applyFactor(baseTotal, roomsFactor * conditionFactor * equipmentFactor);
     return {
       total,
-      roomsFactor,
-      conditionFactor,
-      equipmentFactor,
     };
   })();
 
-  if (!objectKind || !activeRange) return null;
+  if (!objectKind || !activeRange || !profile) return null;
 
   const isRent = mode === "miete";
   const objectLabel = objectKind === "house" ? copy.houseSingular : copy.apartmentSingular;
   const orientationHint = `${copy.orientationHintPrefix} ${objectLabel.toLowerCase()} ${copy.orientationHintIn} ${regionLabel}. ${copy.orientationHintSuffix}`;
   const roomsNote = (() => {
-    if (!Number.isFinite(rooms) || rooms <= 0 || !Number.isFinite(area) || area <= 10) return copy.roomsNoteGood;
-    const expectedRooms = getExpectedRooms(objectKind, area);
+    if (!Number.isFinite(rooms) || rooms <= 0 || !Number.isFinite(area) || area <= 10) return profile.roomNoteGood;
+    const expectedRooms = profile.expectedRooms(area);
     const difference = rooms - expectedRooms;
-    if (difference <= -1) return copy.roomsNoteCompact;
-    if (difference >= 1) return copy.roomsNoteGenerous;
-    return copy.roomsNoteGood;
+    if (difference <= -1) return profile.roomNoteCompact;
+    if (difference >= 1) return profile.roomNoteGenerous;
+    return profile.roomNoteGood;
   })();
   const addressNote = street.trim().length > 0 ? copy.addressNotePresent : copy.addressNoteMissing;
-  const selectedEquipmentLabels = (
-    Object.entries(equipment) as Array<[EquipmentKey, boolean]>
-  )
-    .filter(([, enabled]) => enabled)
-    .map(([key]) => copy.equipmentOptions[key]);
+  const selectedEquipmentLabels = profile.equipmentKeys
+    .filter((key) => equipment[key])
+    .map((key) => copy.equipmentOptions[key]);
   const summaryItems = buildSummaryItems(copy, Number.isFinite(area) && area > 10 ? area : initialArea ?? 80, Number.isFinite(rooms) && rooms > 0 ? rooms : 3, condition);
 
   return (
@@ -375,7 +463,7 @@ export function RequestMarketRangeBox({
                     onChange={(event) => setRoomsDraft(event.target.value)}
                     style={inputStyle}
                   >
-                    {Array.from({ length: objectKind === "house" ? 8 : 6 }, (_, index) => index + 1).map((value) => (
+                    {profile.roomOptions.map((value) => (
                       <option key={value} value={String(value)}>
                         {value}
                       </option>
@@ -428,9 +516,9 @@ export function RequestMarketRangeBox({
             </div>
 
             <div style={fieldCardStyle}>
-              <div style={sectionLabelStyle}>{copy.equipment}</div>
+              <div style={sectionLabelStyle}>{profile.equipmentTitle}</div>
               <div style={choiceGridStyle}>
-                {(Object.keys(copy.equipmentOptions) as EquipmentKey[]).map((key) => (
+                {profile.equipmentKeys.map((key) => (
                   <label key={key} style={equipmentChoiceLabelStyle}>
                     <input
                       type="checkbox"
